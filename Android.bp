@@ -1,8 +1,8 @@
 cc_library_headers {
     name: "libabsl_headers",
-    export_include_dirs: ["."],
-    host_supported: true,
     device_supported: false,
+    host_supported: true,
+    export_include_dirs: ["."],
 }
 
 cc_library_host_static {
@@ -10,7 +10,9 @@ cc_library_host_static {
     srcs: [
         "absl/base/dynamic_annotations.cc",
         "absl/base/internal/cycleclock.cc",
+        "absl/base/internal/exponential_biased.cc",
         "absl/base/internal/low_level_alloc.cc",
+        "absl/base/internal/periodic_sampler.cc",
         "absl/base/internal/raw_logging.cc",
         "absl/base/internal/spinlock.cc",
         "absl/base/internal/spinlock_wait.cc",
@@ -56,11 +58,11 @@ cc_library_host_static {
         "absl/flags/usage.cc",
         "absl/flags/flag.cc",
         "absl/flags/parse.cc",
+        "absl/flags/internal/flag.cc",
         "absl/flags/internal/program_name.cc",
         "absl/flags/internal/registry.cc",
         "absl/flags/internal/usage.cc",
         "absl/flags/internal/type_erased.cc",
-        "absl/flags/internal/commandlineflag.cc",
         "absl/flags/flag_test_defs.cc",
     ],
 }
@@ -79,13 +81,23 @@ cc_library_host_static {
 }
 
 cc_library_host_static {
+    name: "libabsl_status",
+    srcs: [
+        "absl/status/status.cc",
+        "absl/status/status_payload_printer.cc",
+    ],
+}
+
+cc_library_host_static {
     name: "libabsl_strings",
     srcs: [
         "absl/strings/ascii.cc",
         "absl/strings/charconv.cc",
+        "absl/strings/cord.cc",
         "absl/strings/escaping.cc",
         "absl/strings/internal/charconv_bigint.cc",
         "absl/strings/internal/charconv_parse.cc",
+        "absl/strings/internal/escaping.cc",
         "absl/strings/internal/memutil.cc",
         "absl/strings/internal/ostringstream.cc",
         "absl/strings/internal/str_format/arg.cc",
