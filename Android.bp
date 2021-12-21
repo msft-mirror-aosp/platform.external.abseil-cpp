@@ -39,9 +39,7 @@ cc_library_host_static {
     name: "libabsl_base",
     srcs: [
         "absl/base/internal/cycleclock.cc",
-        "absl/base/internal/exponential_biased.cc",
         "absl/base/internal/low_level_alloc.cc",
-        "absl/base/internal/periodic_sampler.cc",
         "absl/base/internal/raw_logging.cc",
         "absl/base/internal/spinlock.cc",
         "absl/base/internal/spinlock_wait.cc",
@@ -104,7 +102,6 @@ cc_library_host_static {
     srcs: [
         "absl/hash/internal/city.cc",
         "absl/hash/internal/hash.cc",
-        "absl/hash/internal/wyhash.cc",
     ],
 }
 
