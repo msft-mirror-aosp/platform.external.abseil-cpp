@@ -301,7 +301,7 @@ bool CordRepRing::IsValid(std::ostream& output) const {
     if (offset >= child->length || entry_length > child->length - offset) {
       output << "entry[" << head << "] has offset " << offset
              << " and entry length " << entry_length
-             << " which are outside of the childs length of " << child->length;
+             << " which are outside of the child's length of " << child->length;
       return false;
     }
 
@@ -400,10 +400,11 @@ CordRepRing* CordRepRing::Mutable(CordRepRing* rep, size_t extra) {
   // Get current number of entries, and check for max capacity.
   size_t entries = rep->entries();
 
-  size_t min_extra = (std::max)(extra, rep->capacity() * 2 - entries);
   if (!rep->refcount.IsOne()) {
-    return Copy(rep, rep->head(), rep->tail(), min_extra);
+    return Copy(rep, rep->head(), rep->tail(), extra);
   } else if (entries + extra > rep->capacity()) {
+    const size_t min_grow = rep->capacity() + rep->capacity() / 2;
+    const size_t min_extra = (std::max)(extra, min_grow - entries);
     CordRepRing* newrep = CordRepRing::New(entries, min_extra);
     newrep->Fill<false>(rep, rep->head(), rep->tail());
     CordRepRing::Delete(rep);
