@@ -43,9 +43,6 @@ cc_test(
     name = "sample_recorder_test",
     srcs = ["internal/sample_recorder_test.cc"],
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    tags = [
-        "no_test_wasm",
-    ],
     deps = [
         ":sample_recorder",
         "//absl/base:core_headers",

@@ -85,11 +85,7 @@ cc_library(
     deps = [
         ":civil_time",
         "//absl/base:config",
-    ] + select(
-        {
-            "//conditions:default": [],
-        },
-    ),
+    ],
 )
 
 ### tests
@@ -119,7 +115,6 @@ cc_test(
         "no_test_android_arm",
         "no_test_android_arm64",
         "no_test_android_x86",
-        "no_test_wasm",
     ],
     deps = [
         ":civil_time",
@@ -139,7 +134,6 @@ cc_test(
         "no_test_android_arm",
         "no_test_android_arm64",
         "no_test_android_x86",
-        "no_test_wasm",
     ],
     deps = [
         ":civil_time",
