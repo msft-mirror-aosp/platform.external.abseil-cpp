@@ -31,7 +31,6 @@
 #include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/base/internal/cycleclock.h"
-#include "absl/base/internal/prefetch.h"
 #include "absl/base/internal/raw_logging.h"
 #include "absl/container/internal/container_memory.h"
 #include "absl/container/internal/hash_function_defaults.h"
@@ -195,39 +194,35 @@ TEST(Group, Match) {
   }
 }
 
-TEST(Group, MaskEmpty) {
+TEST(Group, MatchEmpty) {
   if (Group::kWidth == 16) {
     ctrl_t group[] = {ctrl_t::kEmpty, CtrlT(1), ctrl_t::kDeleted,  CtrlT(3),
                       ctrl_t::kEmpty, CtrlT(5), ctrl_t::kSentinel, CtrlT(7),
                       CtrlT(7),       CtrlT(5), CtrlT(3),          CtrlT(1),
                       CtrlT(1),       CtrlT(1), CtrlT(1),          CtrlT(1)};
-    EXPECT_THAT(Group{group}.MaskEmpty().LowestBitSet(), 0);
-    EXPECT_THAT(Group{group}.MaskEmpty().HighestBitSet(), 4);
+    EXPECT_THAT(Group{group}.MatchEmpty(), ElementsAre(0, 4));
   } else if (Group::kWidth == 8) {
     ctrl_t group[] = {ctrl_t::kEmpty,    CtrlT(1), CtrlT(2),
                       ctrl_t::kDeleted,  CtrlT(2), CtrlT(1),
                       ctrl_t::kSentinel, CtrlT(1)};
-    EXPECT_THAT(Group{group}.MaskEmpty().LowestBitSet(), 0);
-    EXPECT_THAT(Group{group}.MaskEmpty().HighestBitSet(), 0);
+    EXPECT_THAT(Group{group}.MatchEmpty(), ElementsAre(0));
   } else {
     FAIL() << "No test coverage for Group::kWidth==" << Group::kWidth;
   }
 }
 
-TEST(Group, MaskEmptyOrDeleted) {
+TEST(Group, MatchEmptyOrDeleted) {
   if (Group::kWidth == 16) {
-    ctrl_t group[] = {ctrl_t::kEmpty,   CtrlT(1), ctrl_t::kEmpty,    CtrlT(3),
-                      ctrl_t::kDeleted, CtrlT(5), ctrl_t::kSentinel, CtrlT(7),
-                      CtrlT(7),         CtrlT(5), CtrlT(3),          CtrlT(1),
-                      CtrlT(1),         CtrlT(1), CtrlT(1),          CtrlT(1)};
-    EXPECT_THAT(Group{group}.MaskEmptyOrDeleted().LowestBitSet(), 0);
-    EXPECT_THAT(Group{group}.MaskEmptyOrDeleted().HighestBitSet(), 4);
+    ctrl_t group[] = {ctrl_t::kEmpty, CtrlT(1), ctrl_t::kDeleted,  CtrlT(3),
+                      ctrl_t::kEmpty, CtrlT(5), ctrl_t::kSentinel, CtrlT(7),
+                      CtrlT(7),       CtrlT(5), CtrlT(3),          CtrlT(1),
+                      CtrlT(1),       CtrlT(1), CtrlT(1),          CtrlT(1)};
+    EXPECT_THAT(Group{group}.MatchEmptyOrDeleted(), ElementsAre(0, 2, 4));
   } else if (Group::kWidth == 8) {
     ctrl_t group[] = {ctrl_t::kEmpty,    CtrlT(1), CtrlT(2),
                       ctrl_t::kDeleted,  CtrlT(2), CtrlT(1),
                       ctrl_t::kSentinel, CtrlT(1)};
-    EXPECT_THAT(Group{group}.MaskEmptyOrDeleted().LowestBitSet(), 0);
-    EXPECT_THAT(Group{group}.MaskEmptyOrDeleted().HighestBitSet(), 3);
+    EXPECT_THAT(Group{group}.MatchEmptyOrDeleted(), ElementsAre(0, 3));
   } else {
     FAIL() << "No test coverage for Group::kWidth==" << Group::kWidth;
   }
@@ -1249,7 +1244,7 @@ ExpectedStats XorSeedExpectedStats() {
     case 16:
       if (kRandomizesInserts) {
         return {0.1,
-                2.0,
+                1.0,
                 {{0.95, 0.1}},
                 {{0.95, 0}, {0.99, 1}, {0.999, 8}, {0.9999, 15}}};
       } else {
@@ -1263,7 +1258,6 @@ ExpectedStats XorSeedExpectedStats() {
   return {};
 }
 
-// TODO(b/80415403): Figure out why this test is so flaky, esp. on MSVC
 TEST(Table, DISABLED_EnsureNonQuadraticTopNXorSeedByProbeSeqLength) {
   ProbeStatsPerSize stats;
   std::vector<size_t> sizes = {Group::kWidth << 5, Group::kWidth << 10};
@@ -1336,17 +1330,17 @@ ExpectedStats LinearTransformExpectedStats() {
                 {{0.95, 0.3}},
                 {{0.95, 0}, {0.99, 1}, {0.999, 8}, {0.9999, 15}}};
       } else {
-        return {0.4,
-                0.6,
-                {{0.95, 0.5}},
-                {{0.95, 1}, {0.99, 14}, {0.999, 23}, {0.9999, 26}}};
+        return {0.15,
+                0.5,
+                {{0.95, 0.3}},
+                {{0.95, 0}, {0.99, 3}, {0.999, 15}, {0.9999, 25}}};
       }
     case 16:
       if (kRandomizesInserts) {
         return {0.1,
                 0.4,
                 {{0.95, 0.3}},
-                {{0.95, 1}, {0.99, 2}, {0.999, 9}, {0.9999, 15}}};
+                {{0.95, 0}, {0.99, 1}, {0.999, 8}, {0.9999, 15}}};
       } else {
         return {0.05,
                 0.2,
@@ -1358,7 +1352,6 @@ ExpectedStats LinearTransformExpectedStats() {
   return {};
 }
 
-// TODO(b/80415403): Figure out why this test is so flaky.
 TEST(Table, DISABLED_EnsureNonQuadraticTopNLinearTransformByProbeSeqLength) {
   ProbeStatsPerSize stats;
   std::vector<size_t> sizes = {Group::kWidth << 5, Group::kWidth << 10};
@@ -2035,7 +2028,7 @@ TEST(TableDeathTest, EraseOfEndAsserts) {
 
   IntTable t;
   // Extra simple "regexp" as regexp support is highly varied across platforms.
-  constexpr char kDeathMsg[] = "erase.. called on invalid iterator";
+  constexpr char kDeathMsg[] = "Invalid operation on iterator";
   EXPECT_DEATH_IF_SUPPORTED(t.erase(t.end()), kDeathMsg);
 }
 

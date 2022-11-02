@@ -121,7 +121,6 @@ absl_cc_library(
     absl::variant
     GTest::gmock
     GTest::gtest
-  PUBLIC
   TESTONLY
 )
 
@@ -223,8 +222,8 @@ absl_cc_library(
   LINKOPTS
     ${ABSL_DEFAULT_LINKOPTS}
   DEPS
-    absl::config
     absl::inlined_vector
+    absl::random_internal_nonsecure_base
     absl::random_internal_pool_urbg
     absl::random_internal_salted_seed_seq
     absl::random_internal_seed_material
@@ -727,7 +726,7 @@ absl_cc_library(
     ${ABSL_DEFAULT_LINKOPTS}
   DEPS
     absl::core_headers
-    absl::inlined_vector
+    absl::optional
     absl::random_internal_pool_urbg
     absl::random_internal_salted_seed_seq
     absl::random_internal_seed_material
@@ -1211,6 +1210,5 @@ absl_cc_test(
     absl::random_internal_wide_multiply
     absl::bits
     absl::int128
-    GTest::gmock
     GTest::gtest_main
 )
