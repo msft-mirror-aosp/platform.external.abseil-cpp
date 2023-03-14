@@ -16,8 +16,16 @@ cc_library_headers {
     export_include_dirs: ["."],
 }
 
+cc_defaults {
+    name: "libabsl_library_defaults",
+    header_libs: ["libabsl_headers"],
+    export_header_lib_headers: ["libabsl_headers"],
+    whole_static_libs: ["libabsl_base"],
+}
+
 cc_library_host_static {
     name: "libabsl_base",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/base/internal/cycleclock.cc",
         "absl/base/internal/low_level_alloc.cc",
@@ -32,10 +40,12 @@ cc_library_host_static {
         "absl/base/internal/unscaledcycleclock.cc",
         "absl/base/log_severity.cc",
     ],
+    exclude_static_libs: ["libabsl_base"], // don't depend on itself
 }
 
 cc_library_host_static {
     name: "libabsl_container",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/container/internal/test_instance_tracker.cc",
         "absl/container/internal/hashtablez_sampler.cc",
@@ -46,6 +56,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_debugging",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/debugging/failure_signal_handler.cc",
         "absl/debugging/internal/address_is_readable.cc",
@@ -62,6 +73,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_flags",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/flags/commandlineflag.cc",
         "absl/flags/flag_test_defs.cc",
@@ -81,6 +93,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_hash",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/hash/internal/city.cc",
         "absl/hash/internal/hash.cc",
@@ -91,11 +104,13 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_numeric",
+    defaults: ["libabsl_library_defaults"],
     srcs: ["absl/numeric/int128.cc"],
 }
 
 cc_library_host_static {
     name: "libabsl_profiling",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/profiling/internal/exponential_biased.cc",
         "absl/profiling/internal/periodic_sampler.cc",
@@ -104,6 +119,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_random",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/random/discrete_distribution.cc",
         "absl/random/gaussian_distribution.cc",
@@ -127,6 +143,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_status",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/status/status.cc",
         "absl/status/status_payload_printer.cc",
@@ -136,6 +153,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_strings",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/strings/ascii.cc",
         "absl/strings/charconv.cc",
@@ -179,6 +197,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_synchronization",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/synchronization/barrier.cc",
         "absl/synchronization/blocking_counter.cc",
@@ -193,6 +212,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_time",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/time/civil_time.cc",
         "absl/time/clock.cc",
@@ -214,6 +234,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_types",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/types/bad_any_cast.cc",
         "absl/types/bad_optional_access.cc",
