@@ -181,7 +181,6 @@ absl_cc_library(
     "call_once.h"
     "casts.h"
     "internal/cycleclock.h"
-    "internal/cycleclock_config.h"
     "internal/low_level_scheduling.h"
     "internal/per_thread_tls.h"
     "internal/spinlock.h"
@@ -189,7 +188,6 @@ absl_cc_library(
     "internal/thread_identity.h"
     "internal/tsan_mutex_interface.h"
     "internal/unscaledcycleclock.h"
-    "internal/unscaledcycleclock_config.h"
   SRCS
     "internal/cycleclock.cc"
     "internal/spinlock.cc"
@@ -201,7 +199,7 @@ absl_cc_library(
   LINKOPTS
     ${ABSL_DEFAULT_LINKOPTS}
     $<$<BOOL:${LIBRT}>:-lrt>
-    $<$<BOOL:${MINGW}>:-ladvapi32>
+    $<$<BOOL:${MINGW}>:"advapi32">
   DEPS
     absl::atomic_hook
     absl::base_internal
