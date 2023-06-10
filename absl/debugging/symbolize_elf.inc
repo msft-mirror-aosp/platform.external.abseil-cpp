@@ -205,8 +205,7 @@ struct ObjFile {
 
   // PT_LOAD program header describing executable code.
   // Normally we expect just one, but SWIFT binaries have two.
-  // CUDA binaries have 3 (see cr/473913254 description).
-  std::array<ElfW(Phdr), 4> phdr;
+  std::array<ElfW(Phdr), 2> phdr;
 };
 
 // Build 4-way associative cache for symbols. Within each cache line, symbols
@@ -253,21 +252,21 @@ class AddrMap {
  public:
   AddrMap() : size_(0), allocated_(0), obj_(nullptr) {}
   ~AddrMap() { base_internal::LowLevelAlloc::Free(obj_); }
-  size_t Size() const { return size_; }
-  ObjFile *At(size_t i) { return &obj_[i]; }
+  int Size() const { return size_; }
+  ObjFile *At(int i) { return &obj_[i]; }
   ObjFile *Add();
   void Clear();
 
  private:
-  size_t size_;       // count of valid elements (<= allocated_)
-  size_t allocated_;  // count of allocated elements
-  ObjFile *obj_;      // array of allocated_ elements
+  int size_;       // count of valid elements (<= allocated_)
+  int allocated_;  // count of allocated elements
+  ObjFile *obj_;   // array of allocated_ elements
   AddrMap(const AddrMap &) = delete;
   AddrMap &operator=(const AddrMap &) = delete;
 };
 
 void AddrMap::Clear() {
-  for (size_t i = 0; i != size_; i++) {
+  for (int i = 0; i != size_; i++) {
     At(i)->~ObjFile();
   }
   size_ = 0;
@@ -275,7 +274,7 @@ void AddrMap::Clear() {
 
 ObjFile *AddrMap::Add() {
   if (size_ == allocated_) {
-    size_t new_allocated = allocated_ * 2 + 50;
+    int new_allocated = allocated_ * 2 + 50;
     ObjFile *new_obj_ =
         static_cast<ObjFile *>(base_internal::LowLevelAlloc::AllocWithArena(
             new_allocated * sizeof(*new_obj_), SigSafeArena()));
@@ -301,7 +300,7 @@ class Symbolizer {
 
  private:
   char *CopyString(const char *s) {
-    size_t len = strlen(s);
+    int len = strlen(s);
     char *dst = static_cast<char *>(
         base_internal::LowLevelAlloc::AllocWithArena(len + 1, SigSafeArena()));
     ABSL_RAW_CHECK(dst != nullptr, "out of memory");
@@ -322,9 +321,8 @@ class Symbolizer {
   FindSymbolResult GetSymbolFromObjectFile(const ObjFile &obj,
                                            const void *const pc,
                                            const ptrdiff_t relocation,
-                                           char *out, size_t out_size,
-                                           char *tmp_buf, size_t tmp_buf_size);
-  const char *GetUncachedSymbol(const void *pc);
+                                           char *out, int out_size,
+                                           char *tmp_buf, int tmp_buf_size);
 
   enum {
     SYMBOL_BUF_SIZE = 3072,
@@ -354,11 +352,11 @@ static std::atomic<Symbolizer *> g_cached_symbolizer;
 
 }  // namespace
 
-static size_t SymbolizerSize() {
+static int SymbolizerSize() {
 #if defined(__wasm__) || defined(__asmjs__)
-  auto pagesize = static_cast<size_t>(getpagesize());
+  int pagesize = getpagesize();
 #else
-  auto pagesize = static_cast<size_t>(sysconf(_SC_PAGESIZE));
+  int pagesize = sysconf(_SC_PAGESIZE);
 #endif
   return ((sizeof(Symbolizer) - 1) / pagesize + 1) * pagesize;
 }
@@ -430,7 +428,7 @@ static ssize_t ReadPersistent(int fd, void *buf, size_t count) {
     if (len == 0) {  // Reached EOF.
       break;
     }
-    num_bytes += static_cast<size_t>(len);
+    num_bytes += len;
   }
   SAFE_ASSERT(num_bytes <= count);
   return static_cast<ssize_t>(num_bytes);
@@ -443,8 +441,8 @@ static ssize_t ReadFromOffset(const int fd, void *buf, const size_t count,
                               const off_t offset) {
   off_t off = lseek(fd, offset, SEEK_SET);
   if (off == (off_t)-1) {
-    ABSL_RAW_LOG(WARNING, "lseek(%d, %jd, SEEK_SET) failed: errno=%d", fd,
-                 static_cast<intmax_t>(offset), errno);
+    ABSL_RAW_LOG(WARNING, "lseek(%d, %ju, SEEK_SET) failed: errno=%d", fd,
+                 static_cast<uintmax_t>(offset), errno);
     return -1;
   }
   return ReadPersistent(fd, buf, count);
@@ -479,37 +477,29 @@ static int FileGetElfType(const int fd) {
 // inlined.
 static ABSL_ATTRIBUTE_NOINLINE bool GetSectionHeaderByType(
     const int fd, ElfW(Half) sh_num, const off_t sh_offset, ElfW(Word) type,
-    ElfW(Shdr) * out, char *tmp_buf, size_t tmp_buf_size) {
+    ElfW(Shdr) * out, char *tmp_buf, int tmp_buf_size) {
   ElfW(Shdr) *buf = reinterpret_cast<ElfW(Shdr) *>(tmp_buf);
-  const size_t buf_entries = tmp_buf_size / sizeof(buf[0]);
-  const size_t buf_bytes = buf_entries * sizeof(buf[0]);
+  const int buf_entries = tmp_buf_size / sizeof(buf[0]);
+  const int buf_bytes = buf_entries * sizeof(buf[0]);
 
-  for (size_t i = 0; static_cast<int>(i) < sh_num;) {
-    const size_t num_bytes_left =
-        (static_cast<size_t>(sh_num) - i) * sizeof(buf[0]);
-    const size_t num_bytes_to_read =
+  for (int i = 0; i < sh_num;) {
+    const ssize_t num_bytes_left = (sh_num - i) * sizeof(buf[0]);
+    const ssize_t num_bytes_to_read =
         (buf_bytes > num_bytes_left) ? num_bytes_left : buf_bytes;
-    const off_t offset = sh_offset + static_cast<off_t>(i * sizeof(buf[0]));
+    const off_t offset = sh_offset + i * sizeof(buf[0]);
     const ssize_t len = ReadFromOffset(fd, buf, num_bytes_to_read, offset);
-    if (len < 0) {
+    if (len % sizeof(buf[0]) != 0) {
       ABSL_RAW_LOG(
           WARNING,
-          "Reading %zu bytes from offset %ju returned %zd which is negative.",
-          num_bytes_to_read, static_cast<intmax_t>(offset), len);
-      return false;
-    }
-    if (static_cast<size_t>(len) % sizeof(buf[0]) != 0) {
-      ABSL_RAW_LOG(
-          WARNING,
-          "Reading %zu bytes from offset %jd returned %zd which is not a "
+          "Reading %zd bytes from offset %ju returned %zd which is not a "
           "multiple of %zu.",
-          num_bytes_to_read, static_cast<intmax_t>(offset), len,
+          num_bytes_to_read, static_cast<uintmax_t>(offset), len,
           sizeof(buf[0]));
       return false;
     }
-    const size_t num_headers_in_buf = static_cast<size_t>(len) / sizeof(buf[0]);
+    const ssize_t num_headers_in_buf = len / sizeof(buf[0]);
     SAFE_ASSERT(num_headers_in_buf <= buf_entries);
-    for (size_t j = 0; j < num_headers_in_buf; ++j) {
+    for (int j = 0; j < num_headers_in_buf; ++j) {
       if (buf[j].sh_type == type) {
         *out = buf[j];
         return true;
@@ -533,8 +523,8 @@ bool ForEachSection(int fd,
   }
 
   ElfW(Shdr) shstrtab;
-  off_t shstrtab_offset = static_cast<off_t>(elf_header.e_shoff) +
-                          elf_header.e_shentsize * elf_header.e_shstrndx;
+  off_t shstrtab_offset =
+      (elf_header.e_shoff + elf_header.e_shentsize * elf_header.e_shstrndx);
   if (!ReadFromOffsetExact(fd, &shstrtab, sizeof(shstrtab), shstrtab_offset)) {
     return false;
   }
@@ -542,23 +532,22 @@ bool ForEachSection(int fd,
   for (int i = 0; i < elf_header.e_shnum; ++i) {
     ElfW(Shdr) out;
     off_t section_header_offset =
-        static_cast<off_t>(elf_header.e_shoff) + elf_header.e_shentsize * i;
+        (elf_header.e_shoff + elf_header.e_shentsize * i);
     if (!ReadFromOffsetExact(fd, &out, sizeof(out), section_header_offset)) {
       return false;
     }
-    off_t name_offset = static_cast<off_t>(shstrtab.sh_offset) + out.sh_name;
+    off_t name_offset = shstrtab.sh_offset + out.sh_name;
     char header_name[kMaxSectionNameLen];
     ssize_t n_read =
         ReadFromOffset(fd, &header_name, kMaxSectionNameLen, name_offset);
-    if (n_read < 0) {
+    if (n_read == -1) {
       return false;
     } else if (n_read > kMaxSectionNameLen) {
       // Long read?
       return false;
     }
 
-    absl::string_view name(header_name,
-                           strnlen(header_name, static_cast<size_t>(n_read)));
+    absl::string_view name(header_name, strnlen(header_name, n_read));
     if (!callback(name, out)) {
       break;
     }
@@ -585,19 +574,19 @@ bool GetSectionHeaderByName(int fd, const char *name, size_t name_len,
   }
 
   ElfW(Shdr) shstrtab;
-  off_t shstrtab_offset = static_cast<off_t>(elf_header.e_shoff) +
-                          elf_header.e_shentsize * elf_header.e_shstrndx;
+  off_t shstrtab_offset =
+      (elf_header.e_shoff + elf_header.e_shentsize * elf_header.e_shstrndx);
   if (!ReadFromOffsetExact(fd, &shstrtab, sizeof(shstrtab), shstrtab_offset)) {
     return false;
   }
 
   for (int i = 0; i < elf_header.e_shnum; ++i) {
     off_t section_header_offset =
-        static_cast<off_t>(elf_header.e_shoff) + elf_header.e_shentsize * i;
+        (elf_header.e_shoff + elf_header.e_shentsize * i);
     if (!ReadFromOffsetExact(fd, out, sizeof(*out), section_header_offset)) {
       return false;
     }
-    off_t name_offset = static_cast<off_t>(shstrtab.sh_offset) + out->sh_name;
+    off_t name_offset = shstrtab.sh_offset + out->sh_name;
     ssize_t n_read = ReadFromOffset(fd, &header_name, name_len, name_offset);
     if (n_read < 0) {
       return false;
@@ -655,10 +644,10 @@ static bool InSection(const void *address, const ElfW(Shdr) * section) {
 }
 
 static const char *ComputeOffset(const char *base, ptrdiff_t offset) {
-  // Note: cast to intptr_t to avoid undefined behavior when base evaluates to
+  // Note: cast to uintptr_t to avoid undefined behavior when base evaluates to
   // zero and offset is non-zero.
-  return reinterpret_cast<const char *>(reinterpret_cast<intptr_t>(base) +
-                                        offset);
+  return reinterpret_cast<const char *>(
+      reinterpret_cast<uintptr_t>(base) + offset);
 }
 
 // Read a symbol table and look for the symbol containing the
@@ -671,18 +660,18 @@ static const char *ComputeOffset(const char *base, ptrdiff_t offset) {
 // To keep stack consumption low, we would like this function to not get
 // inlined.
 static ABSL_ATTRIBUTE_NOINLINE FindSymbolResult FindSymbol(
-    const void *const pc, const int fd, char *out, size_t out_size,
+    const void *const pc, const int fd, char *out, int out_size,
     ptrdiff_t relocation, const ElfW(Shdr) * strtab, const ElfW(Shdr) * symtab,
-    const ElfW(Shdr) * opd, char *tmp_buf, size_t tmp_buf_size) {
+    const ElfW(Shdr) * opd, char *tmp_buf, int tmp_buf_size) {
   if (symtab == nullptr) {
     return SYMBOL_NOT_FOUND;
   }
 
   // Read multiple symbols at once to save read() calls.
   ElfW(Sym) *buf = reinterpret_cast<ElfW(Sym) *>(tmp_buf);
-  const size_t buf_entries = tmp_buf_size / sizeof(buf[0]);
+  const int buf_entries = tmp_buf_size / sizeof(buf[0]);
 
-  const size_t num_symbols = symtab->sh_size / symtab->sh_entsize;
+  const int num_symbols = symtab->sh_size / symtab->sh_entsize;
 
   // On platforms using an .opd section (PowerPC & IA64), a function symbol
   // has the address of a function descriptor, which contains the real
@@ -697,19 +686,16 @@ static ABSL_ATTRIBUTE_NOINLINE FindSymbolResult FindSymbol(
   ElfW(Sym) best_match;
   SafeMemZero(&best_match, sizeof(best_match));
   bool found_match = false;
-  for (size_t i = 0; i < num_symbols;) {
-    off_t offset =
-        static_cast<off_t>(symtab->sh_offset + i * symtab->sh_entsize);
-    const size_t num_remaining_symbols = num_symbols - i;
-    const size_t entries_in_chunk =
-        std::min(num_remaining_symbols, buf_entries);
-    const size_t bytes_in_chunk = entries_in_chunk * sizeof(buf[0]);
+  for (int i = 0; i < num_symbols;) {
+    off_t offset = symtab->sh_offset + i * symtab->sh_entsize;
+    const int num_remaining_symbols = num_symbols - i;
+    const int entries_in_chunk = std::min(num_remaining_symbols, buf_entries);
+    const int bytes_in_chunk = entries_in_chunk * sizeof(buf[0]);
     const ssize_t len = ReadFromOffset(fd, buf, bytes_in_chunk, offset);
-    SAFE_ASSERT(len >= 0);
-    SAFE_ASSERT(static_cast<size_t>(len) % sizeof(buf[0]) == 0);
-    const size_t num_symbols_in_buf = static_cast<size_t>(len) / sizeof(buf[0]);
+    SAFE_ASSERT(len % sizeof(buf[0]) == 0);
+    const ssize_t num_symbols_in_buf = len / sizeof(buf[0]);
     SAFE_ASSERT(num_symbols_in_buf <= entries_in_chunk);
-    for (size_t j = 0; j < num_symbols_in_buf; ++j) {
+    for (int j = 0; j < num_symbols_in_buf; ++j) {
       const ElfW(Sym) &symbol = buf[j];
 
       // For a DSO, a symbol address is relocated by the loading address.
@@ -726,7 +712,7 @@ static ABSL_ATTRIBUTE_NOINLINE FindSymbolResult FindSymbol(
       // about what encoding is being used; we just want the real start address
       // of the function.
       start_address = reinterpret_cast<const char *>(
-          reinterpret_cast<uintptr_t>(start_address) & ~1u);
+          reinterpret_cast<uintptr_t>(start_address) & ~1);
 #endif
 
       if (deref_function_descriptor_pointer &&
@@ -739,8 +725,7 @@ static ABSL_ATTRIBUTE_NOINLINE FindSymbolResult FindSymbol(
 
       // If pc is inside the .opd section, it points to a function descriptor.
       const size_t size = pc_in_opd ? kFunctionDescriptorSize : symbol.st_size;
-      const void *const end_address =
-          ComputeOffset(start_address, static_cast<ptrdiff_t>(size));
+      const void *const end_address = ComputeOffset(start_address, size);
       if (symbol.st_value != 0 &&  // Skip null value symbols.
           symbol.st_shndx != 0 &&  // Skip undefined symbols.
 #ifdef STT_TLS
@@ -758,18 +743,16 @@ static ABSL_ATTRIBUTE_NOINLINE FindSymbolResult FindSymbol(
   }
 
   if (found_match) {
-    const off_t off =
-        static_cast<off_t>(strtab->sh_offset) + best_match.st_name;
+    const size_t off = strtab->sh_offset + best_match.st_name;
     const ssize_t n_read = ReadFromOffset(fd, out, out_size, off);
     if (n_read <= 0) {
       // This should never happen.
       ABSL_RAW_LOG(WARNING,
-                   "Unable to read from fd %d at offset %lld: n_read = %zd", fd,
-                   static_cast<long long>(off), n_read);
+                   "Unable to read from fd %d at offset %zu: n_read = %zd", fd,
+                   off, n_read);
       return SYMBOL_NOT_FOUND;
     }
-    ABSL_RAW_CHECK(static_cast<size_t>(n_read) <= out_size,
-                   "ReadFromOffset read too much data.");
+    ABSL_RAW_CHECK(n_read <= out_size, "ReadFromOffset read too much data.");
 
     // strtab->sh_offset points into .strtab-like section that contains
     // NUL-terminated strings: '\0foo\0barbaz\0...".
@@ -777,7 +760,7 @@ static ABSL_ATTRIBUTE_NOINLINE FindSymbolResult FindSymbol(
     // sh_offset+st_name points to the start of symbol name, but we don't know
     // how long the symbol is, so we try to read as much as we have space for,
     // and usually over-read (i.e. there is a NUL somewhere before n_read).
-    if (memchr(out, '\0', static_cast<size_t>(n_read)) == nullptr) {
+    if (memchr(out, '\0', n_read) == nullptr) {
       // Either out_size was too small (n_read == out_size and no NUL), or
       // we tried to read past the EOF (n_read < out_size) and .strtab is
       // corrupt (missing terminating NUL; should never happen for valid ELF).
@@ -795,7 +778,7 @@ static ABSL_ATTRIBUTE_NOINLINE FindSymbolResult FindSymbol(
 // See FindSymbol() comment for description of return value.
 FindSymbolResult Symbolizer::GetSymbolFromObjectFile(
     const ObjFile &obj, const void *const pc, const ptrdiff_t relocation,
-    char *out, size_t out_size, char *tmp_buf, size_t tmp_buf_size) {
+    char *out, int out_size, char *tmp_buf, int tmp_buf_size) {
   ElfW(Shdr) symtab;
   ElfW(Shdr) strtab;
   ElfW(Shdr) opd;
@@ -818,15 +801,13 @@ FindSymbolResult Symbolizer::GetSymbolFromObjectFile(
   // Consult a regular symbol table, then fall back to the dynamic symbol table.
   for (const auto symbol_table_type : {SHT_SYMTAB, SHT_DYNSYM}) {
     if (!GetSectionHeaderByType(obj.fd, obj.elf_header.e_shnum,
-                                static_cast<off_t>(obj.elf_header.e_shoff),
-                                static_cast<ElfW(Word)>(symbol_table_type),
+                                obj.elf_header.e_shoff, symbol_table_type,
                                 &symtab, tmp_buf, tmp_buf_size)) {
       continue;
     }
     if (!ReadFromOffsetExact(
             obj.fd, &strtab, sizeof(strtab),
-            static_cast<off_t>(obj.elf_header.e_shoff +
-                               symtab.sh_link * sizeof(symtab)))) {
+            obj.elf_header.e_shoff + symtab.sh_link * sizeof(symtab))) {
       continue;
     }
     const FindSymbolResult rc =
@@ -851,7 +832,7 @@ class FileDescriptor {
 
   ~FileDescriptor() {
     if (fd_ >= 0) {
-      close(fd_);
+      NO_INTR(close(fd_));
     }
   }
 
@@ -868,7 +849,7 @@ class FileDescriptor {
 // and snprintf().
 class LineReader {
  public:
-  explicit LineReader(int fd, char *buf, size_t buf_len)
+  explicit LineReader(int fd, char *buf, int buf_len)
       : fd_(fd),
         buf_len_(buf_len),
         buf_(buf),
@@ -896,12 +877,12 @@ class LineReader {
       bol_ = eol_ + 1;            // Advance to the next line in the buffer.
       SAFE_ASSERT(bol_ <= eod_);  // "bol_" can point to "eod_".
       if (!HasCompleteLine()) {
-        const auto incomplete_line_length = static_cast<size_t>(eod_ - bol_);
+        const int incomplete_line_length = eod_ - bol_;
         // Move the trailing incomplete line to the beginning.
         memmove(buf_, bol_, incomplete_line_length);
         // Read text from file and append it.
         char *const append_pos = buf_ + incomplete_line_length;
-        const size_t capacity_left = buf_len_ - incomplete_line_length;
+        const int capacity_left = buf_len_ - incomplete_line_length;
         const ssize_t num_bytes =
             ReadPersistent(fd_, append_pos, capacity_left);
         if (num_bytes <= 0) {  // EOF or error.
@@ -924,8 +905,7 @@ class LineReader {
 
  private:
   char *FindLineFeed() const {
-    return reinterpret_cast<char *>(
-        memchr(bol_, '\n', static_cast<size_t>(eod_ - bol_)));
+    return reinterpret_cast<char *>(memchr(bol_, '\n', eod_ - bol_));
   }
 
   bool BufferIsEmpty() const { return buf_ == eod_; }
@@ -935,7 +915,7 @@ class LineReader {
   }
 
   const int fd_;
-  const size_t buf_len_;
+  const int buf_len_;
   char *const buf_;
   char *bol_;
   char *eol_;
@@ -953,8 +933,7 @@ static const char *GetHex(const char *start, const char *end,
     int ch = *p;
     if ((ch >= '0' && ch <= '9') || (ch >= 'A' && ch <= 'F') ||
         (ch >= 'a' && ch <= 'f')) {
-      hex = (hex << 4) |
-            static_cast<uint64_t>(ch < 'A' ? ch - '0' : (ch & 0xF) + 9);
+      hex = (hex << 4) | (ch < 'A' ? ch - '0' : (ch & 0xF) + 9);
     } else {  // Encountered the first non-hex character.
       break;
     }
@@ -986,7 +965,7 @@ static bool ShouldUseMapping(const char *const flags) {
 static ABSL_ATTRIBUTE_NOINLINE bool ReadAddrMap(
     bool (*callback)(const char *filename, const void *const start_addr,
                      const void *const end_addr, uint64_t offset, void *arg),
-    void *arg, void *tmp_buf, size_t tmp_buf_size) {
+    void *arg, void *tmp_buf, int tmp_buf_size) {
   // Use /proc/self/task/<pid>/maps instead of /proc/self/maps. The latter
   // requires kernel to stop all threads, and is significantly slower when there
   // are 1000s of threads.
@@ -1101,10 +1080,10 @@ ObjFile *Symbolizer::FindObjFile(const void *const addr, size_t len) {
       }
     }
 
-    size_t lo = 0;
-    size_t hi = addr_map_.Size();
+    int lo = 0;
+    int hi = addr_map_.Size();
     while (lo < hi) {
-      size_t mid = (lo + hi) / 2;
+      int mid = (lo + hi) / 2;
       if (addr < addr_map_.At(mid)->end_addr) {
         hi = mid;
       } else {
@@ -1126,11 +1105,11 @@ ObjFile *Symbolizer::FindObjFile(const void *const addr, size_t len) {
 }
 
 void Symbolizer::ClearAddrMap() {
-  for (size_t i = 0; i != addr_map_.Size(); i++) {
+  for (int i = 0; i != addr_map_.Size(); i++) {
     ObjFile *o = addr_map_.At(i);
     base_internal::LowLevelAlloc::Free(o->filename);
     if (o->fd >= 0) {
-      close(o->fd);
+      NO_INTR(close(o->fd));
     }
   }
   addr_map_.Clear();
@@ -1146,7 +1125,7 @@ bool Symbolizer::RegisterObjFile(const char *filename,
 
   // Files are supposed to be added in the increasing address order.  Make
   // sure that's the case.
-  size_t addr_map_size = impl->addr_map_.Size();
+  int addr_map_size = impl->addr_map_.Size();
   if (addr_map_size != 0) {
     ObjFile *old = impl->addr_map_.At(addr_map_size - 1);
     if (old->end_addr > end_addr) {
@@ -1166,14 +1145,6 @@ bool Symbolizer::RegisterObjFile(const char *filename,
                      reinterpret_cast<uintptr_t>(old->end_addr), old->filename);
       }
       return true;
-    } else if (old->end_addr == start_addr &&
-               reinterpret_cast<uintptr_t>(old->start_addr) - old->offset ==
-                   reinterpret_cast<uintptr_t>(start_addr) - offset &&
-               strcmp(old->filename, filename) == 0) {
-      // Two contiguous map entries that span a contiguous region of the file,
-      // perhaps because some part of the file was mlock()ed. Combine them.
-      old->end_addr = end_addr;
-      return true;
     }
   }
   ObjFile *obj = impl->addr_map_.Add();
@@ -1190,12 +1161,12 @@ bool Symbolizer::RegisterObjFile(const char *filename,
 // where the input symbol is demangled in-place.
 // To keep stack consumption low, we would like this function to not
 // get inlined.
-static ABSL_ATTRIBUTE_NOINLINE void DemangleInplace(char *out, size_t out_size,
+static ABSL_ATTRIBUTE_NOINLINE void DemangleInplace(char *out, int out_size,
                                                     char *tmp_buf,
-                                                    size_t tmp_buf_size) {
+                                                    int tmp_buf_size) {
   if (Demangle(out, tmp_buf, tmp_buf_size)) {
     // Demangling succeeded. Copy to out if the space allows.
-    size_t len = strlen(tmp_buf);
+    int len = strlen(tmp_buf);
     if (len + 1 <= out_size) {  // +1 for '\0'.
       SAFE_ASSERT(len < tmp_buf_size);
       memmove(out, tmp_buf, len + 1);
@@ -1238,8 +1209,7 @@ const char *Symbolizer::InsertSymbolInCache(const void *const pc,
 
   SymbolCacheLine *line = GetCacheLine(pc);
   uint32_t max_age = 0;
-  size_t oldest_index = 0;
-  bool found_oldest_index = false;
+  int oldest_index = -1;
   for (size_t i = 0; i < ABSL_ARRAYSIZE(line->pc); ++i) {
     if (line->pc[i] == nullptr) {
       AgeSymbols(line);
@@ -1251,12 +1221,11 @@ const char *Symbolizer::InsertSymbolInCache(const void *const pc,
     if (line->age[i] >= max_age) {
       max_age = line->age[i];
       oldest_index = i;
-      found_oldest_index = true;
     }
   }
 
   AgeSymbols(line);
-  ABSL_RAW_CHECK(found_oldest_index, "Corrupt cache");
+  ABSL_RAW_CHECK(oldest_index >= 0, "Corrupt cache");
   base_internal::LowLevelAlloc::Free(line->name[oldest_index]);
   line->pc[oldest_index] = pc;
   line->name[oldest_index] = CopyString(name);
@@ -1325,7 +1294,7 @@ static bool MaybeInitializeObjFile(ObjFile *obj) {
     }
     const int phnum = obj->elf_header.e_phnum;
     const int phentsize = obj->elf_header.e_phentsize;
-    auto phoff = static_cast<off_t>(obj->elf_header.e_phoff);
+    size_t phoff = obj->elf_header.e_phoff;
     size_t num_executable_load_segments = 0;
     for (int j = 0; j < phnum; j++) {
       ElfW(Phdr) phdr;
@@ -1343,9 +1312,8 @@ static bool MaybeInitializeObjFile(ObjFile *obj) {
       if (num_executable_load_segments < obj->phdr.size()) {
         memcpy(&obj->phdr[num_executable_load_segments++], &phdr, sizeof(phdr));
       } else {
-        ABSL_RAW_LOG(
-            WARNING, "%s: too many executable LOAD segments: %zu >= %zu",
-            obj->filename, num_executable_load_segments, obj->phdr.size());
+        ABSL_RAW_LOG(WARNING, "%s: too many executable LOAD segments",
+                     obj->filename);
         break;
       }
     }
@@ -1365,7 +1333,13 @@ static bool MaybeInitializeObjFile(ObjFile *obj) {
 // they are called here as well.
 // To keep stack consumption low, we would like this function to not
 // get inlined.
-const char *Symbolizer::GetUncachedSymbol(const void *pc) {
+const char *Symbolizer::GetSymbol(const void *const pc) {
+  const char *entry = FindSymbolInCache(pc);
+  if (entry != nullptr) {
+    return entry;
+  }
+  symbol_buf_[0] = '\0';
+
   ObjFile *const obj = FindObjFile(pc, 1);
   ptrdiff_t relocation = 0;
   int fd = -1;
@@ -1377,7 +1351,7 @@ const char *Symbolizer::GetUncachedSymbol(const void *pc) {
         //
         // For obj->offset > 0, adjust the relocation since a mapping at offset
         // X in the file will have a start address of [true relocation]+X.
-        relocation = static_cast<ptrdiff_t>(start_addr - obj->offset);
+        relocation = start_addr - obj->offset;
 
         // Note: some binaries have multiple "rx" LOAD segments. We must
         // find the right one.
@@ -1453,42 +1427,6 @@ const char *Symbolizer::GetUncachedSymbol(const void *pc) {
   return InsertSymbolInCache(pc, symbol_buf_);
 }
 
-const char *Symbolizer::GetSymbol(const void *pc) {
-  const char *entry = FindSymbolInCache(pc);
-  if (entry != nullptr) {
-    return entry;
-  }
-  symbol_buf_[0] = '\0';
-
-#ifdef __hppa__
-  {
-    // In some contexts (e.g., return addresses), PA-RISC uses the lowest two
-    // bits of the address to indicate the privilege level. Clear those bits
-    // before trying to symbolize.
-    const auto pc_bits = reinterpret_cast<uintptr_t>(pc);
-    const auto address = pc_bits & ~0x3;
-    entry = GetUncachedSymbol(reinterpret_cast<const void *>(address));
-    if (entry != nullptr) {
-      return entry;
-    }
-
-    // In some contexts, PA-RISC also uses bit 1 of the address to indicate that
-    // this is a cross-DSO function pointer. Such function pointers actually
-    // point to a procedure label, a struct whose first 32-bit (pointer) element
-    // actually points to the function text. With no symbol found for this
-    // address so far, try interpreting it as a cross-DSO function pointer and
-    // see how that goes.
-    if (pc_bits & 0x2) {
-      return GetUncachedSymbol(*reinterpret_cast<const void *const *>(address));
-    }
-
-    return nullptr;
-  }
-#else
-  return GetUncachedSymbol(pc);
-#endif
-}
-
 bool RemoveAllSymbolDecorators(void) {
   if (!g_decorators_mu.TryLock()) {
     // Someone else is using decorators. Get out.
@@ -1552,7 +1490,7 @@ bool RegisterFileMappingHint(const void *start, const void *end, uint64_t offset
     ret = false;
   } else {
     // TODO(ckennelly): Move this into a string copy routine.
-    size_t len = strlen(filename);
+    int len = strlen(filename);
     char *dst = static_cast<char *>(
         base_internal::LowLevelAlloc::AllocWithArena(len + 1, SigSafeArena()));
     ABSL_RAW_CHECK(dst != nullptr, "out of memory");
@@ -1608,17 +1546,16 @@ bool Symbolize(const void *pc, char *out, int out_size) {
   const char *name = s->GetSymbol(pc);
   bool ok = false;
   if (name != nullptr && out_size > 0) {
-    strncpy(out, name, static_cast<size_t>(out_size));
+    strncpy(out, name, out_size);
     ok = true;
-    if (out[static_cast<size_t>(out_size) - 1] != '\0') {
+    if (out[out_size - 1] != '\0') {
       // strncpy() does not '\0' terminate when it truncates.  Do so, with
       // trailing ellipsis.
       static constexpr char kEllipsis[] = "...";
-      size_t ellipsis_size =
-          std::min(strlen(kEllipsis), static_cast<size_t>(out_size) - 1);
-      memcpy(out + static_cast<size_t>(out_size) - ellipsis_size - 1, kEllipsis,
-             ellipsis_size);
-      out[static_cast<size_t>(out_size) - 1] = '\0';
+      int ellipsis_size =
+          std::min(implicit_cast<int>(strlen(kEllipsis)), out_size - 1);
+      memcpy(out + out_size - ellipsis_size - 1, kEllipsis, ellipsis_size);
+      out[out_size - 1] = '\0';
     }
   }
   debugging_internal::FreeSymbolizer(s);

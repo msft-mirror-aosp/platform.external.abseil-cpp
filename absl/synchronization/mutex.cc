@@ -36,9 +36,6 @@
 #include <algorithm>
 #include <atomic>
 #include <cinttypes>
-#include <cstddef>
-#include <cstring>
-#include <iterator>
 #include <thread>  // NOLINT(build/c++11)
 
 #include "absl/base/attributes.h"
@@ -54,7 +51,6 @@
 #include "absl/base/internal/sysinfo.h"
 #include "absl/base/internal/thread_identity.h"
 #include "absl/base/internal/tsan_mutex_interface.h"
-#include "absl/base/optimization.h"
 #include "absl/base/port.h"
 #include "absl/debugging/stacktrace.h"
 #include "absl/debugging/symbolize.h"
@@ -113,7 +109,7 @@ static inline bool EvalConditionAnnotated(const Condition *cond, Mutex *mu,
                                           bool locking, bool trylock,
                                           bool read_lock);
 
-void RegisterMutexProfiler(void (*fn)(int64_t wait_cycles)) {
+void RegisterMutexProfiler(void (*fn)(int64_t wait_timestamp)) {
   submit_profile_data.Store(fn);
 }
 
@@ -138,42 +134,25 @@ enum DelayMode { AGGRESSIVE, GENTLE };
 struct ABSL_CACHELINE_ALIGNED MutexGlobals {
   absl::once_flag once;
   int spinloop_iterations = 0;
-  int32_t mutex_sleep_spins[2] = {};
-  absl::Duration mutex_sleep_time;
+  int32_t mutex_sleep_limit[2] = {};
 };
-
-absl::Duration MeasureTimeToYield() {
-  absl::Time before = absl::Now();
-  ABSL_INTERNAL_C_SYMBOL(AbslInternalMutexYield)();
-  return absl::Now() - before;
-}
 
 const MutexGlobals &GetMutexGlobals() {
   ABSL_CONST_INIT static MutexGlobals data;
   absl::base_internal::LowLevelCallOnce(&data.once, [&]() {
     const int num_cpus = absl::base_internal::NumCPUs();
     data.spinloop_iterations = num_cpus > 1 ? 1500 : 0;
-    // If this a uniprocessor, only yield/sleep.
-    // Real-time threads are often unable to yield, so the sleep time needs
-    // to be long enough to keep the calling thread asleep until scheduling
-    // happens.
-    // If this is multiprocessor, allow spinning. If the mode is
+    // If this a uniprocessor, only yield/sleep.  Otherwise, if the mode is
     // aggressive then spin many times before yielding.  If the mode is
     // gentle then spin only a few times before yielding.  Aggressive spinning
     // is used to ensure that an Unlock() call, which must get the spin lock
     // for any thread to make progress gets it without undue delay.
     if (num_cpus > 1) {
-      data.mutex_sleep_spins[AGGRESSIVE] = 5000;
-      data.mutex_sleep_spins[GENTLE] = 250;
-      data.mutex_sleep_time = absl::Microseconds(10);
+      data.mutex_sleep_limit[AGGRESSIVE] = 5000;
+      data.mutex_sleep_limit[GENTLE] = 250;
     } else {
-      data.mutex_sleep_spins[AGGRESSIVE] = 0;
-      data.mutex_sleep_spins[GENTLE] = 0;
-      data.mutex_sleep_time = MeasureTimeToYield() * 5;
-      data.mutex_sleep_time =
-          std::min(data.mutex_sleep_time, absl::Milliseconds(1));
-      data.mutex_sleep_time =
-          std::max(data.mutex_sleep_time, absl::Microseconds(10));
+      data.mutex_sleep_limit[AGGRESSIVE] = 0;
+      data.mutex_sleep_limit[GENTLE] = 0;
     }
   });
   return data;
@@ -184,8 +163,7 @@ namespace synchronization_internal {
 // Returns the Mutex delay on iteration `c` depending on the given `mode`.
 // The returned value should be used as `c` for the next call to `MutexDelay`.
 int MutexDelay(int32_t c, int mode) {
-  const int32_t limit = GetMutexGlobals().mutex_sleep_spins[mode];
-  const absl::Duration sleep_time = GetMutexGlobals().mutex_sleep_time;
+  const int32_t limit = GetMutexGlobals().mutex_sleep_limit[mode];
   if (c < limit) {
     // Spin.
     c++;
@@ -198,7 +176,7 @@ int MutexDelay(int32_t c, int mode) {
       c++;
     } else {
       // Then wait.
-      absl::SleepFor(sleep_time);
+      absl::SleepFor(absl::Microseconds(10));
       c = 0;
     }
     ABSL_TSAN_MUTEX_POST_DIVERT(nullptr, 0);
@@ -347,7 +325,7 @@ static struct SynchEvent {     // this is a trivial hash table for the events
 static SynchEvent *EnsureSynchEvent(std::atomic<intptr_t> *addr,
                                     const char *name, intptr_t bits,
                                     intptr_t lockbit) {
-  uint32_t h = reinterpret_cast<uintptr_t>(addr) % kNSynchEvent;
+  uint32_t h = reinterpret_cast<intptr_t>(addr) % kNSynchEvent;
   SynchEvent *e;
   // first look for existing SynchEvent struct..
   synch_event_mu.Lock();
@@ -400,7 +378,7 @@ static void UnrefSynchEvent(SynchEvent *e) {
 // is clear before doing so).
 static void ForgetSynchEvent(std::atomic<intptr_t> *addr, intptr_t bits,
                              intptr_t lockbit) {
-  uint32_t h = reinterpret_cast<uintptr_t>(addr) % kNSynchEvent;
+  uint32_t h = reinterpret_cast<intptr_t>(addr) % kNSynchEvent;
   SynchEvent **pe;
   SynchEvent *e;
   synch_event_mu.Lock();
@@ -424,7 +402,7 @@ static void ForgetSynchEvent(std::atomic<intptr_t> *addr, intptr_t bits,
 // "addr", if any.  The pointer returned is valid until the UnrefSynchEvent() is
 // called.
 static SynchEvent *GetSynchEvent(const void *addr) {
-  uint32_t h = reinterpret_cast<uintptr_t>(addr) % kNSynchEvent;
+  uint32_t h = reinterpret_cast<intptr_t>(addr) % kNSynchEvent;
   SynchEvent *e;
   synch_event_mu.Lock();
   for (e = synch_event[h];
@@ -452,13 +430,7 @@ static void PostSynchEvent(void *obj, int ev) {
     char buffer[ABSL_ARRAYSIZE(pcs) * 24];
     int pos = snprintf(buffer, sizeof (buffer), " @");
     for (int i = 0; i != n; i++) {
-      int b = snprintf(&buffer[pos], sizeof(buffer) - static_cast<size_t>(pos),
-                       " %p", pcs[i]);
-      if (b < 0 ||
-          static_cast<size_t>(b) >= sizeof(buffer) - static_cast<size_t>(pos)) {
-        break;
-      }
-      pos += b;
+      pos += snprintf(&buffer[pos], sizeof (buffer) - pos, " %p", pcs[i]);
     }
     ABSL_RAW_LOG(INFO, "%s%p %s %s", event_properties[ev].msg, obj,
                  (e == nullptr ? "" : e->name), buffer);
@@ -514,8 +486,7 @@ struct SynchWaitParams {
         cvmu(cvmu_arg),
         thread(thread_arg),
         cv_word(cv_word_arg),
-        contention_start_cycles(base_internal::CycleClock::Now()),
-        should_submit_contention_data(false) {}
+        contention_start_cycles(base_internal::CycleClock::Now()) {}
 
   const Mutex::MuHow how;  // How this thread needs to wait.
   const Condition *cond;  // The condition that this thread is waiting for.
@@ -533,7 +504,6 @@ struct SynchWaitParams {
 
   int64_t contention_start_cycles;  // Time (in cycles) when this thread started
                                     // to contend for the mutex.
-  bool should_submit_contention_data;
 };
 
 struct SynchLocksHeld {
@@ -592,15 +562,10 @@ static SynchLocksHeld *Synch_GetAllLocks() {
 void Mutex::IncrementSynchSem(Mutex *mu, PerThreadSynch *w) {
   if (mu) {
     ABSL_TSAN_MUTEX_PRE_DIVERT(mu, 0);
-    // We miss synchronization around passing PerThreadSynch between threads
-    // since it happens inside of the Mutex code, so we need to ignore all
-    // accesses to the object.
-    ABSL_ANNOTATE_IGNORE_READS_AND_WRITES_BEGIN();
-    PerThreadSem::Post(w->thread_identity());
-    ABSL_ANNOTATE_IGNORE_READS_AND_WRITES_END();
+  }
+  PerThreadSem::Post(w->thread_identity());
+  if (mu) {
     ABSL_TSAN_MUTEX_POST_DIVERT(mu, 0);
-  } else {
-    PerThreadSem::Post(w->thread_identity());
   }
 }
 
@@ -1155,7 +1120,7 @@ void Mutex::TryRemove(PerThreadSynch *s) {
 // if the wait extends past the absolute time specified, even if "s" is still
 // on the mutex queue.  In this case, remove "s" from the queue and return
 // true, otherwise return false.
-void Mutex::Block(PerThreadSynch *s) {
+ABSL_XRAY_LOG_ARGS(1) void Mutex::Block(PerThreadSynch *s) {
   while (s->state.load(std::memory_order_acquire) == PerThreadSynch::kQueued) {
     if (!DecrementSynchSem(this, s, s->waitp->timeout)) {
       // After a timeout, we go into a spin loop until we remove ourselves
@@ -1308,17 +1273,15 @@ static char *StackString(void **pcs, int n, char *buf, int maxlen,
   char sym[kSymLen];
   int len = 0;
   for (int i = 0; i != n; i++) {
-    if (len >= maxlen)
-      return buf;
-    size_t count = static_cast<size_t>(maxlen - len);
     if (symbolize) {
       if (!symbolizer(pcs[i], sym, kSymLen)) {
         sym[0] = '\0';
       }
-      snprintf(buf + len, count, "%s\t@ %p %s\n", (i == 0 ? "\n" : ""), pcs[i],
-               sym);
+      snprintf(buf + len, maxlen - len, "%s\t@ %p %s\n",
+               (i == 0 ? "\n" : ""),
+               pcs[i], sym);
     } else {
-      snprintf(buf + len, count, " %p", pcs[i]);
+      snprintf(buf + len, maxlen - len, " %p", pcs[i]);
     }
     len += strlen(&buf[len]);
   }
@@ -1403,12 +1366,12 @@ static GraphId DeadlockCheck(Mutex *mu) {
       bool symbolize = number_of_reported_deadlocks <= 2;
       ABSL_RAW_LOG(ERROR, "Potential Mutex deadlock: %s",
                    CurrentStackString(b->buf, sizeof (b->buf), symbolize));
-      size_t len = 0;
+      int len = 0;
       for (int j = 0; j != all_locks->n; j++) {
         void* pr = deadlock_graph->Ptr(all_locks->locks[j].id);
         if (pr != nullptr) {
           snprintf(b->buf + len, sizeof (b->buf) - len, " %p", pr);
-          len += strlen(&b->buf[len]);
+          len += static_cast<int>(strlen(&b->buf[len]));
         }
       }
       ABSL_RAW_LOG(ERROR,
@@ -1504,7 +1467,7 @@ static bool TryAcquireWithSpinning(std::atomic<intptr_t>* mu) {
   return false;
 }
 
-void Mutex::Lock() {
+ABSL_XRAY_LOG_ARGS(1) void Mutex::Lock() {
   ABSL_TSAN_MUTEX_PRE_LOCK(this, 0);
   GraphId id = DebugOnlyDeadlockCheck(this);
   intptr_t v = mu_.load(std::memory_order_relaxed);
@@ -1522,7 +1485,7 @@ void Mutex::Lock() {
   ABSL_TSAN_MUTEX_POST_LOCK(this, 0, 0);
 }
 
-void Mutex::ReaderLock() {
+ABSL_XRAY_LOG_ARGS(1) void Mutex::ReaderLock() {
   ABSL_TSAN_MUTEX_PRE_LOCK(this, __tsan_mutex_read_lock);
   GraphId id = DebugOnlyDeadlockCheck(this);
   intptr_t v = mu_.load(std::memory_order_relaxed);
@@ -1635,7 +1598,7 @@ bool Mutex::AwaitCommon(const Condition &cond, KernelTimeout t) {
   return res;
 }
 
-bool Mutex::TryLock() {
+ABSL_XRAY_LOG_ARGS(1) bool Mutex::TryLock() {
   ABSL_TSAN_MUTEX_PRE_LOCK(this, __tsan_mutex_try_lock);
   intptr_t v = mu_.load(std::memory_order_relaxed);
   if ((v & (kMuWriter | kMuReader | kMuEvent)) == 0 &&  // try fast acquire
@@ -1664,7 +1627,7 @@ bool Mutex::TryLock() {
   return false;
 }
 
-bool Mutex::ReaderTryLock() {
+ABSL_XRAY_LOG_ARGS(1) bool Mutex::ReaderTryLock() {
   ABSL_TSAN_MUTEX_PRE_LOCK(this,
                            __tsan_mutex_read_lock | __tsan_mutex_try_lock);
   intptr_t v = mu_.load(std::memory_order_relaxed);
@@ -1710,7 +1673,7 @@ bool Mutex::ReaderTryLock() {
   return false;
 }
 
-void Mutex::Unlock() {
+ABSL_XRAY_LOG_ARGS(1) void Mutex::Unlock() {
   ABSL_TSAN_MUTEX_PRE_UNLOCK(this, 0);
   DebugOnlyLockLeave(this);
   intptr_t v = mu_.load(std::memory_order_relaxed);
@@ -1762,7 +1725,7 @@ static bool ExactlyOneReader(intptr_t v) {
   return (v & kMuMultipleWaitersMask) == 0;
 }
 
-void Mutex::ReaderUnlock() {
+ABSL_XRAY_LOG_ARGS(1) void Mutex::ReaderUnlock() {
   ABSL_TSAN_MUTEX_PRE_UNLOCK(this, __tsan_mutex_read_lock);
   DebugOnlyLockLeave(this);
   intptr_t v = mu_.load(std::memory_order_relaxed);
@@ -1781,33 +1744,23 @@ void Mutex::ReaderUnlock() {
   ABSL_TSAN_MUTEX_POST_UNLOCK(this, __tsan_mutex_read_lock);
 }
 
-// Clears the designated waker flag in the mutex if this thread has blocked, and
-// therefore may be the designated waker.
-static intptr_t ClearDesignatedWakerMask(int flag) {
-  assert(flag >= 0);
-  assert(flag <= 1);
-  switch (flag) {
-    case 0:  // not blocked
-      return ~static_cast<intptr_t>(0);
-    case 1:  // blocked; turn off the designated waker bit
-      return ~static_cast<intptr_t>(kMuDesig);
-  }
-  ABSL_UNREACHABLE();
-}
+// The zap_desig_waker bitmask is used to clear the designated waker flag in
+// the mutex if this thread has blocked, and therefore may be the designated
+// waker.
+static const intptr_t zap_desig_waker[] = {
+    ~static_cast<intptr_t>(0),  // not blocked
+    ~static_cast<intptr_t>(
+        kMuDesig)  // blocked; turn off the designated waker bit
+};
 
-// Conditionally ignores the existence of waiting writers if a reader that has
-// already blocked once wakes up.
-static intptr_t IgnoreWaitingWritersMask(int flag) {
-  assert(flag >= 0);
-  assert(flag <= 1);
-  switch (flag) {
-    case 0:  // not blocked
-      return ~static_cast<intptr_t>(0);
-    case 1:  // blocked; pretend there are no waiting writers
-      return ~static_cast<intptr_t>(kMuWrWait);
-  }
-  ABSL_UNREACHABLE();
-}
+// The ignore_waiting_writers bitmask is used to ignore the existence
+// of waiting writers if a reader that has already blocked once
+// wakes up.
+static const intptr_t ignore_waiting_writers[] = {
+    ~static_cast<intptr_t>(0),  // not blocked
+    ~static_cast<intptr_t>(
+        kMuWrWait)  // blocked; pretend there are no waiting writers
+};
 
 // Internal version of LockWhen().  See LockSlowWithDeadline()
 ABSL_ATTRIBUTE_NOINLINE void Mutex::LockSlow(MuHow how, const Condition *cond,
@@ -1827,8 +1780,8 @@ static inline bool EvalConditionAnnotated(const Condition *cond, Mutex *mu,
   // operation tsan considers that we've already released the mutex.
   bool res = false;
 #ifdef ABSL_INTERNAL_HAVE_TSAN_INTERFACE
-  const uint32_t flags = read_lock ? __tsan_mutex_read_lock : 0;
-  const uint32_t tryflags = flags | (trylock ? __tsan_mutex_try_lock : 0);
+  const int flags = read_lock ? __tsan_mutex_read_lock : 0;
+  const int tryflags = flags | (trylock ? __tsan_mutex_try_lock : 0);
 #endif
   if (locking) {
     // For lock we pretend that we have finished the operation,
@@ -1899,10 +1852,8 @@ bool Mutex::LockSlowWithDeadline(MuHow how, const Condition *cond,
   bool unlock = false;
   if ((v & how->fast_need_zero) == 0 &&  // try fast acquire
       mu_.compare_exchange_strong(
-          v,
-          (how->fast_or |
-           (v & ClearDesignatedWakerMask(flags & kMuHasBlocked))) +
-              how->fast_add,
+          v, (how->fast_or | (v & zap_desig_waker[flags & kMuHasBlocked])) +
+                 how->fast_add,
           std::memory_order_acquire, std::memory_order_relaxed)) {
     if (cond == nullptr ||
         EvalConditionAnnotated(cond, this, true, false, how == kShared)) {
@@ -1941,7 +1892,7 @@ static void CheckForMutexCorruption(intptr_t v, const char* label) {
   // Test for either of two situations that should not occur in v:
   //   kMuWriter and kMuReader
   //   kMuWrWait and !kMuWait
-  const uintptr_t w = static_cast<uintptr_t>(v ^ kMuWait);
+  const uintptr_t w = v ^ kMuWait;
   // By flipping that bit, we can now test for:
   //   kMuWriter and kMuReader in w
   //   kMuWrWait and kMuWait in w
@@ -1976,10 +1927,9 @@ void Mutex::LockSlowLoop(SynchWaitParams *waitp, int flags) {
     CheckForMutexCorruption(v, "Lock");
     if ((v & waitp->how->slow_need_zero) == 0) {
       if (mu_.compare_exchange_strong(
-              v,
-              (waitp->how->fast_or |
-               (v & ClearDesignatedWakerMask(flags & kMuHasBlocked))) +
-                  waitp->how->fast_add,
+              v, (waitp->how->fast_or |
+                  (v & zap_desig_waker[flags & kMuHasBlocked])) +
+                     waitp->how->fast_add,
               std::memory_order_acquire, std::memory_order_relaxed)) {
         if (waitp->cond == nullptr ||
             EvalConditionAnnotated(waitp->cond, this, true, false,
@@ -1996,9 +1946,8 @@ void Mutex::LockSlowLoop(SynchWaitParams *waitp, int flags) {
       if ((v & (kMuSpin|kMuWait)) == 0) {   // no waiters
         // This thread tries to become the one and only waiter.
         PerThreadSynch *new_h = Enqueue(nullptr, waitp, v, flags);
-        intptr_t nv =
-            (v & ClearDesignatedWakerMask(flags & kMuHasBlocked) & kMuLow) |
-            kMuWait;
+        intptr_t nv = (v & zap_desig_waker[flags & kMuHasBlocked] & kMuLow) |
+                      kMuWait;
         ABSL_RAW_CHECK(new_h != nullptr, "Enqueue to empty list failed");
         if (waitp->how == kExclusive && (v & kMuReader) != 0) {
           nv |= kMuWrWait;
@@ -2012,13 +1961,12 @@ void Mutex::LockSlowLoop(SynchWaitParams *waitp, int flags) {
           waitp->thread->waitp = nullptr;
         }
       } else if ((v & waitp->how->slow_inc_need_zero &
-                  IgnoreWaitingWritersMask(flags & kMuHasBlocked)) == 0) {
+                  ignore_waiting_writers[flags & kMuHasBlocked]) == 0) {
         // This is a reader that needs to increment the reader count,
         // but the count is currently held in the last waiter.
         if (mu_.compare_exchange_strong(
-                v,
-                (v & ClearDesignatedWakerMask(flags & kMuHasBlocked)) |
-                    kMuSpin | kMuReader,
+                v, (v & zap_desig_waker[flags & kMuHasBlocked]) | kMuSpin |
+                       kMuReader,
                 std::memory_order_acquire, std::memory_order_relaxed)) {
           PerThreadSynch *h = GetPerThreadSynch(v);
           h->readers += kMuOne;       // inc reader count in waiter
@@ -2039,9 +1987,8 @@ void Mutex::LockSlowLoop(SynchWaitParams *waitp, int flags) {
         }
       } else if ((v & kMuSpin) == 0 &&  // attempt to queue ourselves
                  mu_.compare_exchange_strong(
-                     v,
-                     (v & ClearDesignatedWakerMask(flags & kMuHasBlocked)) |
-                         kMuSpin | kMuWait,
+                     v, (v & zap_desig_waker[flags & kMuHasBlocked]) | kMuSpin |
+                            kMuWait,
                      std::memory_order_acquire, std::memory_order_relaxed)) {
         PerThreadSynch *h = GetPerThreadSynch(v);
         PerThreadSynch *new_h = Enqueue(h, waitp, v, flags);
@@ -2368,26 +2315,19 @@ ABSL_ATTRIBUTE_NOINLINE void Mutex::UnlockSlow(SynchWaitParams *waitp) {
   }                            // end of for(;;)-loop
 
   if (wake_list != kPerThreadSynchNull) {
-    int64_t total_wait_cycles = 0;
-    int64_t max_wait_cycles = 0;
-    int64_t now = base_internal::CycleClock::Now();
+    int64_t enqueue_timestamp = wake_list->waitp->contention_start_cycles;
+    bool cond_waiter = wake_list->cond_waiter;
     do {
-      // Profile lock contention events only if the waiter was trying to acquire
-      // the lock, not waiting on a condition variable or Condition.
-      if (!wake_list->cond_waiter) {
-        int64_t cycles_waited =
-            (now - wake_list->waitp->contention_start_cycles);
-        total_wait_cycles += cycles_waited;
-        if (max_wait_cycles == 0) max_wait_cycles = cycles_waited;
-        wake_list->waitp->contention_start_cycles = now;
-        wake_list->waitp->should_submit_contention_data = true;
-      }
       wake_list = Wakeup(wake_list);              // wake waiters
     } while (wake_list != kPerThreadSynchNull);
-    if (total_wait_cycles > 0) {
-      mutex_tracer("slow release", this, total_wait_cycles);
+    if (!cond_waiter) {
+      // Sample lock contention events only if the (first) waiter was trying to
+      // acquire the lock, not waiting on a condition variable or Condition.
+      int64_t wait_cycles =
+          base_internal::CycleClock::Now() - enqueue_timestamp;
+      mutex_tracer("slow release", this, wait_cycles);
       ABSL_TSAN_MUTEX_PRE_DIVERT(this, 0);
-      submit_profile_data(total_wait_cycles);
+      submit_profile_data(enqueue_timestamp);
       ABSL_TSAN_MUTEX_POST_DIVERT(this, 0);
     }
   }
@@ -2552,9 +2492,9 @@ void CondVar::Remove(PerThreadSynch *s) {
 // before calling Mutex::UnlockSlow(), the Mutex code might be re-entered (via
 // the logging code, or via a Condition function) and might potentially attempt
 // to block this thread.  That would be a problem if the thread were already on
-// a condition variable waiter queue.  Thus, we use the waitp->cv_word to tell
-// the unlock code to call CondVarEnqueue() to queue the thread on the condition
-// variable queue just before the mutex is to be unlocked, and (most
+// a the condition variable waiter queue.  Thus, we use the waitp->cv_word
+// to tell the unlock code to call CondVarEnqueue() to queue the thread on the
+// condition variable queue just before the mutex is to be unlocked, and (most
 // importantly) after any call to an external routine that might re-enter the
 // mutex code.
 static void CondVarEnqueue(SynchWaitParams *waitp) {
@@ -2617,23 +2557,6 @@ bool CondVar::WaitCommon(Mutex *mutex, KernelTimeout t) {
   while (waitp.thread->state.load(std::memory_order_acquire) ==
          PerThreadSynch::kQueued) {
     if (!Mutex::DecrementSynchSem(mutex, waitp.thread, t)) {
-      // DecrementSynchSem returned due to timeout.
-      // Now we will either (1) remove ourselves from the wait list in Remove
-      // below, in which case Remove will set thread.state = kAvailable and
-      // we will not call DecrementSynchSem again; or (2) Signal/SignalAll
-      // has removed us concurrently and is calling Wakeup, which will set
-      // thread.state = kAvailable and post to the semaphore.
-      // It's important to reset the timeout for the case (2) because otherwise
-      // we can live-lock in this loop since DecrementSynchSem will always
-      // return immediately due to timeout, but Signal/SignalAll is not
-      // necessary set thread.state = kAvailable yet (and is not scheduled
-      // due to thread priorities or other scheduler artifacts).
-      // Note this could also be resolved if Signal/SignalAll would set
-      // thread.state = kAvailable while holding the wait list spin lock.
-      // But this can't be easily done for SignalAll since it grabs the whole
-      // wait list with a single compare-exchange and does not really grab
-      // the spin lock.
-      t = KernelTimeout::Never();
       this->Remove(waitp.thread);
       rc = true;
     }
@@ -2788,31 +2711,25 @@ static bool Dereference(void *arg) {
   return *(static_cast<bool *>(arg));
 }
 
-ABSL_CONST_INIT const Condition Condition::kTrue;
+Condition::Condition() {}   // null constructor, used for kTrue only
+const Condition Condition::kTrue;
 
 Condition::Condition(bool (*func)(void *), void *arg)
     : eval_(&CallVoidPtrFunction),
-      arg_(arg) {
-  static_assert(sizeof(&func) <= sizeof(callback_),
-                "An overlarge function pointer passed to Condition.");
-  StoreCallback(func);
-}
+      function_(func),
+      method_(nullptr),
+      arg_(arg) {}
 
 bool Condition::CallVoidPtrFunction(const Condition *c) {
-  using FunctionPointer = bool (*)(void *);
-  FunctionPointer function_pointer;
-  std::memcpy(&function_pointer, c->callback_, sizeof(function_pointer));
-  return (*function_pointer)(c->arg_);
+  return (*c->function_)(c->arg_);
 }
 
 Condition::Condition(const bool *cond)
     : eval_(CallVoidPtrFunction),
+      function_(Dereference),
+      method_(nullptr),
       // const_cast is safe since Dereference does not modify arg
-      arg_(const_cast<bool *>(cond)) {
-  using FunctionPointer = bool (*)(void *);
-  const FunctionPointer dereference = Dereference;
-  StoreCallback(dereference);
-}
+      arg_(const_cast<bool *>(cond)) {}
 
 bool Condition::Eval() const {
   // eval_ == null for kTrue
@@ -2820,15 +2737,14 @@ bool Condition::Eval() const {
 }
 
 bool Condition::GuaranteedEqual(const Condition *a, const Condition *b) {
-  // kTrue logic.
-  if (a == nullptr || a->eval_ == nullptr) {
+  if (a == nullptr) {
     return b == nullptr || b->eval_ == nullptr;
-  } else if (b == nullptr || b->eval_ == nullptr) {
-    return false;
   }
-  // Check equality of the representative fields.
-  return a->eval_ == b->eval_ && a->arg_ == b->arg_ &&
-         !memcmp(a->callback_, b->callback_, sizeof(a->callback_));
+  if (b == nullptr || b->eval_ == nullptr) {
+    return a->eval_ == nullptr;
+  }
+  return a->eval_ == b->eval_ && a->function_ == b->function_ &&
+         a->arg_ == b->arg_ && a->method_ == b->method_;
 }
 
 ABSL_NAMESPACE_END

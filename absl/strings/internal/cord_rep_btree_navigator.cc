@@ -16,7 +16,6 @@
 
 #include <cassert>
 
-#include "absl/strings/internal/cord_data_edge.h"
 #include "absl/strings/internal/cord_internal.h"
 #include "absl/strings/internal/cord_rep_btree.h"
 
@@ -40,7 +39,7 @@ inline CordRep* Substring(CordRep* rep, size_t offset, size_t n) {
   assert(n <= rep->length);
   assert(offset < rep->length);
   assert(offset <= rep->length - n);
-  assert(IsDataEdge(rep));
+  assert(CordRepBtree::IsDataEdge(rep));
 
   if (n == 0) return nullptr;
   if (n == rep->length) return CordRep::Ref(rep);
@@ -50,7 +49,6 @@ inline CordRep* Substring(CordRep* rep, size_t offset, size_t n) {
     rep = rep->substring()->child;
   }
 
-  assert(rep->IsExternal() || rep->IsFlat());
   CordRepSubstring* substring = new CordRepSubstring();
   substring->length = n;
   substring->tag = SUBSTRING;
@@ -90,7 +88,7 @@ CordRepBtreeNavigator::Position CordRepBtreeNavigator::Skip(size_t n) {
   // edges that must be skipped.
   while (height > 0) {
     node = edge->btree();
-    index_[height] = static_cast<uint8_t>(index);
+    index_[height] = index;
     node_[--height] = node;
     index = node->begin();
     edge = node->Edge(index);
@@ -101,7 +99,7 @@ CordRepBtreeNavigator::Position CordRepBtreeNavigator::Skip(size_t n) {
       edge = node->Edge(index);
     }
   }
-  index_[0] = static_cast<uint8_t>(index);
+  index_[0] = index;
   return {edge, n};
 }
 
@@ -126,7 +124,7 @@ ReadResult CordRepBtreeNavigator::Read(size_t edge_offset, size_t n) {
   do {
     length -= edge->length;
     while (++index == node->end()) {
-      index_[height] = static_cast<uint8_t>(index);
+      index_[height] = index;
       if (++height > height_) {
         subtree->set_end(subtree_end);
         if (length == 0) return {subtree, 0};
@@ -154,7 +152,7 @@ ReadResult CordRepBtreeNavigator::Read(size_t edge_offset, size_t n) {
   // edges that must be read, adding 'down' nodes to `subtree`.
   while (height > 0) {
     node = edge->btree();
-    index_[height] = static_cast<uint8_t>(index);
+    index_[height] = index;
     node_[--height] = node;
     index = node->begin();
     edge = node->Edge(index);
@@ -178,7 +176,7 @@ ReadResult CordRepBtreeNavigator::Read(size_t edge_offset, size_t n) {
     subtree->edges_[subtree_end++] = Substring(edge, 0, length);
   }
   subtree->set_end(subtree_end);
-  index_[0] = static_cast<uint8_t>(index);
+  index_[0] = index;
   return {tree, length};
 }
 

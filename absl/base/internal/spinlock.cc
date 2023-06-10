@@ -19,7 +19,6 @@
 #include <limits>
 
 #include "absl/base/attributes.h"
-#include "absl/base/config.h"
 #include "absl/base/internal/atomic_hook.h"
 #include "absl/base/internal/cycleclock.h"
 #include "absl/base/internal/spinlock_wait.h"
@@ -67,14 +66,12 @@ void RegisterSpinLockProfiler(void (*fn)(const void *contendedlock,
   submit_profile_data.Store(fn);
 }
 
-#ifdef ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
 // Static member variable definitions.
 constexpr uint32_t SpinLock::kSpinLockHeld;
 constexpr uint32_t SpinLock::kSpinLockCooperative;
 constexpr uint32_t SpinLock::kSpinLockDisabledScheduling;
 constexpr uint32_t SpinLock::kSpinLockSleeper;
 constexpr uint32_t SpinLock::kWaitTimeMask;
-#endif
 
 // Uncommon constructors.
 SpinLock::SpinLock(base_internal::SchedulingMode mode)
@@ -178,7 +175,7 @@ void SpinLock::SlowUnlock(uint32_t lock_value) {
   // reserve a unitary wait time to represent that a waiter exists without our
   // own acquisition having been contended.
   if ((lock_value & kWaitTimeMask) != kSpinLockSleeper) {
-    const int64_t wait_cycles = DecodeWaitCycles(lock_value);
+    const uint64_t wait_cycles = DecodeWaitCycles(lock_value);
     ABSL_TSAN_MUTEX_PRE_DIVERT(this, 0);
     submit_profile_data(this, wait_cycles);
     ABSL_TSAN_MUTEX_POST_DIVERT(this, 0);
@@ -220,9 +217,9 @@ uint32_t SpinLock::EncodeWaitCycles(int64_t wait_start_time,
   return clamped;
 }
 
-int64_t SpinLock::DecodeWaitCycles(uint32_t lock_value) {
+uint64_t SpinLock::DecodeWaitCycles(uint32_t lock_value) {
   // Cast to uint32_t first to ensure bits [63:32] are cleared.
-  const int64_t scaled_wait_time =
+  const uint64_t scaled_wait_time =
       static_cast<uint32_t>(lock_value & kWaitTimeMask);
   return scaled_wait_time << (kProfileTimestampShift - kLockwordReservedShift);
 }
