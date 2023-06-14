@@ -24,9 +24,11 @@ load(
     "absl_random_randen_copts_init",
 )
 
-package(default_visibility = [
+default_package_visibility = [
     "//absl/random:__pkg__",
-])
+]
+
+package(default_visibility = default_package_visibility)
 
 licenses(["notice"])
 
@@ -35,7 +37,11 @@ cc_library(
     hdrs = ["traits.h"],
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    deps = ["//absl/base:config"],
+    deps = [
+        "//absl/base:config",
+        "//absl/numeric:bits",
+        "//absl/numeric:int128",
+    ],
 )
 
 cc_library(
@@ -58,6 +64,7 @@ cc_library(
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
     deps = [
+        ":traits",
         "//absl/base:config",
         "//absl/meta:type_traits",
     ],
@@ -217,8 +224,8 @@ cc_library(
         ":salted_seed_seq",
         ":seed_material",
         "//absl/base:core_headers",
+        "//absl/container:inlined_vector",
         "//absl/meta:type_traits",
-        "//absl/types:optional",
         "//absl/types:span",
     ],
 )
@@ -243,6 +250,8 @@ cc_library(
     hdrs = ["randen_engine.h"],
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
+    visibility = default_package_visibility + [
+    ],
     deps = [
         ":iostream_state_saver",
         ":randen",
@@ -384,7 +393,7 @@ ABSL_RANDOM_NONPORTABLE_TAGS = [
     "no_test_darwin_x86_64",
     "no_test_ios_x86_64",
     "no_test_loonix",
-    "no_test_msvc_x64",
+    "no_test_lexan",
     "no_test_wasm",
 ]
 
@@ -497,6 +506,7 @@ cc_test(
 cc_library(
     name = "mock_helpers",
     hdrs = ["mock_helpers.h"],
+    linkopts = ABSL_DEFAULT_LINKOPTS,
     deps = [
         "//absl/base:fast_type_id",
         "//absl/types:optional",
@@ -507,6 +517,7 @@ cc_library(
     name = "mock_overload_set",
     testonly = 1,
     hdrs = ["mock_overload_set.h"],
+    linkopts = ABSL_DEFAULT_LINKOPTS,
     deps = [
         ":mock_helpers",
         "//absl/random:mocking_bit_gen",
@@ -674,6 +685,7 @@ cc_library(
         ":traits",
         "//absl/base:config",
         "//absl/meta:type_traits",
+        "//absl/numeric:int128",
     ],
 )
 
@@ -687,6 +699,7 @@ cc_test(
         "benchmark",
         "no_test_ios_x86_64",
         "no_test_loonix",  # Crashing.
+        "no_test_wasm",
     ],
     deps = [
         ":nanobenchmark",
