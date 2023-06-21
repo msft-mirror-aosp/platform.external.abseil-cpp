@@ -72,7 +72,7 @@
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
-namespace raw_log_internal {
+namespace raw_logging_internal {
 namespace {
 
 // TODO(gfalcon): We want raw-logging to work on as many platforms as possible.
@@ -89,14 +89,12 @@ constexpr char kTruncated[] = " ... (message truncated)\n";
 bool VADoRawLog(char** buf, int* size, const char* format, va_list ap)
     ABSL_PRINTF_ATTRIBUTE(3, 0);
 bool VADoRawLog(char** buf, int* size, const char* format, va_list ap) {
-  if (*size < 0)
-    return false;
-  int n = vsnprintf(*buf, static_cast<size_t>(*size), format, ap);
+  int n = vsnprintf(*buf, *size, format, ap);
   bool result = true;
   if (n < 0 || n > *size) {
     result = false;
     if (static_cast<size_t>(*size) > sizeof(kTruncated)) {
-      n = *size - static_cast<int>(sizeof(kTruncated));
+      n = *size - sizeof(kTruncated);  // room for truncation message
     } else {
       n = 0;  // no room for truncation message
     }
@@ -118,11 +116,9 @@ constexpr int kLogBufSize = 3000;
 bool DoRawLog(char** buf, int* size, const char* format, ...)
     ABSL_PRINTF_ATTRIBUTE(3, 4);
 bool DoRawLog(char** buf, int* size, const char* format, ...) {
-  if (*size < 0)
-    return false;
   va_list ap;
   va_start(ap, format);
-  int n = vsnprintf(*buf, static_cast<size_t>(*size), format, ap);
+  int n = vsnprintf(*buf, *size, format, ap);
   va_end(ap);
   if (n < 0 || n > *size) return false;
   *size -= n;
@@ -210,7 +206,7 @@ void AsyncSignalSafeWriteToStderr(const char* s, size_t len) {
 #elif defined(ABSL_HAVE_POSIX_WRITE)
   write(STDERR_FILENO, s, len);
 #elif defined(ABSL_HAVE_RAW_IO)
-  _write(/* stderr */ 2, s, static_cast<unsigned>(len));
+  _write(/* stderr */ 2, s, len);
 #else
   // stderr logging unsupported on this platform
   (void) s;
@@ -248,6 +244,6 @@ void RegisterInternalLogFunction(InternalLogFunction func) {
   internal_log_function.Store(func);
 }
 
-}  // namespace raw_log_internal
+}  // namespace raw_logging_internal
 ABSL_NAMESPACE_END
 }  // namespace absl

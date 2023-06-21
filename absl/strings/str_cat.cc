@@ -17,15 +17,12 @@
 #include <assert.h>
 
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <string>
 
 #include "absl/strings/ascii.h"
 #include "absl/strings/internal/resize_uninitialized.h"
 #include "absl/strings/numbers.h"
-#include "absl/strings/string_view.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -59,7 +56,7 @@ AlphaNum::AlphaNum(Dec dec) {
     *--writer = '0' + (value % 10);
     value /= 10;
   }
-  *--writer = '0' + static_cast<char>(value);
+  *--writer = '0' + value;
   if (neg) *--writer = '-';
 
   ptrdiff_t fillers = writer - minfill;
@@ -76,7 +73,7 @@ AlphaNum::AlphaNum(Dec dec) {
     if (add_sign_again) *--writer = '-';
   }
 
-  piece_ = absl::string_view(writer, static_cast<size_t>(end - writer));
+  piece_ = absl::string_view(writer, end - writer);
 }
 
 // ----------------------------------------------------------------------
@@ -144,12 +141,12 @@ namespace strings_internal {
 std::string CatPieces(std::initializer_list<absl::string_view> pieces) {
   std::string result;
   size_t total_size = 0;
-  for (absl::string_view piece : pieces) total_size += piece.size();
+  for (const absl::string_view& piece : pieces) total_size += piece.size();
   strings_internal::STLStringResizeUninitialized(&result, total_size);
 
   char* const begin = &result[0];
   char* out = begin;
-  for (absl::string_view piece : pieces) {
+  for (const absl::string_view& piece : pieces) {
     const size_t this_size = piece.size();
     if (this_size != 0) {
       memcpy(out, piece.data(), this_size);
@@ -173,7 +170,7 @@ void AppendPieces(std::string* dest,
                   std::initializer_list<absl::string_view> pieces) {
   size_t old_size = dest->size();
   size_t total_size = old_size;
-  for (absl::string_view piece : pieces) {
+  for (const absl::string_view& piece : pieces) {
     ASSERT_NO_OVERLAP(*dest, piece);
     total_size += piece.size();
   }
@@ -181,7 +178,7 @@ void AppendPieces(std::string* dest,
 
   char* const begin = &(*dest)[0];
   char* out = begin + old_size;
-  for (absl::string_view piece : pieces) {
+  for (const absl::string_view& piece : pieces) {
     const size_t this_size = piece.size();
     if (this_size != 0) {
       memcpy(out, piece.data(), this_size);

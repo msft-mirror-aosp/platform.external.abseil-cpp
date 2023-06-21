@@ -235,10 +235,9 @@ class StreamedWrapper {
 
  private:
   template <typename S>
-  friend ArgConvertResult<FormatConversionCharSetUnion(
-      FormatConversionCharSetInternal::s, FormatConversionCharSetInternal::v)>
-  FormatConvertImpl(const StreamedWrapper<S>& v, FormatConversionSpecImpl conv,
-                    FormatSinkImpl* out);
+  friend ArgConvertResult<FormatConversionCharSetInternal::s> FormatConvertImpl(
+      const StreamedWrapper<S>& v, FormatConversionSpecImpl conv,
+      FormatSinkImpl* out);
   const T& v_;
 };
 

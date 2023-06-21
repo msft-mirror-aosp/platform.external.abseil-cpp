@@ -136,9 +136,8 @@ absl_cc_library(
   COPTS
     ${ABSL_DEFAULT_COPTS}
   DEPS
-    absl::any_invocable
-    absl::core_headers
     absl::synchronization
+    absl::core_headers
   TESTONLY
 )
 
@@ -158,20 +157,6 @@ absl_cc_test(
     absl::memory
     absl::raw_logging_internal
     absl::time
-    GTest::gmock_main
-)
-
-absl_cc_test(
-  NAME
-    mutex_method_pointer_test
-  SRCS
-    "mutex_method_pointer_test.cc"
-  COPTS
-    ${ABSL_TEST_COPTS}
-  DEPS
-    absl::base
-    absl::config
-    absl::synchronization
     GTest::gmock_main
 )
 

@@ -200,7 +200,6 @@ cc_library(
     deps = [
         ":synchronization",
         "//absl/base:core_headers",
-        "//absl/functional:any_invocable",
     ],
 )
 
@@ -220,18 +219,6 @@ cc_test(
         "//absl/base:raw_logging_internal",
         "//absl/memory",
         "//absl/time",
-        "@com_google_googletest//:gtest_main",
-    ],
-)
-
-cc_test(
-    name = "mutex_method_pointer_test",
-    srcs = ["mutex_method_pointer_test.cc"],
-    copts = ABSL_TEST_COPTS,
-    linkopts = ABSL_DEFAULT_LINKOPTS,
-    deps = [
-        ":synchronization",
-        "//absl/base:config",
         "@com_google_googletest//:gtest_main",
     ],
 )
@@ -272,7 +259,6 @@ cc_test(
     srcs = ["notification_test.cc"],
     copts = ABSL_TEST_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    tags = ["no_test_lexan"],
     deps = [
         ":synchronization",
         "//absl/time",
@@ -299,7 +285,7 @@ cc_library(
 
 cc_test(
     name = "per_thread_sem_test",
-    size = "large",
+    size = "medium",
     copts = ABSL_TEST_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
     tags = [

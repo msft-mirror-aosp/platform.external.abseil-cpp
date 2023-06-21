@@ -17,9 +17,7 @@
 
 #include <stdint.h>
 
-#include <algorithm>
 #include <functional>
-#include <iterator>
 #include <map>
 #include <ostream>
 #include <string>
@@ -35,7 +33,6 @@
 #include "absl/flags/internal/program_name.h"
 #include "absl/flags/internal/registry.h"
 #include "absl/flags/usage_config.h"
-#include "absl/strings/match.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
@@ -151,7 +148,8 @@ class FlagHelpPrettyPrinter {
       }
 
       // Write the token, ending the string first if necessary/possible.
-      if (!new_line && (line_len_ + token.size() >= max_line_len_)) {
+      if (!new_line &&
+          (line_len_ + static_cast<int>(token.size()) >= max_line_len_)) {
         EndLine();
         new_line = true;
       }
@@ -346,7 +344,7 @@ void FlagHelp(std::ostream& out, const CommandLineFlag& flag,
 void FlagsHelp(std::ostream& out, absl::string_view filter, HelpFormat format,
                absl::string_view program_usage_message) {
   flags_internal::FlagKindFilter filter_cb = [&](absl::string_view filename) {
-    return filter.empty() || absl::StrContains(filename, filter);
+    return filter.empty() || filename.find(filter) != absl::string_view::npos;
   };
   flags_internal::FlagsHelpImpl(out, filter_cb, format, program_usage_message);
 }
@@ -468,7 +466,7 @@ void SetFlagsHelpFormat(HelpFormat format) {
 // function.
 bool DeduceUsageFlags(absl::string_view name, absl::string_view value) {
   if (absl::ConsumePrefix(&name, "help")) {
-    if (name.empty()) {
+    if (name == "") {
       if (value.empty()) {
         SetFlagsHelpMode(HelpMode::kImportant);
       } else {

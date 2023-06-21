@@ -14,7 +14,6 @@
 #ifndef ABSL_STATUS_INTERNAL_STATUS_INTERNAL_H_
 #define ABSL_STATUS_INTERNAL_STATUS_INTERNAL_H_
 
-#include <memory>
 #include <string>
 #include <utility>
 

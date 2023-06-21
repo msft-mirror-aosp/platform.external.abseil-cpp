@@ -66,7 +66,6 @@
 #include "absl/base/config.h"
 #include "absl/base/internal/invoke.h"
 #include "absl/base/macros.h"
-#include "absl/base/optimization.h"
 #include "absl/meta/type_traits.h"
 #include "absl/utility/utility.h"
 
@@ -282,7 +281,7 @@ void LocalManagerNontrivial(FunctionToCall operation,
       from_object.~T();  // Must not throw. // NOLINT
       return;
   }
-  ABSL_UNREACHABLE();
+  ABSL_INTERNAL_UNREACHABLE;
 }
 
 // The invoker that is used when a target function is in local storage
@@ -320,7 +319,7 @@ inline void RemoteManagerTrivial(FunctionToCall operation,
 #endif  // __cpp_sized_deallocation
       return;
   }
-  ABSL_UNREACHABLE();
+  ABSL_INTERNAL_UNREACHABLE;
 }
 
 // The manager that is used when a target function is in remote storage and the
@@ -342,7 +341,7 @@ void RemoteManagerNontrivial(FunctionToCall operation,
       ::delete static_cast<T*>(from->remote.target);  // Must not throw.
       return;
   }
-  ABSL_UNREACHABLE();
+  ABSL_INTERNAL_UNREACHABLE;
 }
 
 // The invoker that is used when a target function is in remote storage
@@ -684,23 +683,23 @@ using UnwrapStdReferenceWrapper =
 // An alias that always yields std::true_type (used with constraints) where
 // substitution failures happen when forming the template arguments.
 template <class... T>
-using TrueAlias =
+using True =
     std::integral_constant<bool, sizeof(absl::void_t<T...>*) != 0>;
 
 /*SFINAE constraints for the conversion-constructor.*/
 template <class Sig, class F,
           class = absl::enable_if_t<
               !std::is_same<RemoveCVRef<F>, AnyInvocable<Sig>>::value>>
-using CanConvert = TrueAlias<
-    absl::enable_if_t<!IsInPlaceType<RemoveCVRef<F>>::value>,
-    absl::enable_if_t<Impl<Sig>::template CallIsValid<F>::value>,
-    absl::enable_if_t<
-        Impl<Sig>::template CallIsNoexceptIfSigIsNoexcept<F>::value>,
-    absl::enable_if_t<std::is_constructible<absl::decay_t<F>, F>::value>>;
+using CanConvert =
+    True<absl::enable_if_t<!IsInPlaceType<RemoveCVRef<F>>::value>,
+         absl::enable_if_t<Impl<Sig>::template CallIsValid<F>::value>,
+         absl::enable_if_t<
+             Impl<Sig>::template CallIsNoexceptIfSigIsNoexcept<F>::value>,
+         absl::enable_if_t<std::is_constructible<absl::decay_t<F>, F>::value>>;
 
 /*SFINAE constraints for the std::in_place constructors.*/
 template <class Sig, class F, class... Args>
-using CanEmplace = TrueAlias<
+using CanEmplace = True<
     absl::enable_if_t<Impl<Sig>::template CallIsValid<F>::value>,
     absl::enable_if_t<
         Impl<Sig>::template CallIsNoexceptIfSigIsNoexcept<F>::value>,
@@ -710,19 +709,19 @@ using CanEmplace = TrueAlias<
 template <class Sig, class F,
           class = absl::enable_if_t<
               !std::is_same<RemoveCVRef<F>, AnyInvocable<Sig>>::value>>
-using CanAssign = TrueAlias<
-    absl::enable_if_t<Impl<Sig>::template CallIsValid<F>::value>,
-    absl::enable_if_t<
-        Impl<Sig>::template CallIsNoexceptIfSigIsNoexcept<F>::value>,
-    absl::enable_if_t<std::is_constructible<absl::decay_t<F>, F>::value>>;
+using CanAssign =
+    True<absl::enable_if_t<Impl<Sig>::template CallIsValid<F>::value>,
+         absl::enable_if_t<
+             Impl<Sig>::template CallIsNoexceptIfSigIsNoexcept<F>::value>,
+         absl::enable_if_t<std::is_constructible<absl::decay_t<F>, F>::value>>;
 
 /*SFINAE constraints for the reference-wrapper conversion-assign operator.*/
 template <class Sig, class F>
-using CanAssignReferenceWrapper = TrueAlias<
-    absl::enable_if_t<
-        Impl<Sig>::template CallIsValid<std::reference_wrapper<F>>::value>,
-    absl::enable_if_t<Impl<Sig>::template CallIsNoexceptIfSigIsNoexcept<
-        std::reference_wrapper<F>>::value>>;
+using CanAssignReferenceWrapper =
+    True<absl::enable_if_t<
+             Impl<Sig>::template CallIsValid<std::reference_wrapper<F>>::value>,
+         absl::enable_if_t<Impl<Sig>::template CallIsNoexceptIfSigIsNoexcept<
+             std::reference_wrapper<F>>::value>>;
 
 ////////////////////////////////////////////////////////////////////////////////
 //
@@ -779,7 +778,7 @@ using CanAssignReferenceWrapper = TrueAlias<
                                                                                \
     /*SFINAE constraint to check if F is invocable with the proper signature*/ \
     template <class F>                                                         \
-    using CallIsValid = TrueAlias<absl::enable_if_t<absl::disjunction<         \
+    using CallIsValid = True<absl::enable_if_t<absl::disjunction<              \
         absl::base_internal::is_invocable_r<ReturnType,                        \
                                             absl::decay_t<F> inv_quals, P...>, \
         std::is_same<ReturnType,                                               \
@@ -789,8 +788,8 @@ using CanAssignReferenceWrapper = TrueAlias<
     /*SFINAE constraint to check if F is nothrow-invocable when necessary*/    \
     template <class F>                                                         \
     using CallIsNoexceptIfSigIsNoexcept =                                      \
-        TrueAlias<ABSL_INTERNAL_ANY_INVOCABLE_NOEXCEPT_CONSTRAINT(inv_quals,   \
-                                                                  noex)>;      \
+        True<ABSL_INTERNAL_ANY_INVOCABLE_NOEXCEPT_CONSTRAINT(inv_quals,        \
+                                                             noex)>;           \
                                                                                \
     /*Put the AnyInvocable into an empty state.*/                              \
     Impl() = default;                                                          \
@@ -810,31 +809,11 @@ using CanAssignReferenceWrapper = TrueAlias<
         : Core(absl::in_place_type<absl::decay_t<T> inv_quals>,                \
                std::forward<Args>(args)...) {}                                 \
                                                                                \
-    InvokerType<noex, ReturnType, P...>* ExtractInvoker() cv {                 \
-      using QualifiedTestType = int cv ref;                                    \
-      auto* invoker = this->invoker_;                                          \
-      if (!std::is_const<QualifiedTestType>::value &&                          \
-          std::is_rvalue_reference<QualifiedTestType>::value) {                \
-        ABSL_HARDENING_ASSERT([this]() {                                       \
-          /* We checked that this isn't const above, so const_cast is safe */  \
-          const_cast<Impl*>(this)->invoker_ =                                  \
-              [](TypeErasedState*,                                             \
-                 ForwardedParameterType<P>...) noexcept(noex) -> ReturnType {  \
-            ABSL_HARDENING_ASSERT(false && "AnyInvocable use-after-move");     \
-            std::terminate();                                                  \
-          };                                                                   \
-          return this->HasValue();                                             \
-        }());                                                                  \
-      }                                                                        \
-      return invoker;                                                          \
-    }                                                                          \
-                                                                               \
     /*The actual invocation operation with the proper signature*/              \
     ReturnType operator()(P... args) cv ref noexcept(noex) {                   \
       assert(this->invoker_ != nullptr);                                       \
-      return this->ExtractInvoker()(                                           \
-          const_cast<TypeErasedState*>(&this->state_),                         \
-          static_cast<ForwardedParameterType<P>>(args)...);                    \
+      return this->invoker_(const_cast<TypeErasedState*>(&this->state_),       \
+                            static_cast<ForwardedParameterType<P>>(args)...);  \
     }                                                                          \
   }
 
