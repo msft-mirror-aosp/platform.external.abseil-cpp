@@ -62,11 +62,10 @@ constexpr static auto kFixedArrayUseDefault = static_cast<size_t>(-1);
 // A `FixedArray` provides a run-time fixed-size array, allocating a small array
 // inline for efficiency.
 //
-// Most users should not specify an `inline_elements` argument and let
-// `FixedArray` automatically determine the number of elements
-// to store inline based on `sizeof(T)`. If `inline_elements` is specified, the
-// `FixedArray` implementation will use inline storage for arrays with a
-// length <= `inline_elements`.
+// Most users should not specify the `N` template parameter and let `FixedArray`
+// automatically determine the number of elements to store inline based on
+// `sizeof(T)`. If `N` is specified, the `FixedArray` implementation will use
+// inline storage for arrays with a length <= `N`.
 //
 // Note that a `FixedArray` constructed with a `size_type` argument will
 // default-initialize its values by leaving trivially constructible types
@@ -471,6 +470,9 @@ class FixedArray {
       return n <= inline_elements;
     }
 
+#ifdef ABSL_HAVE_ADDRESS_SANITIZER
+    ABSL_ATTRIBUTE_NOINLINE
+#endif  // ABSL_HAVE_ADDRESS_SANITIZER
     StorageElement* InitializeData() {
       if (UsingInlinedStorage(size())) {
         InlinedStorage::AnnotateConstruct(size());
@@ -489,12 +491,14 @@ class FixedArray {
   Storage storage_;
 };
 
+#ifdef ABSL_INTERNAL_NEED_REDUNDANT_CONSTEXPR_DECL
 template <typename T, size_t N, typename A>
 constexpr size_t FixedArray<T, N, A>::kInlineBytesDefault;
 
 template <typename T, size_t N, typename A>
 constexpr typename FixedArray<T, N, A>::size_type
     FixedArray<T, N, A>::inline_elements;
+#endif
 
 template <typename T, size_t N, typename A>
 void FixedArray<T, N, A>::NonEmptyInlinedStorage::AnnotateConstruct(
