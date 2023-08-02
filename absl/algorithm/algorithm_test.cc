@@ -20,7 +20,6 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "absl/base/config.h"
 
 namespace {
 
@@ -51,15 +50,7 @@ TEST(EqualTest, EmptyRange) {
   std::vector<int> empty1;
   std::vector<int> empty2;
 
-  // https://gcc.gnu.org/bugzilla/show_bug.cgi?id=105705
-#if ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(12, 0)
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wnonnull"
-#endif
   EXPECT_FALSE(absl::equal(v1.begin(), v1.end(), empty1.begin(), empty1.end()));
-#if ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(12, 0)
-#pragma GCC diagnostic pop
-#endif
   EXPECT_FALSE(absl::equal(empty1.begin(), empty1.end(), v1.begin(), v1.end()));
   EXPECT_TRUE(
       absl::equal(empty1.begin(), empty1.end(), empty2.begin(), empty2.end()));

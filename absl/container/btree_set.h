@@ -35,19 +35,14 @@
 //
 // However, these types should not be considered drop-in replacements for
 // `std::set` and `std::multiset` as there are some API differences, which are
-// noted in this header file. The most consequential differences with respect to
-// migrating to b-tree from the STL types are listed in the next paragraph.
-// Other API differences are minor.
+// noted in this header file.
 //
 // Importantly, insertions and deletions may invalidate outstanding iterators,
 // pointers, and references to elements. Such invalidations are typically only
 // an issue if insertion and deletion operations are interleaved with the use of
 // more than one iterator, pointer, or reference simultaneously. For this
-// reason, `insert()`, `erase()`, and `extract_and_get_next()` return a valid
-// iterator at the current position.
-//
-// Another API difference is that btree iterators can be subtracted, and this
-// is faster than using std::distance.
+// reason, `insert()` and `erase()` return a valid iterator at the current
+// position.
 
 #ifndef ABSL_CONTAINER_BTREE_SET_H_
 #define ABSL_CONTAINER_BTREE_SET_H_
@@ -57,17 +52,6 @@
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
-
-namespace container_internal {
-
-template <typename Key>
-struct set_slot_policy;
-
-template <typename Key, typename Compare, typename Alloc, int TargetNodeSize,
-          bool IsMulti>
-struct set_params;
-
-}  // namespace container_internal
 
 // absl::btree_set<>
 //
@@ -90,7 +74,7 @@ class btree_set
     : public container_internal::btree_set_container<
           container_internal::btree<container_internal::set_params<
               Key, Compare, Alloc, /*TargetNodeSize=*/256,
-              /*IsMulti=*/false>>> {
+              /*Multi=*/false>>> {
   using Base = typename btree_set::btree_set_container;
 
  public:
@@ -272,8 +256,7 @@ class btree_set
   // btree_set::extract()
   //
   // Extracts the indicated element, erasing it in the process, and returns it
-  // as a C++17-compatible node handle. Any references, pointers, or iterators
-  // are invalidated. Overloads are listed below.
+  // as a C++17-compatible node handle. Overloads are listed below.
   //
   // node_type extract(const_iterator position):
   //
@@ -292,21 +275,6 @@ class btree_set
   // containers (https://en.cppreference.com/w/cpp/container/node_handle).
   // It does NOT refer to the data layout of the underlying btree.
   using Base::extract;
-
-  // btree_set::extract_and_get_next()
-  //
-  // Extracts the indicated element, erasing it in the process, and returns it
-  // as a C++17-compatible node handle along with an iterator to the next
-  // element.
-  //
-  // extract_and_get_next_return_type extract_and_get_next(
-  //     const_iterator position):
-  //
-  //   Extracts the element at the indicated position, returns a struct
-  //   containing a member named `node`: a node handle owning that extracted
-  //   data and a member named `next`: an iterator pointing to the next element
-  //   in the btree.
-  using Base::extract_and_get_next;
 
   // btree_set::merge()
   //
@@ -417,11 +385,15 @@ void swap(btree_set<K, C, A> &x, btree_set<K, C, A> &y) {
 // absl::erase_if(absl::btree_set<>, Pred)
 //
 // Erases all elements that satisfy the predicate pred from the container.
-// Returns the number of erased elements.
 template <typename K, typename C, typename A, typename Pred>
-typename btree_set<K, C, A>::size_type erase_if(btree_set<K, C, A> &set,
-                                                Pred pred) {
-  return container_internal::btree_access::erase_if(set, std::move(pred));
+void erase_if(btree_set<K, C, A> &set, Pred pred) {
+  for (auto it = set.begin(); it != set.end();) {
+    if (pred(*it)) {
+      it = set.erase(it);
+    } else {
+      ++it;
+    }
+  }
 }
 
 // absl::btree_multiset<>
@@ -446,7 +418,7 @@ class btree_multiset
     : public container_internal::btree_multiset_container<
           container_internal::btree<container_internal::set_params<
               Key, Compare, Alloc, /*TargetNodeSize=*/256,
-              /*IsMulti=*/true>>> {
+              /*Multi=*/true>>> {
   using Base = typename btree_multiset::btree_multiset_container;
 
  public:
@@ -630,21 +602,6 @@ class btree_multiset
   // It does NOT refer to the data layout of the underlying btree.
   using Base::extract;
 
-  // btree_multiset::extract_and_get_next()
-  //
-  // Extracts the indicated element, erasing it in the process, and returns it
-  // as a C++17-compatible node handle along with an iterator to the next
-  // element.
-  //
-  // extract_and_get_next_return_type extract_and_get_next(
-  //     const_iterator position):
-  //
-  //   Extracts the element at the indicated position, returns a struct
-  //   containing a member named `node`: a node handle owning that extracted
-  //   data and a member named `next`: an iterator pointing to the next element
-  //   in the btree.
-  using Base::extract_and_get_next;
-
   // btree_multiset::merge()
   //
   // Extracts all elements from a given `source` btree_multiset into this
@@ -754,66 +711,16 @@ void swap(btree_multiset<K, C, A> &x, btree_multiset<K, C, A> &y) {
 // absl::erase_if(absl::btree_multiset<>, Pred)
 //
 // Erases all elements that satisfy the predicate pred from the container.
-// Returns the number of erased elements.
 template <typename K, typename C, typename A, typename Pred>
-typename btree_multiset<K, C, A>::size_type erase_if(
-   btree_multiset<K, C, A> & set, Pred pred) {
-  return container_internal::btree_access::erase_if(set, std::move(pred));
+void erase_if(btree_multiset<K, C, A> &set, Pred pred) {
+  for (auto it = set.begin(); it != set.end();) {
+    if (pred(*it)) {
+      it = set.erase(it);
+    } else {
+      ++it;
+    }
+  }
 }
-
-namespace container_internal {
-
-// This type implements the necessary functions from the
-// absl::container_internal::slot_type interface for btree_(multi)set.
-template <typename Key>
-struct set_slot_policy {
-  using slot_type = Key;
-  using value_type = Key;
-  using mutable_value_type = Key;
-
-  static value_type &element(slot_type *slot) { return *slot; }
-  static const value_type &element(const slot_type *slot) { return *slot; }
-
-  template <typename Alloc, class... Args>
-  static void construct(Alloc *alloc, slot_type *slot, Args &&...args) {
-    absl::allocator_traits<Alloc>::construct(*alloc, slot,
-                                             std::forward<Args>(args)...);
-  }
-
-  template <typename Alloc>
-  static void construct(Alloc *alloc, slot_type *slot, slot_type *other) {
-    absl::allocator_traits<Alloc>::construct(*alloc, slot, std::move(*other));
-  }
-
-  template <typename Alloc>
-  static void construct(Alloc *alloc, slot_type *slot, const slot_type *other) {
-    absl::allocator_traits<Alloc>::construct(*alloc, slot, *other);
-  }
-
-  template <typename Alloc>
-  static void destroy(Alloc *alloc, slot_type *slot) {
-    absl::allocator_traits<Alloc>::destroy(*alloc, slot);
-  }
-};
-
-// A parameters structure for holding the type parameters for a btree_set.
-// Compare and Alloc should be nothrow copy-constructible.
-template <typename Key, typename Compare, typename Alloc, int TargetNodeSize,
-          bool IsMulti>
-struct set_params : common_params<Key, Compare, Alloc, TargetNodeSize, IsMulti,
-                                  /*IsMap=*/false, set_slot_policy<Key>> {
-  using value_type = Key;
-  using slot_type = typename set_params::common_params::slot_type;
-
-  template <typename V>
-  static const V &key(const V &value) {
-    return value;
-  }
-  static const Key &key(const slot_type *slot) { return *slot; }
-  static const Key &key(slot_type *slot) { return *slot; }
-};
-
-}  // namespace container_internal
 
 ABSL_NAMESPACE_END
 }  // namespace absl

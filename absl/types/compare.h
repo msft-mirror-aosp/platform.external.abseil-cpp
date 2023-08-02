@@ -44,28 +44,29 @@ namespace compare_internal {
 
 using value_type = int8_t;
 
-class OnlyLiteralZero {
-  // A private type which cannot be named to explicitly cast to it.
-  struct MatchLiteralZero;
+template <typename T>
+struct Fail {
+  static_assert(sizeof(T) < 0, "Only literal `0` is allowed.");
+};
 
- public:
-  // Accept only literal zero since it can be implicitly converted to a pointer
-  // type. nullptr constants will be caught by the other constructor which
-  // accepts a nullptr_t.
-  constexpr OnlyLiteralZero(MatchLiteralZero *) noexcept {}  // NOLINT
+// We need the NullPtrT template to avoid triggering the modernize-use-nullptr
+// ClangTidy warning in user code.
+template <typename NullPtrT = std::nullptr_t>
+struct OnlyLiteralZero {
+  constexpr OnlyLiteralZero(NullPtrT) noexcept {}  // NOLINT
 
   // Fails compilation when `nullptr` or integral type arguments other than
   // `int` are passed. This constructor doesn't accept `int` because literal `0`
   // has type `int`. Literal `0` arguments will be implicitly converted to
   // `std::nullptr_t` and accepted by the above constructor, while other `int`
   // arguments will fail to be converted and cause compilation failure.
-  template <typename T, typename = typename std::enable_if<
-                            std::is_same<T, std::nullptr_t>::value ||
-                            (std::is_integral<T>::value &&
-                             !std::is_same<T, int>::value)>::type>
-  OnlyLiteralZero(T) {  // NOLINT
-    static_assert(sizeof(T) < 0, "Only literal `0` is allowed.");
-  }
+  template <
+      typename T,
+      typename = typename std::enable_if<
+          std::is_same<T, std::nullptr_t>::value ||
+          (std::is_integral<T>::value && !std::is_same<T, int>::value)>::type,
+      typename = typename Fail<T>::type>
+  OnlyLiteralZero(T);  // NOLINT
 };
 
 enum class eq : value_type {
@@ -162,18 +163,18 @@ class weak_equality
 
   // Comparisons
   friend constexpr bool operator==(
-      weak_equality v, compare_internal::OnlyLiteralZero) noexcept {
+      weak_equality v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ == 0;
   }
   friend constexpr bool operator!=(
-      weak_equality v, compare_internal::OnlyLiteralZero) noexcept {
+      weak_equality v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ != 0;
   }
-  friend constexpr bool operator==(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator==(compare_internal::OnlyLiteralZero<>,
                                    weak_equality v) noexcept {
     return 0 == v.value_;
   }
-  friend constexpr bool operator!=(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator!=(compare_internal::OnlyLiteralZero<>,
                                    weak_equality v) noexcept {
     return 0 != v.value_;
   }
@@ -213,18 +214,18 @@ class strong_equality
   }
   // Comparisons
   friend constexpr bool operator==(
-      strong_equality v, compare_internal::OnlyLiteralZero) noexcept {
+      strong_equality v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ == 0;
   }
   friend constexpr bool operator!=(
-      strong_equality v, compare_internal::OnlyLiteralZero) noexcept {
+      strong_equality v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ != 0;
   }
-  friend constexpr bool operator==(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator==(compare_internal::OnlyLiteralZero<>,
                                    strong_equality v) noexcept {
     return 0 == v.value_;
   }
-  friend constexpr bool operator!=(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator!=(compare_internal::OnlyLiteralZero<>,
                                    strong_equality v) noexcept {
     return 0 != v.value_;
   }
@@ -276,50 +277,50 @@ class partial_ordering
   }
   // Comparisons
   friend constexpr bool operator==(
-      partial_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      partial_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.is_ordered() && v.value_ == 0;
   }
   friend constexpr bool operator!=(
-      partial_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      partial_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return !v.is_ordered() || v.value_ != 0;
   }
   friend constexpr bool operator<(
-      partial_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      partial_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.is_ordered() && v.value_ < 0;
   }
   friend constexpr bool operator<=(
-      partial_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      partial_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.is_ordered() && v.value_ <= 0;
   }
   friend constexpr bool operator>(
-      partial_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      partial_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.is_ordered() && v.value_ > 0;
   }
   friend constexpr bool operator>=(
-      partial_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      partial_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.is_ordered() && v.value_ >= 0;
   }
-  friend constexpr bool operator==(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator==(compare_internal::OnlyLiteralZero<>,
                                    partial_ordering v) noexcept {
     return v.is_ordered() && 0 == v.value_;
   }
-  friend constexpr bool operator!=(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator!=(compare_internal::OnlyLiteralZero<>,
                                    partial_ordering v) noexcept {
     return !v.is_ordered() || 0 != v.value_;
   }
-  friend constexpr bool operator<(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator<(compare_internal::OnlyLiteralZero<>,
                                   partial_ordering v) noexcept {
     return v.is_ordered() && 0 < v.value_;
   }
-  friend constexpr bool operator<=(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator<=(compare_internal::OnlyLiteralZero<>,
                                    partial_ordering v) noexcept {
     return v.is_ordered() && 0 <= v.value_;
   }
-  friend constexpr bool operator>(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator>(compare_internal::OnlyLiteralZero<>,
                                   partial_ordering v) noexcept {
     return v.is_ordered() && 0 > v.value_;
   }
-  friend constexpr bool operator>=(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator>=(compare_internal::OnlyLiteralZero<>,
                                    partial_ordering v) noexcept {
     return v.is_ordered() && 0 >= v.value_;
   }
@@ -368,50 +369,50 @@ class weak_ordering
   }
   // Comparisons
   friend constexpr bool operator==(
-      weak_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      weak_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ == 0;
   }
   friend constexpr bool operator!=(
-      weak_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      weak_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ != 0;
   }
   friend constexpr bool operator<(
-      weak_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      weak_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ < 0;
   }
   friend constexpr bool operator<=(
-      weak_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      weak_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ <= 0;
   }
   friend constexpr bool operator>(
-      weak_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      weak_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ > 0;
   }
   friend constexpr bool operator>=(
-      weak_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      weak_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ >= 0;
   }
-  friend constexpr bool operator==(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator==(compare_internal::OnlyLiteralZero<>,
                                    weak_ordering v) noexcept {
     return 0 == v.value_;
   }
-  friend constexpr bool operator!=(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator!=(compare_internal::OnlyLiteralZero<>,
                                    weak_ordering v) noexcept {
     return 0 != v.value_;
   }
-  friend constexpr bool operator<(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator<(compare_internal::OnlyLiteralZero<>,
                                   weak_ordering v) noexcept {
     return 0 < v.value_;
   }
-  friend constexpr bool operator<=(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator<=(compare_internal::OnlyLiteralZero<>,
                                    weak_ordering v) noexcept {
     return 0 <= v.value_;
   }
-  friend constexpr bool operator>(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator>(compare_internal::OnlyLiteralZero<>,
                                   weak_ordering v) noexcept {
     return 0 > v.value_;
   }
-  friend constexpr bool operator>=(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator>=(compare_internal::OnlyLiteralZero<>,
                                    weak_ordering v) noexcept {
     return 0 >= v.value_;
   }
@@ -467,50 +468,50 @@ class strong_ordering
   }
   // Comparisons
   friend constexpr bool operator==(
-      strong_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      strong_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ == 0;
   }
   friend constexpr bool operator!=(
-      strong_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      strong_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ != 0;
   }
   friend constexpr bool operator<(
-      strong_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      strong_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ < 0;
   }
   friend constexpr bool operator<=(
-      strong_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      strong_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ <= 0;
   }
   friend constexpr bool operator>(
-      strong_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      strong_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ > 0;
   }
   friend constexpr bool operator>=(
-      strong_ordering v, compare_internal::OnlyLiteralZero) noexcept {
+      strong_ordering v, compare_internal::OnlyLiteralZero<>) noexcept {
     return v.value_ >= 0;
   }
-  friend constexpr bool operator==(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator==(compare_internal::OnlyLiteralZero<>,
                                    strong_ordering v) noexcept {
     return 0 == v.value_;
   }
-  friend constexpr bool operator!=(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator!=(compare_internal::OnlyLiteralZero<>,
                                    strong_ordering v) noexcept {
     return 0 != v.value_;
   }
-  friend constexpr bool operator<(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator<(compare_internal::OnlyLiteralZero<>,
                                   strong_ordering v) noexcept {
     return 0 < v.value_;
   }
-  friend constexpr bool operator<=(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator<=(compare_internal::OnlyLiteralZero<>,
                                    strong_ordering v) noexcept {
     return 0 <= v.value_;
   }
-  friend constexpr bool operator>(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator>(compare_internal::OnlyLiteralZero<>,
                                   strong_ordering v) noexcept {
     return 0 > v.value_;
   }
-  friend constexpr bool operator>=(compare_internal::OnlyLiteralZero,
+  friend constexpr bool operator>=(compare_internal::OnlyLiteralZero<>,
                                    strong_ordering v) noexcept {
     return 0 >= v.value_;
   }
@@ -543,9 +544,9 @@ namespace compare_internal {
 // Helper functions to do a boolean comparison of two keys given a boolean
 // or three-way comparator.
 // SFINAE prevents implicit conversions to bool (such as from int).
-template <typename BoolT,
-          absl::enable_if_t<std::is_same<bool, BoolT>::value, int> = 0>
-constexpr bool compare_result_as_less_than(const BoolT r) { return r; }
+template <typename Bool,
+          absl::enable_if_t<std::is_same<bool, Bool>::value, int> = 0>
+constexpr bool compare_result_as_less_than(const Bool r) { return r; }
 constexpr bool compare_result_as_less_than(const absl::weak_ordering r) {
   return r < 0;
 }

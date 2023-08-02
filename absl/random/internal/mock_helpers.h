@@ -18,7 +18,6 @@
 
 #include <tuple>
 #include <type_traits>
-#include <utility>
 
 #include "absl/base/internal/fast_type_id.h"
 #include "absl/types/optional.h"

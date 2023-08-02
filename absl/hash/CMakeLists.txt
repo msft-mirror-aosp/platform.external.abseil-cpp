@@ -24,14 +24,12 @@ absl_cc_library(
     "internal/hash.h"
   COPTS
     ${ABSL_DEFAULT_COPTS}
-  DEPS
-    absl::bits
+    DEPS
     absl::city
     absl::config
     absl::core_headers
     absl::endian
     absl::fixed_array
-    absl::function_ref
     absl::meta
     absl::int128
     absl::strings
@@ -56,7 +54,6 @@ absl_cc_library(
     absl::variant
     GTest::gmock
   TESTONLY
-  PUBLIC
 )
 
 absl_cc_test(
@@ -71,22 +68,13 @@ absl_cc_test(
     absl::hash
     absl::hash_testing
     absl::core_headers
-    absl::btree
-    absl::flat_hash_map
     absl::flat_hash_set
-    absl::node_hash_map
-    absl::node_hash_set
     absl::spy_hash_state
     absl::meta
     absl::int128
     GTest::gmock_main
 )
 
-# Internal-only target, do not depend on directly.
-#
-# Note: Even though external code should not depend on this target
-# directly, it must be marked PUBLIC since it is a dependency of
-# hash_testing.
 absl_cc_library(
   NAME
     spy_hash_state
@@ -99,10 +87,8 @@ absl_cc_library(
     absl::strings
     absl::str_format
   TESTONLY
-  PUBLIC
 )
 
-# Internal-only target, do not depend on directly.
 absl_cc_library(
   NAME
     city
@@ -130,7 +116,6 @@ absl_cc_test(
     GTest::gmock_main
 )
 
-# Internal-only target, do not depend on directly.
 absl_cc_library(
   NAME
     low_level_hash
@@ -141,6 +126,7 @@ absl_cc_library(
   COPTS
     ${ABSL_DEFAULT_COPTS}
   DEPS
+    absl::bits
     absl::config
     absl::endian
     absl::int128
