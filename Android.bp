@@ -9,13 +9,6 @@ license {
     license_text: ["LICENSE"],
 }
 
-cc_library_headers {
-    name: "libabsl_headers",
-    device_supported: false,
-    host_supported: true,
-    export_include_dirs: ["."],
-}
-
 // Monolithic module for use on device. Currently restricted to 3P libraries
 // which require it as a dependency. See go/absl-android for more information.
 cc_library_static {
@@ -49,6 +42,23 @@ cc_library_static {
         "//external/grpc-grpc:__subpackages__",
         "//external/kythe:__subpackages__",
     ],
+}
+
+// Globally visible host-only library.
+cc_library_host_static {
+    name: "libabsl_host",
+    whole_static_libs: ["libabsl"],
+    export_include_dirs: ["."],
+    stl: "libc++",
+}
+
+// Targets below are deprecated.
+
+cc_library_headers {
+    name: "libabsl_headers",
+    device_supported: false,
+    host_supported: true,
+    export_include_dirs: ["."],
 }
 
 cc_defaults {
