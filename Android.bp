@@ -16,8 +16,51 @@ cc_library_headers {
     export_include_dirs: ["."],
 }
 
+// Monolithic module for use on device. Currently restricted to 3P libraries
+// which require it as a dependency. See go/absl-android for more information.
+cc_library_static {
+    name: "libabsl",
+    host_supported: true,
+    vendor_available: true,
+    srcs: [
+        "absl/**/*.cc",
+    ],
+    exclude_srcs: [
+        "absl/**/*benchmark.cc",
+        "absl/**/*benchmarks.cc",
+        "absl/**/*_test.cc",
+        "absl/**/*_testing.cc",
+        "absl/base/spinlock_test_common.cc",
+        "absl/hash/internal/print_hash_of.cc",
+        "absl/log/internal/test_helpers.cc",
+        "absl/log/internal/test_matchers.cc",
+        "absl/log/scoped_mock_log.cc",
+        "absl/random/internal/gaussian_distribution_gentables.cc",
+    ],
+    export_include_dirs: ["."],
+    shared_libs: [
+        "liblog",
+    ],
+    stl: "libc++",
+    apex_available: [
+        "//apex_available:platform",
+    ],
+    visibility: [
+        "//external/grpc-grpc:__subpackages__",
+        "//external/kythe:__subpackages__",
+    ],
+}
+
+cc_defaults {
+    name: "libabsl_library_defaults",
+    header_libs: ["libabsl_headers"],
+    export_header_lib_headers: ["libabsl_headers"],
+    whole_static_libs: ["libabsl_base"],
+}
+
 cc_library_host_static {
     name: "libabsl_base",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/base/internal/cycleclock.cc",
         "absl/base/internal/low_level_alloc.cc",
@@ -32,10 +75,12 @@ cc_library_host_static {
         "absl/base/internal/unscaledcycleclock.cc",
         "absl/base/log_severity.cc",
     ],
+    exclude_static_libs: ["libabsl_base"], // don't depend on itself
 }
 
 cc_library_host_static {
     name: "libabsl_container",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/container/internal/test_instance_tracker.cc",
         "absl/container/internal/hashtablez_sampler.cc",
@@ -46,6 +91,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_debugging",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/debugging/failure_signal_handler.cc",
         "absl/debugging/internal/address_is_readable.cc",
@@ -62,6 +108,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_flags",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/flags/commandlineflag.cc",
         "absl/flags/flag_test_defs.cc",
@@ -81,6 +128,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_hash",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/hash/internal/city.cc",
         "absl/hash/internal/hash.cc",
@@ -91,11 +139,13 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_numeric",
+    defaults: ["libabsl_library_defaults"],
     srcs: ["absl/numeric/int128.cc"],
 }
 
 cc_library_host_static {
     name: "libabsl_profiling",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/profiling/internal/exponential_biased.cc",
         "absl/profiling/internal/periodic_sampler.cc",
@@ -104,6 +154,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_random",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/random/discrete_distribution.cc",
         "absl/random/gaussian_distribution.cc",
@@ -127,6 +178,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_status",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/status/status.cc",
         "absl/status/status_payload_printer.cc",
@@ -136,7 +188,16 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_strings",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
+        "absl/crc/crc32c.cc",
+        "absl/crc/internal/cpu_detect.cc",
+        "absl/crc/internal/crc_cord_state.cc",
+        "absl/crc/internal/crc_memcpy_fallback.cc",
+        "absl/crc/internal/crc_memcpy_x86_64.cc",
+        "absl/crc/internal/crc_non_temporal_memcpy.cc",
+        "absl/crc/internal/crc_x86_arm_combined.cc",
+        "absl/crc/internal/crc.cc",
         "absl/strings/ascii.cc",
         "absl/strings/charconv.cc",
         "absl/strings/cord_analysis.cc",
@@ -156,6 +217,7 @@ cc_library_host_static {
         "absl/strings/internal/cordz_handle.cc",
         "absl/strings/internal/cordz_info.cc",
         "absl/strings/internal/cordz_sample_token.cc",
+        "absl/strings/internal/damerau_levenshtein_distance.cc",
         "absl/strings/internal/escaping.cc",
         "absl/strings/internal/memutil.cc",
         "absl/strings/internal/ostringstream.cc",
@@ -166,6 +228,7 @@ cc_library_host_static {
         "absl/strings/internal/str_format/float_conversion.cc",
         "absl/strings/internal/str_format/output.cc",
         "absl/strings/internal/str_format/parser.cc",
+        "absl/strings/internal/stringify_sink.cc",
         "absl/strings/internal/utf8.cc",
         "absl/strings/match.cc",
         "absl/strings/numbers.cc",
@@ -179,13 +242,20 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_synchronization",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/synchronization/barrier.cc",
         "absl/synchronization/blocking_counter.cc",
         "absl/synchronization/internal/create_thread_identity.cc",
-        "absl/synchronization/internal/per_thread_sem.cc",
-        "absl/synchronization/internal/waiter.cc",
+        "absl/synchronization/internal/futex_waiter.cc",
         "absl/synchronization/internal/graphcycles.cc",
+        "absl/synchronization/internal/kernel_timeout.cc",
+        "absl/synchronization/internal/per_thread_sem.cc",
+        "absl/synchronization/internal/pthread_waiter.cc",
+        "absl/synchronization/internal/sem_waiter.cc",
+        "absl/synchronization/internal/stdcpp_waiter.cc",
+        "absl/synchronization/internal/waiter_base.cc",
+        "absl/synchronization/internal/win32_waiter.cc",
         "absl/synchronization/mutex.cc",
         "absl/synchronization/notification.cc",
     ],
@@ -193,6 +263,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_time",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/time/civil_time.cc",
         "absl/time/clock.cc",
@@ -214,6 +285,7 @@ cc_library_host_static {
 
 cc_library_host_static {
     name: "libabsl_types",
+    defaults: ["libabsl_library_defaults"],
     srcs: [
         "absl/types/bad_any_cast.cc",
         "absl/types/bad_optional_access.cc",
