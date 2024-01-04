@@ -21,6 +21,7 @@
 #include "absl/container/internal/unordered_set_lookup_test.h"
 #include "absl/container/internal/unordered_set_members_test.h"
 #include "absl/container/internal/unordered_set_modifiers_test.h"
+#include "absl/log/check.h"
 #include "absl/memory/memory.h"
 #include "absl/strings/string_view.h"
 
@@ -35,6 +36,17 @@ using ::testing::IsEmpty;
 using ::testing::Pointee;
 using ::testing::UnorderedElementsAre;
 using ::testing::UnorderedElementsAreArray;
+
+// Check that absl::flat_hash_set works in a global constructor.
+struct BeforeMain {
+  BeforeMain() {
+    absl::flat_hash_set<int> x;
+    x.insert(1);
+    CHECK(!x.contains(0)) << "x should not contain 0";
+    CHECK(x.contains(1)) << "x should contain 1";
+  }
+};
+const BeforeMain before_main;
 
 template <class T>
 using Set =
@@ -131,31 +143,31 @@ TEST(FlatHashSet, EraseIf) {
   // Erase all elements.
   {
     flat_hash_set<int> s = {1, 2, 3, 4, 5};
-    erase_if(s, [](int) { return true; });
+    EXPECT_EQ(erase_if(s, [](int) { return true; }), 5);
     EXPECT_THAT(s, IsEmpty());
   }
   // Erase no elements.
   {
     flat_hash_set<int> s = {1, 2, 3, 4, 5};
-    erase_if(s, [](int) { return false; });
+    EXPECT_EQ(erase_if(s, [](int) { return false; }), 0);
     EXPECT_THAT(s, UnorderedElementsAre(1, 2, 3, 4, 5));
   }
   // Erase specific elements.
   {
     flat_hash_set<int> s = {1, 2, 3, 4, 5};
-    erase_if(s, [](int k) { return k % 2 == 1; });
+    EXPECT_EQ(erase_if(s, [](int k) { return k % 2 == 1; }), 3);
     EXPECT_THAT(s, UnorderedElementsAre(2, 4));
   }
   // Predicate is function reference.
   {
     flat_hash_set<int> s = {1, 2, 3, 4, 5};
-    erase_if(s, IsEven);
+    EXPECT_EQ(erase_if(s, IsEven), 2);
     EXPECT_THAT(s, UnorderedElementsAre(1, 3, 5));
   }
   // Predicate is function pointer.
   {
     flat_hash_set<int> s = {1, 2, 3, 4, 5};
-    erase_if(s, &IsEven);
+    EXPECT_EQ(erase_if(s, &IsEven), 2);
     EXPECT_THAT(s, UnorderedElementsAre(1, 3, 5));
   }
 }

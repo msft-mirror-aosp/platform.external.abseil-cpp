@@ -21,10 +21,14 @@
 #include <thread>
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "absl/base/config.h"
-#include "absl/time/internal/cctz/include/cctz/civil_time.h"
 #include "absl/time/internal/cctz/include/cctz/time_zone.h"
+#if defined(__linux__)
+#include <features.h>
+#endif
+
+#include "gtest/gtest.h"
+#include "absl/time/internal/cctz/include/cctz/civil_time.h"
 
 namespace chrono = std::chrono;
 
@@ -131,6 +135,7 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "America/Cayman",
                                       "America/Chicago",
                                       "America/Chihuahua",
+                                      "America/Ciudad_Juarez",
                                       "America/Coral_Harbour",
                                       "America/Cordoba",
                                       "America/Costa_Rica",
@@ -211,6 +216,7 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "America/North_Dakota/Beulah",
                                       "America/North_Dakota/Center",
                                       "America/North_Dakota/New_Salem",
+                                      "America/Nuuk",
                                       "America/Ojinaga",
                                       "America/Panama",
                                       "America/Pangnirtung",
@@ -484,6 +490,7 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Europe/Kaliningrad",
                                       "Europe/Kiev",
                                       "Europe/Kirov",
+                                      "Europe/Kyiv",
                                       "Europe/Lisbon",
                                       "Europe/Ljubljana",
                                       "Europe/London",
@@ -523,6 +530,7 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Europe/Zagreb",
                                       "Europe/Zaporozhye",
                                       "Europe/Zurich",
+                                      "Factory",
                                       "GB",
                                       "GB-Eire",
                                       "GMT",
@@ -578,6 +586,7 @@ const char* const kTimeZoneNames[] = {"Africa/Abidjan",
                                       "Pacific/Guam",
                                       "Pacific/Honolulu",
                                       "Pacific/Johnston",
+                                      "Pacific/Kanton",
                                       "Pacific/Kiritimati",
                                       "Pacific/Kosrae",
                                       "Pacific/Kwajalein",
@@ -716,6 +725,22 @@ TEST(TimeZones, LoadZonesConcurrently) {
 }
 #endif
 
+TEST(TimeZone, UTC) {
+  const time_zone utc = utc_time_zone();
+
+  time_zone loaded_utc;
+  EXPECT_TRUE(load_time_zone("UTC", &loaded_utc));
+  EXPECT_EQ(loaded_utc, utc);
+
+  time_zone loaded_utc0;
+  EXPECT_TRUE(load_time_zone("UTC0", &loaded_utc0));
+  EXPECT_EQ(loaded_utc0, utc);
+
+  time_zone loaded_bad;
+  EXPECT_FALSE(load_time_zone("Invalid/TimeZone", &loaded_bad));
+  EXPECT_EQ(loaded_bad, utc);
+}
+
 TEST(TimeZone, NamedTimeZones) {
   const time_zone utc = utc_time_zone();
   EXPECT_EQ("UTC", utc.name());
@@ -749,7 +774,7 @@ TEST(TimeZone, Failures) {
   EXPECT_EQ(chrono::system_clock::from_time_t(0),
             convert(civil_second(1970, 1, 1, 0, 0, 0), tz));  // UTC
 
-  // Loading an empty std::string timezone should fail.
+  // Loading an empty string timezone should fail.
   tz = LoadZone("America/Los_Angeles");
   EXPECT_FALSE(load_time_zone("", &tz));
   EXPECT_EQ(chrono::system_clock::from_time_t(0),
@@ -891,19 +916,19 @@ TEST(MakeTime, TimePointResolution) {
   const time_zone utc = utc_time_zone();
   const time_point<chrono::nanoseconds> tp_ns =
       convert(civil_second(2015, 1, 2, 3, 4, 5), utc);
-  EXPECT_EQ("04:05", format("%M:%E*S", tp_ns, utc));
+  EXPECT_EQ("04:05", absl::time_internal::cctz::format("%M:%E*S", tp_ns, utc));
   const time_point<chrono::microseconds> tp_us =
       convert(civil_second(2015, 1, 2, 3, 4, 5), utc);
-  EXPECT_EQ("04:05", format("%M:%E*S", tp_us, utc));
+  EXPECT_EQ("04:05", absl::time_internal::cctz::format("%M:%E*S", tp_us, utc));
   const time_point<chrono::milliseconds> tp_ms =
       convert(civil_second(2015, 1, 2, 3, 4, 5), utc);
-  EXPECT_EQ("04:05", format("%M:%E*S", tp_ms, utc));
+  EXPECT_EQ("04:05", absl::time_internal::cctz::format("%M:%E*S", tp_ms, utc));
   const time_point<chrono::seconds> tp_s =
       convert(civil_second(2015, 1, 2, 3, 4, 5), utc);
-  EXPECT_EQ("04:05", format("%M:%E*S", tp_s, utc));
+  EXPECT_EQ("04:05", absl::time_internal::cctz::format("%M:%E*S", tp_s, utc));
   const time_point<absl::time_internal::cctz::seconds> tp_s64 =
       convert(civil_second(2015, 1, 2, 3, 4, 5), utc);
-  EXPECT_EQ("04:05", format("%M:%E*S", tp_s64, utc));
+  EXPECT_EQ("04:05", absl::time_internal::cctz::format("%M:%E*S", tp_s64, utc));
 
   // These next two require chrono::time_point_cast because the conversion
   // from a resolution of seconds (the return value of convert()) to a
@@ -911,10 +936,10 @@ TEST(MakeTime, TimePointResolution) {
   const time_point<chrono::minutes> tp_m =
       chrono::time_point_cast<chrono::minutes>(
           convert(civil_second(2015, 1, 2, 3, 4, 5), utc));
-  EXPECT_EQ("04:00", format("%M:%E*S", tp_m, utc));
+  EXPECT_EQ("04:00", absl::time_internal::cctz::format("%M:%E*S", tp_m, utc));
   const time_point<chrono::hours> tp_h = chrono::time_point_cast<chrono::hours>(
       convert(civil_second(2015, 1, 2, 3, 4, 5), utc));
-  EXPECT_EQ("00:00", format("%M:%E*S", tp_h, utc));
+  EXPECT_EQ("00:00", absl::time_internal::cctz::format("%M:%E*S", tp_h, utc));
 }
 
 TEST(MakeTime, Normalization) {
@@ -932,7 +957,7 @@ TEST(MakeTime, Normalization) {
 
 // NOTE: Run this with -ftrapv to detect overflow problems.
 TEST(MakeTime, SysSecondsLimits) {
-  const char RFC3339[] = "%Y-%m-%dT%H:%M:%S%Ez";
+  const char RFC3339[] = "%Y-%m-%d%ET%H:%M:%S%Ez";
   const time_zone utc = utc_time_zone();
   const time_zone east = fixed_time_zone(chrono::hours(14));
   const time_zone west = fixed_time_zone(-chrono::hours(14));
@@ -940,9 +965,11 @@ TEST(MakeTime, SysSecondsLimits) {
 
   // Approach the maximal time_point<cctz::seconds> value from below.
   tp = convert(civil_second(292277026596, 12, 4, 15, 30, 6), utc);
-  EXPECT_EQ("292277026596-12-04T15:30:06+00:00", format(RFC3339, tp, utc));
+  EXPECT_EQ("292277026596-12-04T15:30:06+00:00",
+            absl::time_internal::cctz::format(RFC3339, tp, utc));
   tp = convert(civil_second(292277026596, 12, 4, 15, 30, 7), utc);
-  EXPECT_EQ("292277026596-12-04T15:30:07+00:00", format(RFC3339, tp, utc));
+  EXPECT_EQ("292277026596-12-04T15:30:07+00:00",
+            absl::time_internal::cctz::format(RFC3339, tp, utc));
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::max(), tp);
   tp = convert(civil_second(292277026596, 12, 4, 15, 30, 8), utc);
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::max(), tp);
@@ -951,7 +978,8 @@ TEST(MakeTime, SysSecondsLimits) {
 
   // Checks that we can also get the maximal value for a far-east zone.
   tp = convert(civil_second(292277026596, 12, 5, 5, 30, 7), east);
-  EXPECT_EQ("292277026596-12-05T05:30:07+14:00", format(RFC3339, tp, east));
+  EXPECT_EQ("292277026596-12-05T05:30:07+14:00",
+            absl::time_internal::cctz::format(RFC3339, tp, east));
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::max(), tp);
   tp = convert(civil_second(292277026596, 12, 5, 5, 30, 8), east);
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::max(), tp);
@@ -960,7 +988,8 @@ TEST(MakeTime, SysSecondsLimits) {
 
   // Checks that we can also get the maximal value for a far-west zone.
   tp = convert(civil_second(292277026596, 12, 4, 1, 30, 7), west);
-  EXPECT_EQ("292277026596-12-04T01:30:07-14:00", format(RFC3339, tp, west));
+  EXPECT_EQ("292277026596-12-04T01:30:07-14:00",
+            absl::time_internal::cctz::format(RFC3339, tp, west));
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::max(), tp);
   tp = convert(civil_second(292277026596, 12, 4, 7, 30, 8), west);
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::max(), tp);
@@ -969,9 +998,11 @@ TEST(MakeTime, SysSecondsLimits) {
 
   // Approach the minimal time_point<cctz::seconds> value from above.
   tp = convert(civil_second(-292277022657, 1, 27, 8, 29, 53), utc);
-  EXPECT_EQ("-292277022657-01-27T08:29:53+00:00", format(RFC3339, tp, utc));
+  EXPECT_EQ("-292277022657-01-27T08:29:53+00:00",
+            absl::time_internal::cctz::format(RFC3339, tp, utc));
   tp = convert(civil_second(-292277022657, 1, 27, 8, 29, 52), utc);
-  EXPECT_EQ("-292277022657-01-27T08:29:52+00:00", format(RFC3339, tp, utc));
+  EXPECT_EQ("-292277022657-01-27T08:29:52+00:00",
+            absl::time_internal::cctz::format(RFC3339, tp, utc));
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::min(), tp);
   tp = convert(civil_second(-292277022657, 1, 27, 8, 29, 51), utc);
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::min(), tp);
@@ -980,7 +1011,8 @@ TEST(MakeTime, SysSecondsLimits) {
 
   // Checks that we can also get the minimal value for a far-east zone.
   tp = convert(civil_second(-292277022657, 1, 27, 22, 29, 52), east);
-  EXPECT_EQ("-292277022657-01-27T22:29:52+14:00", format(RFC3339, tp, east));
+  EXPECT_EQ("-292277022657-01-27T22:29:52+14:00",
+            absl::time_internal::cctz::format(RFC3339, tp, east));
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::min(), tp);
   tp = convert(civil_second(-292277022657, 1, 27, 22, 29, 51), east);
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::min(), tp);
@@ -989,7 +1021,8 @@ TEST(MakeTime, SysSecondsLimits) {
 
   // Checks that we can also get the minimal value for a far-west zone.
   tp = convert(civil_second(-292277022657, 1, 26, 18, 29, 52), west);
-  EXPECT_EQ("-292277022657-01-26T18:29:52-14:00", format(RFC3339, tp, west));
+  EXPECT_EQ("-292277022657-01-26T18:29:52-14:00",
+            absl::time_internal::cctz::format(RFC3339, tp, west));
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::min(), tp);
   tp = convert(civil_second(-292277022657, 1, 26, 18, 29, 51), west);
   EXPECT_EQ(time_point<absl::time_internal::cctz::seconds>::min(), tp);
@@ -1003,13 +1036,23 @@ TEST(MakeTime, SysSecondsLimits) {
 #if defined(_WIN32) || defined(_WIN64)
     // localtime_s() and gmtime_s() don't believe in years outside [1970:3000].
 #else
-    const time_zone utc = LoadZone("libc:UTC");
+    const time_zone cut = LoadZone("libc:UTC");
     const year_t max_tm_year = year_t{std::numeric_limits<int>::max()} + 1900;
-    tp = convert(civil_second(max_tm_year, 12, 31, 23, 59, 59), utc);
-    EXPECT_EQ("2147485547-12-31T23:59:59+00:00", format(RFC3339, tp, utc));
+    tp = convert(civil_second(max_tm_year, 12, 31, 23, 59, 59), cut);
+#if defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__EMSCRIPTEN__)
+    // Some gmtime_r() impls fail on extreme positive values.
+#else
+    EXPECT_EQ("2147485547-12-31T23:59:59+00:00",
+              absl::time_internal::cctz::format(RFC3339, tp, cut));
+#endif
     const year_t min_tm_year = year_t{std::numeric_limits<int>::min()} + 1900;
-    tp = convert(civil_second(min_tm_year, 1, 1, 0, 0, 0), utc);
-    EXPECT_EQ("-2147481748-01-01T00:00:00+00:00", format(RFC3339, tp, utc));
+    tp = convert(civil_second(min_tm_year, 1, 1, 0, 0, 0), cut);
+#if defined(__Fuchsia__) || defined(__EMSCRIPTEN__)
+    // Some gmtime_r() impls fail on extreme negative values (fxbug.dev/78527).
+#else
+    EXPECT_EQ("-2147481748-01-01T00:00:00+00:00",
+              absl::time_internal::cctz::format(RFC3339, tp, cut));
+#endif
 #endif
   }
 }
@@ -1021,7 +1064,7 @@ TEST(MakeTime, LocalTimeLibC) {
   //  1) we know how to change the time zone used by localtime()/mktime(),
   //  2) cctz and localtime()/mktime() will use similar-enough tzdata, and
   //  3) we have some idea about how mktime() behaves during transitions.
-#if defined(__linux__) && !defined(__ANDROID__)
+#if defined(__linux__) && defined(__GLIBC__) && !defined(__ANDROID__)
   const char* const ep = getenv("TZ");
   std::string tz_name = (ep != nullptr) ? ep : "";
   for (const char* const* np = kTimeZoneNames; *np != nullptr; ++np) {
@@ -1034,7 +1077,7 @@ TEST(MakeTime, LocalTimeLibC) {
          tp = zi.lookup(transition.to).trans) {
       const auto fcl = zi.lookup(transition.from);
       const auto tcl = zi.lookup(transition.to);
-      civil_second cs;  // compare cs in zi and lc
+      civil_second cs, us;  // compare cs and us in zi and lc
       if (fcl.kind == time_zone::civil_lookup::UNIQUE) {
         if (tcl.kind == time_zone::civil_lookup::UNIQUE) {
           // Both unique; must be an is_dst or abbr change.
@@ -1050,12 +1093,14 @@ TEST(MakeTime, LocalTimeLibC) {
         }
         ASSERT_EQ(time_zone::civil_lookup::REPEATED, tcl.kind);
         cs = transition.to;
+        us = transition.from;
       } else {
         ASSERT_EQ(time_zone::civil_lookup::UNIQUE, tcl.kind);
         ASSERT_EQ(time_zone::civil_lookup::SKIPPED, fcl.kind);
         cs = transition.from;
+        us = transition.to;
       }
-      if (cs.year() > 2037) break;  // limit test time (and to 32-bit time_t)
+      if (us.year() > 2037) break;  // limit test time (and to 32-bit time_t)
       const auto cl_zi = zi.lookup(cs);
       if (zi.lookup(cl_zi.pre).is_dst == zi.lookup(cl_zi.post).is_dst) {
         // The "libc" implementation cannot correctly classify transitions
@@ -1087,6 +1132,13 @@ TEST(MakeTime, LocalTimeLibC) {
       EXPECT_EQ(cl_zi.pre, cl_lc.pre);
       EXPECT_EQ(cl_zi.trans, cl_lc.trans);
       EXPECT_EQ(cl_zi.post, cl_lc.post);
+      const auto ucl_zi = zi.lookup(us);
+      const auto ucl_lc = lc.lookup(us);
+      SCOPED_TRACE(testing::Message() << "For " << us << " in " << *np);
+      EXPECT_EQ(ucl_zi.kind, ucl_lc.kind);
+      EXPECT_EQ(ucl_zi.pre, ucl_lc.pre);
+      EXPECT_EQ(ucl_zi.trans, ucl_lc.trans);
+      EXPECT_EQ(ucl_zi.post, ucl_lc.post);
     }
   }
   if (ep == nullptr) {
@@ -1158,6 +1210,45 @@ TEST(PrevTransition, AmericaNewYork) {
   tp = time_point<absl::time_internal::cctz::seconds>::max();
   EXPECT_TRUE(tz.prev_transition(tp, &trans));
   // We have a transition but we don't know which one.
+}
+
+TEST(NextTransition, Scan) {
+  for (const char* const* np = kTimeZoneNames; *np != nullptr; ++np) {
+    SCOPED_TRACE(testing::Message() << "In " << *np);
+    time_zone tz;
+    // EXPECT_TRUE(load_time_zone(*np, &tz));
+    if (!load_time_zone(*np, &tz)) {
+      continue;  // tolerate kTimeZoneNames/zoneinfo skew
+    }
+
+    auto tp = time_point<absl::time_internal::cctz::seconds>::min();
+    time_zone::civil_transition trans;
+    while (tz.next_transition(tp, &trans)) {
+      time_zone::civil_lookup from_cl = tz.lookup(trans.from);
+      EXPECT_NE(from_cl.kind, time_zone::civil_lookup::REPEATED);
+      time_zone::civil_lookup to_cl = tz.lookup(trans.to);
+      EXPECT_NE(to_cl.kind, time_zone::civil_lookup::SKIPPED);
+
+      auto trans_tp = to_cl.trans;
+      time_zone::absolute_lookup trans_al = tz.lookup(trans_tp);
+      EXPECT_EQ(trans_al.cs, trans.to);
+      auto pre_trans_tp = trans_tp - absl::time_internal::cctz::seconds(1);
+      time_zone::absolute_lookup pre_trans_al = tz.lookup(pre_trans_tp);
+      EXPECT_EQ(pre_trans_al.cs + 1, trans.from);
+
+      auto offset_delta = trans_al.offset - pre_trans_al.offset;
+      EXPECT_EQ(offset_delta, trans.to - trans.from);
+      if (offset_delta == 0) {
+        // This "transition" is only an is_dst or abbr change.
+        EXPECT_EQ(to_cl.kind, time_zone::civil_lookup::UNIQUE);
+        if (trans_al.is_dst == pre_trans_al.is_dst) {
+          EXPECT_STRNE(trans_al.abbr, pre_trans_al.abbr);
+        }
+      }
+
+      tp = trans_tp;  // continue scan from transition
+    }
+  }
 }
 
 TEST(TimeZoneEdgeCase, AmericaNewYork) {
