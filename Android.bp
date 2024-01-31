@@ -51,12 +51,3 @@ cc_library_host_static {
     export_include_dirs: ["."],
     stl: "libc++",
 }
-
-// Targets below are deprecated.
-
-cc_library_headers {
-    name: "libabsl_headers",
-    device_supported: false,
-    host_supported: true,
-    export_include_dirs: ["."],
-}
