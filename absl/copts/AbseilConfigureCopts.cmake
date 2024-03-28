@@ -10,7 +10,7 @@ else()
   set(ABSL_BUILD_DLL FALSE)
 endif()
 
-if(APPLE AND CMAKE_CXX_COMPILER_ID MATCHES [[Clang]])
+if(NOT DARWIN_AARCH64 AND APPLE AND CMAKE_CXX_COMPILER_ID MATCHES [[Clang]])
   # Some CMake targets (not known at the moment of processing) could be set to
   # compile for multiple architectures as specified by the OSX_ARCHITECTURES
   # property, which is target-specific.  We should neither inspect nor rely on
