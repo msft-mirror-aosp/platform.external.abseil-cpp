@@ -20,25 +20,40 @@ load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
 # GoogleTest/GoogleMock framework. Used by most unit-tests.
 http_archive(
-    name = "com_google_googletest",  # 2021-07-09T13:28:13Z
-    sha256 = "12ef65654dc01ab40f6f33f9d02c04f2097d2cd9fbe48dc6001b29543583b0ad",
-    strip_prefix = "googletest-8d51ffdfab10b3fba636ae69bc03da4b54f8c235",
-    # Keep this URL in sync with ABSL_GOOGLETEST_COMMIT in ci/cmake_common.sh.
-    urls = ["https://github.com/google/googletest/archive/8d51ffdfab10b3fba636ae69bc03da4b54f8c235.zip"],
+  name = "com_google_googletest",
+  sha256 = "8ad598c73ad796e0d8280b082cebd82a630d73e73cd3c70057938a6501bba5d7",
+  strip_prefix = "googletest-1.14.0",
+  # Keep this URL in sync with ABSL_GOOGLETEST_COMMIT in ci/cmake_common.sh and
+  # ci/windows_msvc_cmake.bat.
+  urls = ["https://github.com/google/googletest/archive/refs/tags/v1.14.0.tar.gz"],
+)
+
+# RE2 (the regular expression library used by GoogleTest)
+http_archive(
+    name = "com_googlesource_code_re2",
+    sha256 = "828341ad08524618a626167bd320b0c2acc97bd1c28eff693a9ea33a7ed2a85f",
+    strip_prefix = "re2-2023-11-01",
+    urls = ["https://github.com/google/re2/releases/download/2023-11-01/re2-2023-11-01.zip"],
 )
 
 # Google benchmark.
 http_archive(
-    name = "com_github_google_benchmark",  # 2021-09-20T09:19:51Z
-    sha256 = "62e2f2e6d8a744d67e4bbc212fcfd06647080de4253c97ad5c6749e09faf2cb0",
-    strip_prefix = "benchmark-0baacde3618ca617da95375e0af13ce1baadea47",
-    urls = ["https://github.com/google/benchmark/archive/0baacde3618ca617da95375e0af13ce1baadea47.zip"],
+    name = "com_github_google_benchmark",
+    sha256 = "6bc180a57d23d4d9515519f92b0c83d61b05b5bab188961f36ac7b06b0d9e9ce",
+    strip_prefix = "benchmark-1.8.3",
+    urls = ["https://github.com/google/benchmark/archive/refs/tags/v1.8.3.tar.gz"],
+)
+
+# Bazel Skylib.
+http_archive(
+  name = "bazel_skylib",
+  sha256 = "cd55a062e763b9349921f0f5db8c3933288dc8ba4f76dd9416aac68acee3cb94",
+  urls = ["https://github.com/bazelbuild/bazel-skylib/releases/download/1.5.0/bazel-skylib-1.5.0.tar.gz"],
 )
 
 # Bazel platform rules.
 http_archive(
     name = "platforms",
-    sha256 = "b601beaf841244de5c5a50d2b2eddd34839788000fa1be4260ce6603ca0d8eb7",
-    strip_prefix = "platforms-98939346da932eef0b54cf808622f5bb0928f00b",
-    urls = ["https://github.com/bazelbuild/platforms/archive/98939346da932eef0b54cf808622f5bb0928f00b.zip"],
+    sha256 = "8150406605389ececb6da07cbcb509d5637a3ab9a24bc69b1101531367d89d74",
+    urls = ["https://github.com/bazelbuild/platforms/releases/download/0.0.8/platforms-0.0.8.tar.gz"],
 )
