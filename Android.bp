@@ -37,12 +37,17 @@ cc_library_static {
         "liblog",
     ],
     stl: "libc++",
+    sdk_version: "current",
+    min_sdk_version: "apex_inherit",
     apex_available: [
         "//apex_available:platform",
+        "com.android.ondevicepersonalization",
     ],
     visibility: [
+        "//external/federated-compute:__subpackages__",
         "//external/grpc-grpc:__subpackages__",
         "//external/kythe:__subpackages__",
+        "//external/tensorflow:__subpackages__",
         "//external/webrtc:__subpackages__",
         "//frameworks/av/media/libeffects/preprocessing",
     ],
