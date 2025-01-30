@@ -16,6 +16,7 @@ cc_library_static {
     host_supported: true,
     vendor_available: true,
     product_available: true,
+    recovery_available: true,
     srcs: [
         "absl/**/*.cc",
     ],
@@ -30,18 +31,30 @@ cc_library_static {
         "absl/log/internal/test_matchers.cc",
         "absl/log/scoped_mock_log.cc",
         "absl/random/internal/gaussian_distribution_gentables.cc",
+        "absl/status/internal/status_matchers.cc",
     ],
     export_include_dirs: ["."],
     shared_libs: [
         "liblog",
     ],
     stl: "libc++",
+    sdk_version: "current",
+    min_sdk_version: "apex_inherit",
     apex_available: [
         "//apex_available:platform",
+        "com.android.adservices",
+        "com.android.extservices",
+        "com.android.ondevicepersonalization",
     ],
     visibility: [
+        "//external/federated-compute:__subpackages__",
         "//external/grpc-grpc:__subpackages__",
+        "//external/libtextclassifier:__subpackages__",
         "//external/kythe:__subpackages__",
+        "//external/tensorflow:__subpackages__",
+        "//external/tflite-support:__subpackages__",
+        "//external/webrtc:__subpackages__",
+        "//frameworks/av/media/libeffects/preprocessing",
     ],
 }
 
