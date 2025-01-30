@@ -49,6 +49,7 @@ cc_library_static {
     visibility: [
         "//external/federated-compute:__subpackages__",
         "//external/grpc-grpc:__subpackages__",
+        "//external/iamf_tools:__subpackages__",
         "//external/libtextclassifier:__subpackages__",
         "//external/kythe:__subpackages__",
         "//external/tensorflow:__subpackages__",
