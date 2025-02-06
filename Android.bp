@@ -16,6 +16,7 @@ cc_library_static {
     host_supported: true,
     vendor_available: true,
     product_available: true,
+    recovery_available: true,
     srcs: [
         "absl/**/*.cc",
     ],
@@ -48,6 +49,7 @@ cc_library_static {
     visibility: [
         "//external/federated-compute:__subpackages__",
         "//external/grpc-grpc:__subpackages__",
+        "//external/iamf_tools:__subpackages__",
         "//external/libtextclassifier:__subpackages__",
         "//external/kythe:__subpackages__",
         "//external/tensorflow:__subpackages__",
