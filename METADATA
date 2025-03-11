@@ -12,7 +12,7 @@ third_party {
     type: GIT
     value: "https://github.com/abseil/abseil-cpp"
   }
-  version: "20240722.0"
-  last_upgrade_date { year: 2024 month: 11 day: 4 }
+  version: "20250127.0"
+  last_upgrade_date { year: 2025 month: 3 day: 11 }
   license_type: NOTICE
 }
