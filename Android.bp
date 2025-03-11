@@ -47,15 +47,19 @@ cc_library_static {
         "com.android.ondevicepersonalization",
     ],
     visibility: [
+        // go/keep-sorted start
+        "//external/anonymous-counting-tokens:__subpackages__",
         "//external/federated-compute:__subpackages__",
         "//external/grpc-grpc:__subpackages__",
         "//external/iamf_tools:__subpackages__",
-        "//external/libtextclassifier:__subpackages__",
         "//external/kythe:__subpackages__",
+        "//external/libtextclassifier:__subpackages__",
+        "//external/private-join-and-compute:__subpackages__",
         "//external/tensorflow:__subpackages__",
         "//external/tflite-support:__subpackages__",
         "//external/webrtc:__subpackages__",
         "//frameworks/av/media/libeffects/preprocessing",
+        // go/keep-sorted end
     ],
 }
 
