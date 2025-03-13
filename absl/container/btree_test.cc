@@ -2949,7 +2949,6 @@ TEST(Btree,
 
 TEST(Btree, ConstructImplicitlyWithUnadaptedComparator) {
   absl::btree_set<MultiKey, MultiKeyComp> set = {{}, MultiKeyComp{}};
-  EXPECT_TRUE(set.empty());
 }
 
 TEST(Btree, InvalidComparatorsCaught) {

@@ -111,7 +111,7 @@ TEST_P(BasicLogTest, Info) {
             ENCODED_MESSAGE(MatchesEvent(
                 Eq(__FILE__), Eq(log_line), InMatchWindow(),
                 Eq(logging::proto::INFO), Eq(absl::base_internal::GetTID()),
-                ElementsAre(ValueWithLiteral(Eq("hello world"))))),
+                ElementsAre(EqualsProto(R"pb(literal: "hello world")pb")))),
             Stacktrace(IsEmpty()))));
   }
 
@@ -142,7 +142,7 @@ TEST_P(BasicLogTest, Warning) {
             ENCODED_MESSAGE(MatchesEvent(
                 Eq(__FILE__), Eq(log_line), InMatchWindow(),
                 Eq(logging::proto::WARNING), Eq(absl::base_internal::GetTID()),
-                ElementsAre(ValueWithLiteral(Eq("hello world"))))),
+                ElementsAre(EqualsProto(R"pb(literal: "hello world")pb")))),
             Stacktrace(IsEmpty()))));
   }
 
@@ -173,7 +173,7 @@ TEST_P(BasicLogTest, Error) {
             ENCODED_MESSAGE(MatchesEvent(
                 Eq(__FILE__), Eq(log_line), InMatchWindow(),
                 Eq(logging::proto::ERROR), Eq(absl::base_internal::GetTID()),
-                ElementsAre(ValueWithLiteral(Eq("hello world"))))),
+                ElementsAre(EqualsProto(R"pb(literal: "hello world")pb")))),
             Stacktrace(IsEmpty()))));
   }
 
@@ -226,7 +226,8 @@ TEST_P(BasicLogDeathTest, Fatal) {
                              Eq(__FILE__), Eq(log_line), InMatchWindow(),
                              Eq(logging::proto::FATAL),
                              Eq(absl::base_internal::GetTID()),
-                             ElementsAre(ValueWithLiteral(Eq("hello world"))))),
+                             ElementsAre(EqualsProto(
+                                 R"pb(literal: "hello world")pb")))),
                          Stacktrace(IsEmpty()))))
               .WillOnce(DeathTestExpectedLogging());
 
@@ -245,7 +246,8 @@ TEST_P(BasicLogDeathTest, Fatal) {
                              Eq(__FILE__), Eq(log_line), InMatchWindow(),
                              Eq(logging::proto::FATAL),
                              Eq(absl::base_internal::GetTID()),
-                             ElementsAre(ValueWithLiteral(Eq("hello world"))))),
+                             ElementsAre(EqualsProto(
+                                 R"pb(literal: "hello world")pb")))),
                          Stacktrace(Not(IsEmpty())))))
               .WillOnce(DeathTestExpectedLogging());
         }
@@ -286,7 +288,8 @@ TEST_P(BasicLogDeathTest, QFatal) {
                              Eq(__FILE__), Eq(log_line), InMatchWindow(),
                              Eq(logging::proto::FATAL),
                              Eq(absl::base_internal::GetTID()),
-                             ElementsAre(ValueWithLiteral(Eq("hello world"))))),
+                             ElementsAre(EqualsProto(
+                                 R"pb(literal: "hello world")pb")))),
                          Stacktrace(IsEmpty()))))
               .WillOnce(DeathTestExpectedLogging());
         }
@@ -322,7 +325,7 @@ TEST_P(BasicLogTest, DFatal) {
             ENCODED_MESSAGE(MatchesEvent(
                 Eq(__FILE__), Eq(log_line), InMatchWindow(),
                 Eq(logging::proto::ERROR), Eq(absl::base_internal::GetTID()),
-                ElementsAre(ValueWithLiteral(Eq("hello world"))))),
+                ElementsAre(EqualsProto(R"pb(literal: "hello world")pb")))),
             Stacktrace(IsEmpty()))));
   }
 
@@ -365,7 +368,8 @@ TEST_P(BasicLogDeathTest, DFatal) {
                              Eq(__FILE__), Eq(log_line), InMatchWindow(),
                              Eq(logging::proto::FATAL),
                              Eq(absl::base_internal::GetTID()),
-                             ElementsAre(ValueWithLiteral(Eq("hello world"))))),
+                             ElementsAre(EqualsProto(
+                                 R"pb(literal: "hello world")pb")))),
                          Stacktrace(IsEmpty()))))
               .WillOnce(DeathTestExpectedLogging());
 
@@ -384,7 +388,8 @@ TEST_P(BasicLogDeathTest, DFatal) {
                              Eq(__FILE__), Eq(log_line), InMatchWindow(),
                              Eq(logging::proto::FATAL),
                              Eq(absl::base_internal::GetTID()),
-                             ElementsAre(ValueWithLiteral(Eq("hello world"))))),
+                             ElementsAre(EqualsProto(
+                                 R"pb(literal: "hello world")pb")))),
                          Stacktrace(Not(IsEmpty())))))
               .WillOnce(DeathTestExpectedLogging());
         }
@@ -449,7 +454,7 @@ TEST_P(BasicLogTest, Level) {
                          ? logging::proto::ERROR
                          : 0),
                   Eq(absl::base_internal::GetTID()),
-                  ElementsAre(ValueWithLiteral(Eq("hello world"))))),
+                  ElementsAre(EqualsProto(R"pb(literal: "hello world")pb")))),
               Stacktrace(IsEmpty()))));
     }
     test_sink.StartCapturingLogs();
@@ -495,7 +500,8 @@ TEST_P(BasicLogDeathTest, Level) {
                              Eq(__FILE__), Eq(log_line), InMatchWindow(),
                              Eq(logging::proto::FATAL),
                              Eq(absl::base_internal::GetTID()),
-                             ElementsAre(ValueWithLiteral(Eq("hello world"))))),
+                             ElementsAre(EqualsProto(
+                                 R"pb(literal: "hello world")pb")))),
                          Stacktrace(IsEmpty()))))
               .WillOnce(DeathTestExpectedLogging());
 
@@ -513,7 +519,8 @@ TEST_P(BasicLogDeathTest, Level) {
                              Eq(__FILE__), Eq(log_line), InMatchWindow(),
                              Eq(logging::proto::FATAL),
                              Eq(absl::base_internal::GetTID()),
-                             ElementsAre(ValueWithLiteral(Eq("hello world"))))),
+                             ElementsAre(EqualsProto(
+                                 R"pb(literal: "hello world")pb")))),
                          Stacktrace(Not(IsEmpty())))))
               .WillOnce(DeathTestExpectedLogging());
         }
