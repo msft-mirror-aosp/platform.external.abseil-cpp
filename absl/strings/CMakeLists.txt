@@ -100,7 +100,7 @@ absl_cc_library(
   COPTS
     ${ABSL_DEFAULT_COPTS}
   DEPS
-    absl::config
+    absl::core_headers
     absl::string_view
   PUBLIC
 )
@@ -371,7 +371,6 @@ absl_cc_test(
   DEPS
     absl::strings
     absl::str_format
-    absl::config
     absl::core_headers
     GTest::gmock_main
 )
