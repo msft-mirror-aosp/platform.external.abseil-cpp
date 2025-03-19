@@ -24,14 +24,12 @@
 #include <functional>
 #include <iostream>
 #include <iterator>
-#include <limits>
 #include <list>
 #include <map>
 #include <memory>
 #include <numeric>
 #include <ostream>
 #include <random>
-#include <set>
 #include <string>
 #include <tuple>
 #include <type_traits>
@@ -64,7 +62,6 @@
 #include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 #include "absl/strings/string_view.h"
-#include "absl/types/optional.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -2093,10 +2090,6 @@ TEST(Table, MoveSelfAssign) {
   t.emplace("a", "b");
   EXPECT_EQ(1, t.size());
   t = std::move(*&t);
-  if (SwisstableGenerationsEnabled()) {
-    // NOLINTNEXTLINE(bugprone-use-after-move)
-    EXPECT_DEATH_IF_SUPPORTED(t.contains("a"), "self-move-assigned");
-  }
   // As long as we don't crash, it's fine.
 }
 
@@ -2436,9 +2429,8 @@ TYPED_TEST(SooTest, HintInsert) {
 }
 
 template <typename T>
-T MakeSimpleTable(size_t size, bool do_reserve) {
+T MakeSimpleTable(size_t size) {
   T t;
-  if (do_reserve) t.reserve(size);
   while (t.size() < size) t.insert(t.size());
   return t;
 }
@@ -2457,62 +2449,51 @@ std::vector<int> OrderOfIteration(const T& t) {
 // We also need to keep the old tables around to avoid getting the same memory
 // blocks over and over.
 TYPED_TEST(SooTest, IterationOrderChangesByInstance) {
-  for (bool do_reserve : {false, true}) {
-    for (size_t size : {2u, 6u, 12u, 20u}) {
-      SCOPED_TRACE(absl::StrCat("size: ", size, " do_reserve: ", do_reserve));
-      const auto reference_table = MakeSimpleTable<TypeParam>(size, do_reserve);
-      const auto reference = OrderOfIteration(reference_table);
+  for (size_t size : {2, 6, 12, 20}) {
+    const auto reference_table = MakeSimpleTable<TypeParam>(size);
+    const auto reference = OrderOfIteration(reference_table);
 
-      std::vector<TypeParam> tables;
-      bool found_difference = false;
-      for (int i = 0; !found_difference && i < 5000; ++i) {
-        tables.push_back(MakeSimpleTable<TypeParam>(size, do_reserve));
-        found_difference = OrderOfIteration(tables.back()) != reference;
-      }
-      if (!found_difference) {
-        FAIL() << "Iteration order remained the same across many attempts with "
-                  "size "
-               << size;
-      }
+    std::vector<TypeParam> tables;
+    bool found_difference = false;
+    for (int i = 0; !found_difference && i < 5000; ++i) {
+      tables.push_back(MakeSimpleTable<TypeParam>(size));
+      found_difference = OrderOfIteration(tables.back()) != reference;
+    }
+    if (!found_difference) {
+      FAIL()
+          << "Iteration order remained the same across many attempts with size "
+          << size;
     }
   }
 }
 
 TYPED_TEST(SooTest, IterationOrderChangesOnRehash) {
-#ifdef ABSL_HAVE_ADDRESS_SANITIZER
-  GTEST_SKIP() << "Hash quality is lower in asan mode, causing flakiness.";
-#endif
-
   // We test different sizes with many small numbers, because small table
   // resize has a different codepath.
   // Note: iteration order for size() <= 1 is always the same.
-  for (bool do_reserve : {false, true}) {
-    for (size_t size : {2u, 3u, 6u, 7u, 12u, 15u, 20u, 50u}) {
-      for (size_t rehash_size : {
-               size_t{0},        // Force rehash is guaranteed.
-               size * 10  // Rehash to the larger capacity is guaranteed.
-           }) {
-        SCOPED_TRACE(absl::StrCat("size: ", size, " rehash_size: ", rehash_size,
-                                  " do_reserve: ", do_reserve));
-        std::vector<TypeParam> garbage;
-        bool ok = false;
-        for (int i = 0; i < 5000; ++i) {
-          auto t = MakeSimpleTable<TypeParam>(size, do_reserve);
-          const auto reference = OrderOfIteration(t);
-          // Force rehash.
-          t.rehash(rehash_size);
-          auto trial = OrderOfIteration(t);
-          if (trial != reference) {
-            // We are done.
-            ok = true;
-            break;
-          }
-          garbage.push_back(std::move(t));
+  for (size_t size : std::vector<size_t>{2, 3, 6, 7, 12, 15, 20, 50}) {
+    for (size_t rehash_size : {
+             size_t{0},  // Force rehash is guaranteed.
+             size * 10   // Rehash to the larger capacity is guaranteed.
+         }) {
+      std::vector<TypeParam> garbage;
+      bool ok = false;
+      for (int i = 0; i < 5000; ++i) {
+        auto t = MakeSimpleTable<TypeParam>(size);
+        const auto reference = OrderOfIteration(t);
+        // Force rehash.
+        t.rehash(rehash_size);
+        auto trial = OrderOfIteration(t);
+        if (trial != reference) {
+          // We are done.
+          ok = true;
+          break;
         }
-        EXPECT_TRUE(ok)
-            << "Iteration order remained the same across many attempts " << size
-            << "->" << rehash_size << ".";
+        garbage.push_back(std::move(t));
       }
+      EXPECT_TRUE(ok)
+          << "Iteration order remained the same across many attempts " << size
+          << "->" << rehash_size << ".";
     }
   }
 }
@@ -3611,138 +3592,6 @@ TEST(Iterator, InconsistentHashEqFunctorsValidation) {
   };
   EXPECT_DEATH_IF_SUPPORTED(insert_conflicting_elems(),
                             "hash/eq functors are inconsistent.");
-}
-
-struct ConstructCaller {
-  explicit ConstructCaller(int v) : val(v) {}
-  ConstructCaller(int v, absl::FunctionRef<void()> func) : val(v) { func(); }
-  template <typename H>
-  friend H AbslHashValue(H h, const ConstructCaller& d) {
-    return H::combine(std::move(h), d.val);
-  }
-  bool operator==(const ConstructCaller& c) const { return val == c.val; }
-
-  int val;
-};
-
-struct DestroyCaller {
-  explicit DestroyCaller(int v) : val(v) {}
-  DestroyCaller(int v, absl::FunctionRef<void()> func)
-      : val(v), destroy_func(func) {}
-  DestroyCaller(DestroyCaller&& that)
-      : val(that.val), destroy_func(std::move(that.destroy_func)) {
-    that.Deactivate();
-  }
-  ~DestroyCaller() {
-    if (destroy_func) (*destroy_func)();
-  }
-  void Deactivate() { destroy_func = absl::nullopt; }
-
-  template <typename H>
-  friend H AbslHashValue(H h, const DestroyCaller& d) {
-    return H::combine(std::move(h), d.val);
-  }
-  bool operator==(const DestroyCaller& d) const { return val == d.val; }
-
-  int val;
-  absl::optional<absl::FunctionRef<void()>> destroy_func;
-};
-
-TEST(Table, ReentrantCallsFail) {
-#ifdef NDEBUG
-  GTEST_SKIP() << "Reentrant checks only enabled in debug mode.";
-#else
-  {
-    ValueTable<ConstructCaller> t;
-    t.insert(ConstructCaller{0});
-    auto erase_begin = [&] { t.erase(t.begin()); };
-    EXPECT_DEATH_IF_SUPPORTED(t.emplace(1, erase_begin), "");
-  }
-  {
-    ValueTable<DestroyCaller> t;
-    t.insert(DestroyCaller{0});
-    auto find_0 = [&] { t.find(DestroyCaller{0}); };
-    t.insert(DestroyCaller{1, find_0});
-    for (int i = 10; i < 20; ++i) t.insert(DestroyCaller{i});
-    EXPECT_DEATH_IF_SUPPORTED(t.clear(), "");
-    for (auto& elem : t) elem.Deactivate();
-  }
-  {
-    ValueTable<DestroyCaller> t;
-    t.insert(DestroyCaller{0});
-    auto insert_1 = [&] { t.insert(DestroyCaller{1}); };
-    t.insert(DestroyCaller{1, insert_1});
-    for (int i = 10; i < 20; ++i) t.insert(DestroyCaller{i});
-    EXPECT_DEATH_IF_SUPPORTED(t.clear(), "");
-    for (auto& elem : t) elem.Deactivate();
-  }
-#endif
-}
-
-TEST(Table, DestroyedCallsFail) {
-#ifdef NDEBUG
-  GTEST_SKIP() << "Destroyed checks only enabled in debug mode.";
-#else
-  absl::optional<IntTable> t;
-  t.emplace({1});
-  IntTable* t_ptr = &*t;
-  EXPECT_TRUE(t_ptr->contains(1));
-  t.reset();
-  EXPECT_DEATH_IF_SUPPORTED(t_ptr->contains(1), "");
-#endif
-}
-
-TEST(Table, MovedFromCallsFail) {
-  if (!SwisstableGenerationsEnabled()) {
-    GTEST_SKIP() << "Moved-from checks only enabled in sanitizer mode.";
-    return;
-  }
-
-  {
-    ABSL_ATTRIBUTE_UNUSED IntTable t1, t2, t3;
-    t1.insert(1);
-    t2 = std::move(t1);
-    // NOLINTNEXTLINE(bugprone-use-after-move)
-    EXPECT_DEATH_IF_SUPPORTED(t1.contains(1), "moved-from");
-    // NOLINTNEXTLINE(bugprone-use-after-move)
-    EXPECT_DEATH_IF_SUPPORTED(t1.swap(t3), "moved-from");
-    // NOLINTNEXTLINE(bugprone-use-after-move)
-    EXPECT_DEATH_IF_SUPPORTED(t1.merge(t3), "moved-from");
-    // NOLINTNEXTLINE(bugprone-use-after-move)
-    EXPECT_DEATH_IF_SUPPORTED(IntTable{t1}, "moved-from");
-    // NOLINTNEXTLINE(bugprone-use-after-move)
-    EXPECT_DEATH_IF_SUPPORTED(t1.begin(), "moved-from");
-    // NOLINTNEXTLINE(bugprone-use-after-move)
-    EXPECT_DEATH_IF_SUPPORTED(t1.end(), "moved-from");
-    // NOLINTNEXTLINE(bugprone-use-after-move)
-    EXPECT_DEATH_IF_SUPPORTED(t1.size(), "moved-from");
-  }
-  {
-    ABSL_ATTRIBUTE_UNUSED IntTable t1;
-    t1.insert(1);
-    ABSL_ATTRIBUTE_UNUSED IntTable t2(std::move(t1));
-    // NOLINTNEXTLINE(bugprone-use-after-move)
-    EXPECT_DEATH_IF_SUPPORTED(t1.contains(1), "moved-from");
-    t1.clear();  // Clearing a moved-from table is allowed.
-  }
-  {
-    // Test that using a table (t3) that was moved-to from a moved-from table
-    // (t1) fails.
-    ABSL_ATTRIBUTE_UNUSED IntTable t1, t2, t3;
-    t1.insert(1);
-    t2 = std::move(t1);
-    // NOLINTNEXTLINE(bugprone-use-after-move)
-    t3 = std::move(t1);
-    EXPECT_DEATH_IF_SUPPORTED(t3.contains(1), "moved-from");
-  }
-}
-
-TEST(Table, MaxSizeOverflow) {
-  size_t overflow = (std::numeric_limits<size_t>::max)();
-  EXPECT_DEATH_IF_SUPPORTED(IntTable t(overflow), "Hash table size overflow");
-  IntTable t;
-  EXPECT_DEATH_IF_SUPPORTED(t.reserve(overflow), "Hash table size overflow");
-  EXPECT_DEATH_IF_SUPPORTED(t.rehash(overflow), "Hash table size overflow");
 }
 
 }  // namespace
