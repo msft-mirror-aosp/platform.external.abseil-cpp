@@ -31,9 +31,14 @@
 #include "absl/container/fixed_array.h"
 #include "absl/container/inlined_vector.h"
 #include "absl/hash/hash_testing.h"
+#include "absl/meta/type_traits.h"
 #include "absl/strings/str_cat.h"
 
 namespace {
+
+static_assert(!absl::type_traits_internal::IsOwner<absl::Span<int>>::value &&
+                  absl::type_traits_internal::IsView<absl::Span<int>>::value,
+              "Span is a view, not an owner");
 
 MATCHER_P(DataIs, data,
           absl::StrCat("data() ", negation ? "isn't " : "is ",
@@ -191,7 +196,7 @@ TEST(IntSpan, SpanOfDerived) {
 }
 
 void TestInitializerList(absl::Span<const int> s, const std::vector<int>& v) {
-  EXPECT_TRUE(absl::equal(s.begin(), s.end(), v.begin(), v.end()));
+  EXPECT_TRUE(std::equal(s.begin(), s.end(), v.begin(), v.end()));
 }
 
 TEST(ConstIntSpan, InitializerListConversion) {

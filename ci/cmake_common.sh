@@ -14,12 +14,6 @@
 
 # The commit of GoogleTest to be used in the CMake tests in this directory.
 # Keep this in sync with the commit in the WORKSPACE file.
-readonly ABSL_GOOGLETEST_COMMIT="b796f7d44681514f58a683a3a71ff17c94edb0c1" # v1.13.0
+readonly ABSL_GOOGLETEST_VERSION="1.15.2"
 
-# Avoid depending on GitHub by looking for a cached copy of the commit first.
-if [[ -r "${KOKORO_GFILE_DIR:-}/distdir/${ABSL_GOOGLETEST_COMMIT}.zip" ]]; then
-  DOCKER_EXTRA_ARGS="--mount type=bind,source=${KOKORO_GFILE_DIR}/distdir,target=/distdir,readonly ${DOCKER_EXTRA_ARGS:-}"
-  ABSL_GOOGLETEST_DOWNLOAD_URL="file:///distdir/${ABSL_GOOGLETEST_COMMIT}.zip"
-else
-  ABSL_GOOGLETEST_DOWNLOAD_URL="https://github.com/google/googletest/archive/${ABSL_GOOGLETEST_COMMIT}.zip"
-fi
+readonly ABSL_GOOGLETEST_DOWNLOAD_URL="https://github.com/google/googletest/releases/download/v${ABSL_GOOGLETEST_VERSION}/googletest-${ABSL_GOOGLETEST_VERSION}.tar.gz"
