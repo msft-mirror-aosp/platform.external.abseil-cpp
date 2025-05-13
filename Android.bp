@@ -56,6 +56,7 @@ cc_library_static {
         "//external/kythe:__subpackages__",
         "//external/libtextclassifier:__subpackages__",
         "//external/private-join-and-compute:__subpackages__",
+        "//external/regex-re2:__subpackages__",
         "//external/tensorflow:__subpackages__",
         "//external/tflite-support:__subpackages__",
         "//external/webrtc:__subpackages__",
