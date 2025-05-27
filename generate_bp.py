@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse
 import json
 import subprocess
@@ -20,6 +20,7 @@ legacy_mega_target_libs = [
     '//absl/log:absl_check',
     '//absl/log:absl_log',
     '//absl/log:check',
+    '//absl/log:die_if_null',
     '//absl/log:initialize',
     '//absl/log:log',
     '//absl/random:bit_gen_ref',
