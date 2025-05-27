@@ -7826,6 +7826,61 @@ cc_library_static {
 }
 
 genrule {
+    name: "absl_log_die_if_null_hdrs",
+    srcs: [
+        "absl/log/die_if_null.h",
+    ],
+    out: [
+        "my_include_dir/absl/log/die_if_null.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_log_die_if_null",
+    visibility: ["//visibility:public"],
+    srcs: [
+        "absl/log/die_if_null.cc",
+    ],
+    generated_headers: ["absl_log_die_if_null_hdrs"],
+    export_generated_headers: ["absl_log_die_if_null_hdrs"],
+
+    whole_static_libs: [
+        "absl_log",
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_strings",
+    ],
+    export_static_lib_headers: [
+        "absl_log",
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_strings",
+    ],
+
+    host_supported: true,
+    vendor_available: true,
+    product_available: true,
+    recovery_available: true,
+    sdk_version: "current",
+    min_sdk_version: "apex_inherit",
+    stl: "libc++",
+    apex_available: [
+        "//apex_available:platform",
+        "com.android.adservices",
+        "com.android.extservices",
+        "com.android.media.swcodec",
+        "com.android.ondevicepersonalization",
+    ],
+}
+
+genrule {
     name: "absl_log_check_hdrs",
     srcs: [
         "absl/log/check.h",
@@ -10054,6 +10109,7 @@ cc_library_static {
         "absl_log_absl_check",
         "absl_log_absl_log",
         "absl_log_check",
+        "absl_log_die_if_null",
         "absl_log_initialize",
         "absl_log",
         "absl_random_bit_gen_ref",
@@ -10077,6 +10133,7 @@ cc_library_static {
         "absl_log_absl_check",
         "absl_log_absl_log",
         "absl_log_check",
+        "absl_log_die_if_null",
         "absl_log_initialize",
         "absl_log",
         "absl_random_bit_gen_ref",
@@ -10104,7 +10161,6 @@ cc_library_static {
         "//external/kythe:__subpackages__",
         "//external/libtextclassifier:__subpackages__",
         "//external/private-join-and-compute:__subpackages__",
-        "//external/regex-re2:__subpackages__",
         "//external/tensorflow:__subpackages__",
         "//external/tflite-support:__subpackages__",
         "//external/webrtc:__subpackages__",
