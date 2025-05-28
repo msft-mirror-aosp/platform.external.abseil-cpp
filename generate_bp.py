@@ -1,11 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 import argparse
 import json
 import subprocess
 import sys
 import os
 
-legacy_mega_target_libs = [
+root_libs = [
     '//absl/algorithm:algorithm',
     '//absl/cleanup:cleanup',
     '//absl/container:btree',
@@ -20,6 +20,7 @@ legacy_mega_target_libs = [
     '//absl/log:absl_check',
     '//absl/log:absl_log',
     '//absl/log:check',
+    '//absl/log:die_if_null',
     '//absl/log:initialize',
     '//absl/log:log',
     '//absl/random:bit_gen_ref',
@@ -28,8 +29,6 @@ legacy_mega_target_libs = [
     '//absl/strings:strings',
     '//absl/synchronization:synchronization',
 ]
-
-root_libs = legacy_mega_target_libs
 
 # Convert names like //foo/bar:baz to foo_bar_baz.
 # If the last segment of the path and the target names are the same,
@@ -211,59 +210,6 @@ def main():
         '''
 
         queue.extend(deps)
-
-    bp += f'''
-    // Monolithic module for use on device. Currently restricted to 3P libraries
-    // which require it as a dependency. See go/absl-android for more information.
-    cc_library_static {{
-        name: "libabsl",
-        host_supported: true,
-        vendor_available: true,
-        product_available: true,
-        recovery_available: true,
-        whole_static_libs: [
-            {',\n'.join(['"' + bazel_name_to_bp_name(x) + '"' for x in legacy_mega_target_libs])}
-        ],
-        export_static_lib_headers: [
-            {',\n'.join(['"' + bazel_name_to_bp_name(x) + '"' for x in legacy_mega_target_libs])}
-        ],
-        stl: "libc++",
-        sdk_version: "current",
-        min_sdk_version: "apex_inherit",
-        apex_available: [
-            "//apex_available:platform",
-            "com.android.adservices",
-            "com.android.extservices",
-            "com.android.media.swcodec",
-            "com.android.ondevicepersonalization",
-        ],
-        visibility: [
-            // go/keep-sorted start
-            "//external/anonymous-counting-tokens:__subpackages__",
-            "//external/federated-compute:__subpackages__",
-            "//external/grpc-grpc:__subpackages__",
-            "//external/iamf_tools:__subpackages__",
-            "//external/kythe:__subpackages__",
-            "//external/libtextclassifier:__subpackages__",
-            "//external/private-join-and-compute:__subpackages__",
-            "//external/tensorflow:__subpackages__",
-            "//external/tflite-support:__subpackages__",
-            "//external/webrtc:__subpackages__",
-            "//frameworks/av/media/libeffects/preprocessing",
-            // go/keep-sorted end
-        ],
-    }}
-
-
-    // Globally visible host-only library.
-    cc_library_host_static {{
-        name: "libabsl_host",
-        whole_static_libs: ["libabsl"],
-        export_static_lib_headers: ["libabsl"],
-        stl: "libc++",
-        visibility: ["//visibility:public"],
-    }}
-    '''
 
     with open('Android.bp', 'w') as f:
         f.write(bp)
