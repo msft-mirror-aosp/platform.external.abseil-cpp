@@ -305,7 +305,7 @@ constexpr size_t Max(size_t a, size_t b, Ts... rest) {
 template <class T>
 std::string TypeName() {
   std::string out;
-#ifdef ABSL_INTERNAL_HAS_RTTI
+#if ABSL_INTERNAL_HAS_RTTI
   absl::StrAppend(&out, "<",
                   absl::debugging_internal::DemangleString(typeid(T).name()),
                   ">");
@@ -314,6 +314,9 @@ std::string TypeName() {
 }
 
 }  // namespace adl_barrier
+
+template <bool C>
+using EnableIf = typename std::enable_if<C, int>::type;
 
 // Can `T` be a template argument of `Layout`?
 template <class T>
@@ -414,16 +417,17 @@ class LayoutImpl<
   //   assert(x.Offset<1>() == 16);  // The doubles starts from 16.
   //
   // Requires: `N <= NumSizes && N < sizeof...(Ts)`.
-  template <size_t N>
+  template <size_t N, EnableIf<N == 0> = 0>
   constexpr size_t Offset() const {
-    if constexpr (N == 0) {
-      return 0;
-    } else {
-      static_assert(N < NumOffsets, "Index out of bounds");
-      return adl_barrier::Align(
-          Offset<N - 1>() + SizeOf<ElementType<N - 1>>::value * Size<N - 1>(),
-          ElementAlignment<N>::value);
-    }
+    return 0;
+  }
+
+  template <size_t N, EnableIf<N != 0> = 0>
+  constexpr size_t Offset() const {
+    static_assert(N < NumOffsets, "Index out of bounds");
+    return adl_barrier::Align(
+        Offset<N - 1>() + SizeOf<ElementType<N - 1>>::value * Size<N - 1>(),
+        ElementAlignment<N>::value);
   }
 
   // Offset in bytes of the array with the specified element type. There must
@@ -452,14 +456,15 @@ class LayoutImpl<
   //   assert(x.Size<1>() == 4);
   //
   // Requires: `N < NumSizes`.
-  template <size_t N>
+  template <size_t N, EnableIf<(N < NumStaticSizes)> = 0>
   constexpr size_t Size() const {
-    if constexpr (N < NumStaticSizes) {
-      return kStaticSizes[N];
-    } else {
-      static_assert(N < NumSizes, "Index out of bounds");
-      return size_[N - NumStaticSizes];
-    }
+    return kStaticSizes[N];
+  }
+
+  template <size_t N, EnableIf<(N >= NumStaticSizes)> = 0>
+  constexpr size_t Size() const {
+    static_assert(N < NumSizes, "Index out of bounds");
+    return size_[N - NumStaticSizes];
   }
 
   // The number of elements in the array with the specified element type.
@@ -618,13 +623,15 @@ class LayoutImpl<
   // `Char` must be `[const] [signed|unsigned] char`.
   //
   // Requires: `p` is aligned to `Alignment()`.
-  template <class Char, size_t N = NumOffsets - 1>
+  template <class Char, size_t N = NumOffsets - 1, EnableIf<N == 0> = 0>
   void PoisonPadding(const Char* p) const {
-    if constexpr (N == 0) {
-      Pointer<0>(p);  // verify the requirements on `Char` and `p`
-    } else {
-      static_assert(N < NumOffsets, "Index out of bounds");
-      (void)p;
+    Pointer<0>(p);  // verify the requirements on `Char` and `p`
+  }
+
+  template <class Char, size_t N = NumOffsets - 1, EnableIf<N != 0> = 0>
+  void PoisonPadding(const Char* p) const {
+    static_assert(N < NumOffsets, "Index out of bounds");
+    (void)p;
 #ifdef ABSL_HAVE_ADDRESS_SANITIZER
     PoisonPadding<Char, N - 1>(p);
     // The `if` is an optimization. It doesn't affect the observable behaviour.
@@ -634,7 +641,6 @@ class LayoutImpl<
       ASAN_POISON_MEMORY_REGION(p + start, Offset<N>() - start);
     }
 #endif
-    }
   }
 
   // Human-readable description of the memory layout. Useful for debugging.
@@ -684,6 +690,15 @@ class LayoutImpl<
   // Arguments of `Layout::Partial()` or `Layout::Layout()`.
   size_t size_[NumRuntimeSizes > 0 ? NumRuntimeSizes : 1];
 };
+
+// Defining a constexpr static class member variable is redundant and deprecated
+// in C++17, but required in C++14.
+template <class... Elements, size_t... StaticSizeSeq, size_t... RuntimeSizeSeq,
+          size_t... SizeSeq, size_t... OffsetSeq>
+constexpr std::array<size_t, sizeof...(StaticSizeSeq)> LayoutImpl<
+    std::tuple<Elements...>, absl::index_sequence<StaticSizeSeq...>,
+    absl::index_sequence<RuntimeSizeSeq...>, absl::index_sequence<SizeSeq...>,
+    absl::index_sequence<OffsetSeq...>>::kStaticSizes;
 
 template <class StaticSizeSeq, size_t NumRuntimeSizes, class... Ts>
 using LayoutType = LayoutImpl<
