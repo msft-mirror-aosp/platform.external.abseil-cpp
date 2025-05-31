@@ -46,10 +46,8 @@
 // reason, `insert()`, `erase()`, and `extract_and_get_next()` return a valid
 // iterator at the current position.
 //
-// There are other API differences: first, btree iterators can be subtracted,
-// and this is faster than using `std::distance`. Additionally, btree
-// iterators can be advanced via `operator+=` and `operator-=`, which is faster
-// than using `std::advance`.
+// Another API difference is that btree iterators can be subtracted, and this
+// is faster than using std::distance.
 //
 // B-tree sets are not exception-safe.
 
@@ -91,7 +89,7 @@ struct set_params;
 //
 template <typename Key, typename Compare = std::less<Key>,
           typename Alloc = std::allocator<Key>>
-class ABSL_ATTRIBUTE_OWNER btree_set
+class ABSL_INTERNAL_ATTRIBUTE_OWNER btree_set
     : public container_internal::btree_set_container<
           container_internal::btree<container_internal::set_params<
               Key, Compare, Alloc, /*TargetNodeSize=*/256,
@@ -447,7 +445,7 @@ typename btree_set<K, C, A>::size_type erase_if(btree_set<K, C, A> &set,
 //
 template <typename Key, typename Compare = std::less<Key>,
           typename Alloc = std::allocator<Key>>
-class ABSL_ATTRIBUTE_OWNER btree_multiset
+class ABSL_INTERNAL_ATTRIBUTE_OWNER btree_multiset
     : public container_internal::btree_multiset_container<
           container_internal::btree<container_internal::set_params<
               Key, Compare, Alloc, /*TargetNodeSize=*/256,
