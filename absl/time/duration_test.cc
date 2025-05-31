@@ -16,19 +16,14 @@
 #include <winsock2.h>  // for timeval
 #endif
 
-#include "absl/base/config.h"
-
-// For feature testing and determining which headers can be included.
-#if ABSL_INTERNAL_CPLUSPLUS_LANG >= 202002L
-#include <version>
-#endif
-
 #include <array>
 #include <cfloat>
 #include <chrono>  // NOLINT(build/c++11)
-#ifdef __cpp_lib_three_way_comparison
+
+#ifdef __cpp_impl_three_way_comparison
 #include <compare>
-#endif  // __cpp_lib_three_way_comparison
+#endif  // __cpp_impl_three_way_comparison
+
 #include <cmath>
 #include <cstdint>
 #include <ctime>
@@ -36,11 +31,9 @@
 #include <limits>
 #include <random>
 #include <string>
-#include <type_traits>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
-#include "absl/random/random.h"
 #include "absl/strings/str_format.h"
 #include "absl/time/time.h"
 
@@ -76,8 +69,6 @@ MATCHER_P(TimevalMatcher, tv, "") {
 }
 
 TEST(Duration, ConstExpr) {
-  static_assert(std::is_trivially_destructible<absl::Duration>::value,
-                "Duration is documented as being trivially destructible");
   constexpr absl::Duration d0 = absl::ZeroDuration();
   static_assert(d0 == absl::ZeroDuration(), "ZeroDuration()");
   constexpr absl::Duration d1 = absl::Seconds(1);
@@ -446,14 +437,14 @@ TEST(Duration, InfinityComparison) {
   EXPECT_LT(-inf, inf);
   EXPECT_GT(inf, -inf);
 
-#ifdef ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+#ifdef __cpp_impl_three_way_comparison
   EXPECT_EQ(inf <=> inf, std::strong_ordering::equal);
   EXPECT_EQ(-inf <=> -inf, std::strong_ordering::equal);
   EXPECT_EQ(-inf <=> inf, std::strong_ordering::less);
   EXPECT_EQ(inf <=> -inf, std::strong_ordering::greater);
   EXPECT_EQ(any_dur <=> inf, std::strong_ordering::less);
   EXPECT_EQ(any_dur <=> -inf, std::strong_ordering::greater);
-#endif  // ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+#endif  // __cpp_impl_three_way_comparison
 }
 
 TEST(Duration, InfinityAddition) {
@@ -520,18 +511,18 @@ TEST(Duration, InfinitySubtraction) {
   absl::Duration almost_neg_inf = sec_min;
   EXPECT_LT(-inf, almost_neg_inf);
 
-#ifdef ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+#ifdef __cpp_impl_three_way_comparison
   EXPECT_EQ(-inf <=> almost_neg_inf, std::strong_ordering::less);
   EXPECT_EQ(almost_neg_inf <=> -inf, std::strong_ordering::greater);
-#endif  // ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+#endif  // __cpp_impl_three_way_comparison
 
   almost_neg_inf -= -absl::Nanoseconds(1);
   EXPECT_LT(-inf, almost_neg_inf);
 
-#ifdef ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+#ifdef __cpp_impl_three_way_comparison
   EXPECT_EQ(-inf <=> almost_neg_inf, std::strong_ordering::less);
   EXPECT_EQ(almost_neg_inf <=> -inf, std::strong_ordering::greater);
-#endif  // ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+#endif  // __cpp_impl_three_way_comparison
 
   // For reference: IEEE 754 behavior
   const double dbl_inf = std::numeric_limits<double>::infinity();
@@ -892,7 +883,7 @@ TEST(Duration, Range) {
   EXPECT_LT(neg_full_range, full_range);
   EXPECT_EQ(neg_full_range, -full_range);
 
-#ifdef ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+#ifdef __cpp_impl_three_way_comparison
   EXPECT_EQ(range_future <=> absl::InfiniteDuration(),
             std::strong_ordering::less);
   EXPECT_EQ(range_past <=> -absl::InfiniteDuration(),
@@ -905,7 +896,7 @@ TEST(Duration, Range) {
             std::strong_ordering::greater);
   EXPECT_EQ(neg_full_range <=> full_range, std::strong_ordering::less);
   EXPECT_EQ(neg_full_range <=> -full_range, std::strong_ordering::equal);
-#endif  // ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+#endif  // __cpp_impl_three_way_comparison
 }
 
 TEST(Duration, RelationalOperators) {
@@ -929,7 +920,8 @@ TEST(Duration, RelationalOperators) {
 #undef TEST_REL_OPS
 }
 
-#ifdef ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+
+#ifdef __cpp_impl_three_way_comparison
 
 TEST(Duration, SpaceshipOperators) {
 #define TEST_REL_OPS(UNIT)               \
@@ -947,7 +939,7 @@ TEST(Duration, SpaceshipOperators) {
 #undef TEST_REL_OPS
 }
 
-#endif  // ABSL_INTERNAL_TIME_HAS_THREE_WAY_COMPARISON
+#endif  // __cpp_impl_three_way_comparison
 
 TEST(Duration, Addition) {
 #define TEST_ADD_OPS(UNIT)                  \
@@ -1515,7 +1507,9 @@ TEST(Duration, ToDoubleSecondsCheckEdgeCases) {
 }
 
 TEST(Duration, ToDoubleSecondsCheckRandom) {
-  absl::InsecureBitGen gen;
+  std::random_device rd;
+  std::seed_seq seed({rd(), rd(), rd(), rd(), rd(), rd(), rd(), rd()});
+  std::mt19937_64 gen(seed);
   // We want doubles distributed from 1/8ns up to 2^63, where
   // as many values are tested from 1ns to 2ns as from 1sec to 2sec,
   // so even distribute along a log-scale of those values, and

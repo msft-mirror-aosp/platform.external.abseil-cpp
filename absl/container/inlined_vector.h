@@ -46,14 +46,11 @@
 #include <utility>
 
 #include "absl/algorithm/algorithm.h"
-#include "absl/base/attributes.h"
-#include "absl/base/internal/iterator_traits.h"
 #include "absl/base/internal/throw_delegate.h"
 #include "absl/base/macros.h"
 #include "absl/base/optimization.h"
 #include "absl/base/port.h"
 #include "absl/container/internal/inlined_vector.h"
-#include "absl/hash/internal/weakly_mixed_integer.h"
 #include "absl/memory/memory.h"
 #include "absl/meta/type_traits.h"
 
@@ -70,7 +67,7 @@ ABSL_NAMESPACE_BEGIN
 // as a `std::vector`. The API of the `absl::InlinedVector` within this file is
 // designed to cover the same API footprint as covered by `std::vector`.
 template <typename T, size_t N, typename A = std::allocator<T>>
-class ABSL_ATTRIBUTE_WARN_UNUSED InlinedVector {
+class InlinedVector {
   static_assert(N > 0, "`absl::InlinedVector` requires an inlined capacity.");
 
   using Storage = inlined_vector_internal::Storage<T, N, A>;
@@ -92,11 +89,11 @@ class ABSL_ATTRIBUTE_WARN_UNUSED InlinedVector {
       inlined_vector_internal::DefaultValueAdapter<TheA>;
 
   template <typename Iterator>
-  using EnableIfAtLeastForwardIterator = std::enable_if_t<
-      base_internal::IsAtLeastForwardIterator<Iterator>::value, int>;
+  using EnableIfAtLeastForwardIterator = absl::enable_if_t<
+      inlined_vector_internal::IsAtLeastForwardIterator<Iterator>::value, int>;
   template <typename Iterator>
-  using DisableIfAtLeastForwardIterator = std::enable_if_t<
-      !base_internal::IsAtLeastForwardIterator<Iterator>::value, int>;
+  using DisableIfAtLeastForwardIterator = absl::enable_if_t<
+      !inlined_vector_internal::IsAtLeastForwardIterator<Iterator>::value, int>;
 
   using MemcpyPolicy = typename Storage::MemcpyPolicy;
   using ElementwiseAssignPolicy = typename Storage::ElementwiseAssignPolicy;
@@ -1009,8 +1006,7 @@ bool operator>=(const absl::InlinedVector<T, N, A>& a,
 template <typename H, typename T, size_t N, typename A>
 H AbslHashValue(H h, const absl::InlinedVector<T, N, A>& a) {
   auto size = a.size();
-  return H::combine(H::combine_contiguous(std::move(h), a.data(), size),
-                    hash_internal::WeaklyMixedInteger{size});
+  return H::combine(H::combine_contiguous(std::move(h), a.data(), size), size);
 }
 
 ABSL_NAMESPACE_END
