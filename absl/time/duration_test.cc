@@ -16,8 +16,14 @@
 #include <winsock2.h>  // for timeval
 #endif
 
-#include <chrono>  // NOLINT(build/c++11)
+#include <array>
 #include <cfloat>
+#include <chrono>  // NOLINT(build/c++11)
+
+#ifdef __cpp_impl_three_way_comparison
+#include <compare>
+#endif  // __cpp_impl_three_way_comparison
+
 #include <cmath>
 #include <cstdint>
 #include <ctime>
@@ -28,6 +34,7 @@
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "absl/strings/str_format.h"
 #include "absl/time/time.h"
 
 namespace {
@@ -429,6 +436,15 @@ TEST(Duration, InfinityComparison) {
   EXPECT_LT(-inf, any_dur);
   EXPECT_LT(-inf, inf);
   EXPECT_GT(inf, -inf);
+
+#ifdef __cpp_impl_three_way_comparison
+  EXPECT_EQ(inf <=> inf, std::strong_ordering::equal);
+  EXPECT_EQ(-inf <=> -inf, std::strong_ordering::equal);
+  EXPECT_EQ(-inf <=> inf, std::strong_ordering::less);
+  EXPECT_EQ(inf <=> -inf, std::strong_ordering::greater);
+  EXPECT_EQ(any_dur <=> inf, std::strong_ordering::less);
+  EXPECT_EQ(any_dur <=> -inf, std::strong_ordering::greater);
+#endif  // __cpp_impl_three_way_comparison
 }
 
 TEST(Duration, InfinityAddition) {
@@ -494,8 +510,19 @@ TEST(Duration, InfinitySubtraction) {
   // Interesting case
   absl::Duration almost_neg_inf = sec_min;
   EXPECT_LT(-inf, almost_neg_inf);
+
+#ifdef __cpp_impl_three_way_comparison
+  EXPECT_EQ(-inf <=> almost_neg_inf, std::strong_ordering::less);
+  EXPECT_EQ(almost_neg_inf <=> -inf, std::strong_ordering::greater);
+#endif  // __cpp_impl_three_way_comparison
+
   almost_neg_inf -= -absl::Nanoseconds(1);
   EXPECT_LT(-inf, almost_neg_inf);
+
+#ifdef __cpp_impl_three_way_comparison
+  EXPECT_EQ(-inf <=> almost_neg_inf, std::strong_ordering::less);
+  EXPECT_EQ(almost_neg_inf <=> -inf, std::strong_ordering::greater);
+#endif  // __cpp_impl_three_way_comparison
 
   // For reference: IEEE 754 behavior
   const double dbl_inf = std::numeric_limits<double>::infinity();
@@ -855,6 +882,21 @@ TEST(Duration, Range) {
 
   EXPECT_LT(neg_full_range, full_range);
   EXPECT_EQ(neg_full_range, -full_range);
+
+#ifdef __cpp_impl_three_way_comparison
+  EXPECT_EQ(range_future <=> absl::InfiniteDuration(),
+            std::strong_ordering::less);
+  EXPECT_EQ(range_past <=> -absl::InfiniteDuration(),
+            std::strong_ordering::greater);
+  EXPECT_EQ(full_range <=> absl::ZeroDuration(),  //
+            std::strong_ordering::greater);
+  EXPECT_EQ(full_range <=> -absl::InfiniteDuration(),
+            std::strong_ordering::greater);
+  EXPECT_EQ(neg_full_range <=> -absl::InfiniteDuration(),
+            std::strong_ordering::greater);
+  EXPECT_EQ(neg_full_range <=> full_range, std::strong_ordering::less);
+  EXPECT_EQ(neg_full_range <=> -full_range, std::strong_ordering::equal);
+#endif  // __cpp_impl_three_way_comparison
 }
 
 TEST(Duration, RelationalOperators) {
@@ -877,6 +919,27 @@ TEST(Duration, RelationalOperators) {
 
 #undef TEST_REL_OPS
 }
+
+
+#ifdef __cpp_impl_three_way_comparison
+
+TEST(Duration, SpaceshipOperators) {
+#define TEST_REL_OPS(UNIT)               \
+  static_assert(UNIT(2) <=> UNIT(2) == std::strong_ordering::equal, ""); \
+  static_assert(UNIT(1) <=> UNIT(2) == std::strong_ordering::less, ""); \
+  static_assert(UNIT(3) <=> UNIT(2) == std::strong_ordering::greater, "");
+
+  TEST_REL_OPS(absl::Nanoseconds);
+  TEST_REL_OPS(absl::Microseconds);
+  TEST_REL_OPS(absl::Milliseconds);
+  TEST_REL_OPS(absl::Seconds);
+  TEST_REL_OPS(absl::Minutes);
+  TEST_REL_OPS(absl::Hours);
+
+#undef TEST_REL_OPS
+}
+
+#endif  // __cpp_impl_three_way_comparison
 
 TEST(Duration, Addition) {
 #define TEST_ADD_OPS(UNIT)                  \
@@ -1816,6 +1879,20 @@ TEST(Duration, FormatParseRoundTrip) {
   TEST_PARSE_ROUNDTRIP(huge_range + (absl::Seconds(1) - absl::Nanoseconds(1)));
 
 #undef TEST_PARSE_ROUNDTRIP
+}
+
+TEST(Duration, AbslStringify) {
+  // FormatDuration is already well tested, so just use one test case here to
+  // verify that StrFormat("%v", d) works as expected.
+  absl::Duration d = absl::Seconds(1);
+  EXPECT_EQ(absl::StrFormat("%v", d), absl::FormatDuration(d));
+}
+
+TEST(Duration, NoPadding) {
+  // Should match the size of a struct with uint32_t alignment and no padding.
+  using NoPadding = std::array<uint32_t, 3>;
+  EXPECT_EQ(sizeof(NoPadding), sizeof(absl::Duration));
+  EXPECT_EQ(alignof(NoPadding), alignof(absl::Duration));
 }
 
 }  // namespace
