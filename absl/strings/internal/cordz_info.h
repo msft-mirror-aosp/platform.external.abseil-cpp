@@ -291,10 +291,15 @@ inline void CordzInfo::SetCordRep(CordRep* rep) {
 
 inline void CordzInfo::UnsafeSetCordRep(CordRep* rep) { rep_ = rep; }
 
+// Android local modification: locally silence an incorrect warning that
+// causes build failures in code that uses -Werror.
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wthread-safety-negative"
 inline CordRep* CordzInfo::RefCordRep() const ABSL_LOCKS_EXCLUDED(mutex_) {
   MutexLock lock(&mutex_);
   return rep_ ? CordRep::Ref(rep_) : nullptr;
 }
+#pragma clang diagnostic pop
 
 }  // namespace cord_internal
 ABSL_NAMESPACE_END
