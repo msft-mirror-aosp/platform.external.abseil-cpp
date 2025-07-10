@@ -1208,6 +1208,9 @@ class RawHashSetLayout {
   // Given the capacity of a table, computes the total size of the backing
   // array.
   size_t alloc_size(size_t slot_size) const {
+    ABSL_HARDENING_ASSERT(
+        slot_size <=
+        ((std::numeric_limits<size_t>::max)() - slot_offset_) / capacity_);
     return slot_offset_ + capacity_ * slot_size;
   }
 
@@ -1498,6 +1501,12 @@ void ConvertDeletedToEmptyAndFullToDeleted(ctrl_t* ctrl, size_t capacity);
 // Converts `n` into the next valid capacity, per `IsValidCapacity`.
 inline size_t NormalizeCapacity(size_t n) {
   return n ? ~size_t{} >> countl_zero(n) : 1;
+}
+
+template <size_t kSlotSize>
+size_t MaxValidCapacity() {
+  return NormalizeCapacity((std::numeric_limits<size_t>::max)() / 4 /
+                           kSlotSize);
 }
 
 // General notes on capacity/growth methods below:
@@ -2614,6 +2623,8 @@ class raw_hash_set {
       : settings_(CommonFields::CreateDefault<SooEnabled()>(), hash, eq,
                   alloc) {
     if (bucket_count > (SooEnabled() ? SooCapacity() : 0)) {
+      ABSL_RAW_CHECK(bucket_count <= MaxValidCapacity<sizeof(slot_type)>(),
+                     "Hash table size overflow");
       resize(NormalizeCapacity(bucket_count));
     }
   }
@@ -2866,12 +2877,16 @@ class raw_hash_set {
   size_t capacity() const {
     const size_t cap = common().capacity();
     // Compiler complains when using functions in assume so use local variables.
-    ABSL_ATTRIBUTE_UNUSED static constexpr bool kEnabled = SooEnabled();
-    ABSL_ATTRIBUTE_UNUSED static constexpr size_t kCapacity = SooCapacity();
+    // Android local modification: Replace ABSL_ATTRIBUTE_UNUSED with
+    // [[maybe_unused]] to avoid -Wused-but-marked-unused
+    [[maybe_unused]] static constexpr bool kEnabled = SooEnabled();
+    [[maybe_unused]] static constexpr size_t kCapacity = SooCapacity();
     ABSL_ASSUME(!kEnabled || cap >= kCapacity);
     return cap;
   }
-  size_t max_size() const { return (std::numeric_limits<size_t>::max)(); }
+  size_t max_size() const {
+    return CapacityToGrowth(MaxValidCapacity<sizeof(slot_type)>());
+  }
 
   ABSL_ATTRIBUTE_REINITIALIZES void clear() {
     // Iterating over this container is O(bucket_count()). When bucket_count()
@@ -3260,6 +3275,8 @@ class raw_hash_set {
     auto m = NormalizeCapacity(n | GrowthToLowerboundCapacity(size()));
     // n == 0 unconditionally rehashes as per the standard.
     if (n == 0 || m > cap) {
+      ABSL_RAW_CHECK(m <= MaxValidCapacity<sizeof(slot_type)>(),
+                     "Hash table size overflow");
       resize(m);
 
       // This is after resize, to ensure that we have completed the allocation
@@ -3272,6 +3289,7 @@ class raw_hash_set {
     const size_t max_size_before_growth =
         is_soo() ? SooCapacity() : size() + growth_left();
     if (n > max_size_before_growth) {
+      ABSL_RAW_CHECK(n <= max_size(), "Hash table size overflow");
       size_t m = GrowthToLowerboundCapacity(n);
       resize(NormalizeCapacity(m));
 
