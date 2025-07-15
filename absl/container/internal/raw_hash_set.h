@@ -2877,8 +2877,10 @@ class raw_hash_set {
   size_t capacity() const {
     const size_t cap = common().capacity();
     // Compiler complains when using functions in assume so use local variables.
-    ABSL_ATTRIBUTE_UNUSED static constexpr bool kEnabled = SooEnabled();
-    ABSL_ATTRIBUTE_UNUSED static constexpr size_t kCapacity = SooCapacity();
+    // Android local modification: Replace ABSL_ATTRIBUTE_UNUSED with
+    // [[maybe_unused]] to avoid -Wused-but-marked-unused
+    [[maybe_unused]] static constexpr bool kEnabled = SooEnabled();
+    [[maybe_unused]] static constexpr size_t kCapacity = SooCapacity();
     ABSL_ASSUME(!kEnabled || cap >= kCapacity);
     return cap;
   }
