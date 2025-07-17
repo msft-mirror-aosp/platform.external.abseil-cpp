@@ -118,7 +118,9 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_base_dynamic_annotations",
         "absl_base_malloc_internal",
+        "absl_base_nullability",
         "absl_base_raw_logging_internal",
+        "absl_base_tracing_internal",
         "absl_debugging_stacktrace",
         "absl_debugging_symbolize",
         "absl_time",
@@ -133,7 +135,9 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_base_dynamic_annotations",
         "absl_base_malloc_internal",
+        "absl_base_nullability",
         "absl_base_raw_logging_internal",
+        "absl_base_tracing_internal",
         "absl_debugging_stacktrace",
         "absl_debugging_symbolize",
         "absl_time",
@@ -187,6 +191,7 @@ cc_library_static {
         "absl_base_raw_logging_internal",
         "absl_numeric_int128",
         "absl_strings",
+        "absl_strings_string_view",
         "absl_time_internal_cctz_civil_time",
         "absl_time_internal_cctz_time_zone",
         "absl_types_optional",
@@ -198,6 +203,7 @@ cc_library_static {
         "absl_base_raw_logging_internal",
         "absl_numeric_int128",
         "absl_strings",
+        "absl_strings_string_view",
         "absl_time_internal_cctz_civil_time",
         "absl_time_internal_cctz_time_zone",
         "absl_types_optional",
@@ -209,11 +215,9 @@ genrule {
     name: "absl_types_optional_hdrs",
     srcs: [
         "absl/types/optional.h",
-        "absl/types/internal/optional.h",
     ],
     out: [
         "my_include_dir/absl/types/optional.h",
-        "my_include_dir/absl/types/internal/optional.h",
     ],
     export_include_dirs: ["my_include_dir"],
     cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
@@ -235,23 +239,11 @@ cc_library_static {
     export_generated_headers: ["absl_types_optional_hdrs"],
 
     whole_static_libs: [
-        "absl_types_bad_optional_access",
-        "absl_base_base_internal",
         "absl_base_config",
-        "absl_base_core_headers",
-        "absl_base_nullability",
-        "absl_memory",
-        "absl_meta_type_traits",
         "absl_utility",
     ],
     export_static_lib_headers: [
-        "absl_types_bad_optional_access",
-        "absl_base_base_internal",
         "absl_base_config",
-        "absl_base_core_headers",
-        "absl_base_nullability",
-        "absl_memory",
-        "absl_meta_type_traits",
         "absl_utility",
     ],
 
@@ -285,12 +277,10 @@ cc_library_static {
     export_generated_headers: ["absl_utility_hdrs"],
 
     whole_static_libs: [
-        "absl_base_base_internal",
         "absl_base_config",
         "absl_meta_type_traits",
     ],
     export_static_lib_headers: [
-        "absl_base_base_internal",
         "absl_base_config",
         "absl_meta_type_traits",
     ],
@@ -422,20 +412,28 @@ cc_library_static {
 }
 
 genrule {
-    name: "absl_base_base_internal_hdrs",
+    name: "absl_time_internal_cctz_time_zone_hdrs",
     srcs: [
-        "absl/base/internal/hide_ptr.h",
-        "absl/base/internal/identity.h",
-        "absl/base/internal/inline_variable.h",
-        "absl/base/internal/invoke.h",
-        "absl/base/internal/scheduling_mode.h",
+        "absl/time/internal/cctz/include/cctz/time_zone.h",
+        "absl/time/internal/cctz/include/cctz/zone_info_source.h",
+        "absl/time/internal/cctz/src/time_zone_fixed.h",
+        "absl/time/internal/cctz/src/time_zone_if.h",
+        "absl/time/internal/cctz/src/time_zone_impl.h",
+        "absl/time/internal/cctz/src/time_zone_info.h",
+        "absl/time/internal/cctz/src/time_zone_libc.h",
+        "absl/time/internal/cctz/src/time_zone_posix.h",
+        "absl/time/internal/cctz/src/tzfile.h",
     ],
     out: [
-        "my_include_dir/absl/base/internal/hide_ptr.h",
-        "my_include_dir/absl/base/internal/identity.h",
-        "my_include_dir/absl/base/internal/inline_variable.h",
-        "my_include_dir/absl/base/internal/invoke.h",
-        "my_include_dir/absl/base/internal/scheduling_mode.h",
+        "my_include_dir/absl/time/internal/cctz/include/cctz/time_zone.h",
+        "my_include_dir/absl/time/internal/cctz/include/cctz/zone_info_source.h",
+        "my_include_dir/absl/time/internal/cctz/src/time_zone_fixed.h",
+        "my_include_dir/absl/time/internal/cctz/src/time_zone_if.h",
+        "my_include_dir/absl/time/internal/cctz/src/time_zone_impl.h",
+        "my_include_dir/absl/time/internal/cctz/src/time_zone_info.h",
+        "my_include_dir/absl/time/internal/cctz/src/time_zone_libc.h",
+        "my_include_dir/absl/time/internal/cctz/src/time_zone_posix.h",
+        "my_include_dir/absl/time/internal/cctz/src/tzfile.h",
     ],
     export_include_dirs: ["my_include_dir"],
     cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
@@ -447,33 +445,43 @@ genrule {
 }
 
 cc_library_static {
-    name: "absl_base_base_internal",
+    name: "absl_time_internal_cctz_time_zone",
     defaults: ["absl_defaults"],
-
+    visibility: ["//visibility:public"],
     srcs: [
-
+        "absl/time/internal/cctz/src/time_zone_fixed.cc",
+        "absl/time/internal/cctz/src/time_zone_format.cc",
+        "absl/time/internal/cctz/src/time_zone_if.cc",
+        "absl/time/internal/cctz/src/time_zone_impl.cc",
+        "absl/time/internal/cctz/src/time_zone_info.cc",
+        "absl/time/internal/cctz/src/time_zone_libc.cc",
+        "absl/time/internal/cctz/src/time_zone_lookup.cc",
+        "absl/time/internal/cctz/src/time_zone_posix.cc",
+        "absl/time/internal/cctz/src/zone_info_source.cc",
     ],
-    generated_headers: ["absl_base_base_internal_hdrs"],
-    export_generated_headers: ["absl_base_base_internal_hdrs"],
+    generated_headers: ["absl_time_internal_cctz_time_zone_hdrs"],
+    export_generated_headers: ["absl_time_internal_cctz_time_zone_hdrs"],
 
     whole_static_libs: [
+        "absl_time_internal_cctz_civil_time",
         "absl_base_config",
-        "absl_meta_type_traits",
     ],
     export_static_lib_headers: [
+        "absl_time_internal_cctz_civil_time",
         "absl_base_config",
-        "absl_meta_type_traits",
     ],
 
 }
 
 genrule {
-    name: "absl_memory_hdrs",
+    name: "absl_time_internal_cctz_civil_time_hdrs",
     srcs: [
-        "absl/memory/memory.h",
+        "absl/time/internal/cctz/include/cctz/civil_time.h",
+        "absl/time/internal/cctz/include/cctz/civil_time_detail.h",
     ],
     out: [
-        "my_include_dir/absl/memory/memory.h",
+        "my_include_dir/absl/time/internal/cctz/include/cctz/civil_time.h",
+        "my_include_dir/absl/time/internal/cctz/include/cctz/civil_time_detail.h",
     ],
     export_include_dirs: ["my_include_dir"],
     cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
@@ -485,35 +493,31 @@ genrule {
 }
 
 cc_library_static {
-    name: "absl_memory",
+    name: "absl_time_internal_cctz_civil_time",
     defaults: ["absl_defaults"],
     visibility: ["//visibility:public"],
     srcs: [
-
+        "absl/time/internal/cctz/src/civil_time_detail.cc",
     ],
-    generated_headers: ["absl_memory_hdrs"],
-    export_generated_headers: ["absl_memory_hdrs"],
+    generated_headers: ["absl_time_internal_cctz_civil_time_hdrs"],
+    export_generated_headers: ["absl_time_internal_cctz_civil_time_hdrs"],
 
     whole_static_libs: [
-        "absl_base_core_headers",
-        "absl_meta_type_traits",
+        "absl_base_config",
     ],
     export_static_lib_headers: [
-        "absl_base_core_headers",
-        "absl_meta_type_traits",
+        "absl_base_config",
     ],
 
 }
 
 genrule {
-    name: "absl_base_nullability_hdrs",
+    name: "absl_strings_string_view_hdrs",
     srcs: [
-        "absl/base/nullability.h",
-        "absl/base/internal/nullability_impl.h",
+        "absl/strings/string_view.h",
     ],
     out: [
-        "my_include_dir/absl/base/nullability.h",
-        "my_include_dir/absl/base/internal/nullability_impl.h",
+        "my_include_dir/absl/strings/string_view.h",
     ],
     export_include_dirs: ["my_include_dir"],
     cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
@@ -525,35 +529,39 @@ genrule {
 }
 
 cc_library_static {
-    name: "absl_base_nullability",
+    name: "absl_strings_string_view",
     defaults: ["absl_defaults"],
     visibility: ["//visibility:public"],
     srcs: [
-
+        "absl/strings/string_view.cc",
     ],
-    generated_headers: ["absl_base_nullability_hdrs"],
-    export_generated_headers: ["absl_base_nullability_hdrs"],
+    generated_headers: ["absl_strings_string_view_hdrs"],
+    export_generated_headers: ["absl_strings_string_view_hdrs"],
 
     whole_static_libs: [
+        "absl_base",
         "absl_base_config",
         "absl_base_core_headers",
-        "absl_meta_type_traits",
+        "absl_base_nullability",
+        "absl_base_throw_delegate",
     ],
     export_static_lib_headers: [
+        "absl_base",
         "absl_base_config",
         "absl_base_core_headers",
-        "absl_meta_type_traits",
+        "absl_base_nullability",
+        "absl_base_throw_delegate",
     ],
 
 }
 
 genrule {
-    name: "absl_types_bad_optional_access_hdrs",
+    name: "absl_base_throw_delegate_hdrs",
     srcs: [
-        "absl/types/bad_optional_access.h",
+        "absl/base/internal/throw_delegate.h",
     ],
     out: [
-        "my_include_dir/absl/types/bad_optional_access.h",
+        "my_include_dir/absl/base/internal/throw_delegate.h",
     ],
     export_include_dirs: ["my_include_dir"],
     cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
@@ -565,14 +573,14 @@ genrule {
 }
 
 cc_library_static {
-    name: "absl_types_bad_optional_access",
+    name: "absl_base_throw_delegate",
     defaults: ["absl_defaults"],
-    visibility: ["//visibility:public"],
+
     srcs: [
-        "absl/types/bad_optional_access.cc",
+        "absl/base/internal/throw_delegate.cc",
     ],
-    generated_headers: ["absl_types_bad_optional_access_hdrs"],
-    export_generated_headers: ["absl_types_bad_optional_access_hdrs"],
+    generated_headers: ["absl_base_throw_delegate_hdrs"],
+    export_generated_headers: ["absl_base_throw_delegate_hdrs"],
 
     whole_static_libs: [
         "absl_base_config",
@@ -742,28 +750,14 @@ cc_library_static {
 }
 
 genrule {
-    name: "absl_time_internal_cctz_time_zone_hdrs",
+    name: "absl_base_nullability_hdrs",
     srcs: [
-        "absl/time/internal/cctz/include/cctz/time_zone.h",
-        "absl/time/internal/cctz/include/cctz/zone_info_source.h",
-        "absl/time/internal/cctz/src/time_zone_fixed.h",
-        "absl/time/internal/cctz/src/time_zone_if.h",
-        "absl/time/internal/cctz/src/time_zone_impl.h",
-        "absl/time/internal/cctz/src/time_zone_info.h",
-        "absl/time/internal/cctz/src/time_zone_libc.h",
-        "absl/time/internal/cctz/src/time_zone_posix.h",
-        "absl/time/internal/cctz/src/tzfile.h",
+        "absl/base/nullability.h",
+        "absl/base/internal/nullability_deprecated.h",
     ],
     out: [
-        "my_include_dir/absl/time/internal/cctz/include/cctz/time_zone.h",
-        "my_include_dir/absl/time/internal/cctz/include/cctz/zone_info_source.h",
-        "my_include_dir/absl/time/internal/cctz/src/time_zone_fixed.h",
-        "my_include_dir/absl/time/internal/cctz/src/time_zone_if.h",
-        "my_include_dir/absl/time/internal/cctz/src/time_zone_impl.h",
-        "my_include_dir/absl/time/internal/cctz/src/time_zone_info.h",
-        "my_include_dir/absl/time/internal/cctz/src/time_zone_libc.h",
-        "my_include_dir/absl/time/internal/cctz/src/time_zone_posix.h",
-        "my_include_dir/absl/time/internal/cctz/src/tzfile.h",
+        "my_include_dir/absl/base/nullability.h",
+        "my_include_dir/absl/base/internal/nullability_deprecated.h",
     ],
     export_include_dirs: ["my_include_dir"],
     cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
@@ -775,303 +769,14 @@ genrule {
 }
 
 cc_library_static {
-    name: "absl_time_internal_cctz_time_zone",
-    defaults: ["absl_defaults"],
-    visibility: ["//visibility:public"],
-    srcs: [
-        "absl/time/internal/cctz/src/time_zone_fixed.cc",
-        "absl/time/internal/cctz/src/time_zone_format.cc",
-        "absl/time/internal/cctz/src/time_zone_if.cc",
-        "absl/time/internal/cctz/src/time_zone_impl.cc",
-        "absl/time/internal/cctz/src/time_zone_info.cc",
-        "absl/time/internal/cctz/src/time_zone_libc.cc",
-        "absl/time/internal/cctz/src/time_zone_lookup.cc",
-        "absl/time/internal/cctz/src/time_zone_posix.cc",
-        "absl/time/internal/cctz/src/zone_info_source.cc",
-    ],
-    generated_headers: ["absl_time_internal_cctz_time_zone_hdrs"],
-    export_generated_headers: ["absl_time_internal_cctz_time_zone_hdrs"],
-
-    whole_static_libs: [
-        "absl_time_internal_cctz_civil_time",
-        "absl_base_config",
-    ],
-    export_static_lib_headers: [
-        "absl_time_internal_cctz_civil_time",
-        "absl_base_config",
-    ],
-
-}
-
-genrule {
-    name: "absl_time_internal_cctz_civil_time_hdrs",
-    srcs: [
-        "absl/time/internal/cctz/include/cctz/civil_time.h",
-        "absl/time/internal/cctz/include/cctz/civil_time_detail.h",
-    ],
-    out: [
-        "my_include_dir/absl/time/internal/cctz/include/cctz/civil_time.h",
-        "my_include_dir/absl/time/internal/cctz/include/cctz/civil_time_detail.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_time_internal_cctz_civil_time",
-    defaults: ["absl_defaults"],
-    visibility: ["//visibility:public"],
-    srcs: [
-        "absl/time/internal/cctz/src/civil_time_detail.cc",
-    ],
-    generated_headers: ["absl_time_internal_cctz_civil_time_hdrs"],
-    export_generated_headers: ["absl_time_internal_cctz_civil_time_hdrs"],
-
-    whole_static_libs: [
-        "absl_base_config",
-    ],
-    export_static_lib_headers: [
-        "absl_base_config",
-    ],
-
-}
-
-genrule {
-    name: "absl_strings_hdrs",
-    srcs: [
-        "absl/strings/ascii.h",
-        "absl/strings/charconv.h",
-        "absl/strings/escaping.h",
-        "absl/strings/has_absl_stringify.h",
-        "absl/strings/internal/damerau_levenshtein_distance.h",
-        "absl/strings/internal/string_constant.h",
-        "absl/strings/match.h",
-        "absl/strings/numbers.h",
-        "absl/strings/str_cat.h",
-        "absl/strings/str_join.h",
-        "absl/strings/str_replace.h",
-        "absl/strings/str_split.h",
-        "absl/strings/string_view.h",
-        "absl/strings/strip.h",
-        "absl/strings/substitute.h",
-        "absl/strings/internal/charconv_bigint.h",
-        "absl/strings/internal/charconv_parse.h",
-        "absl/strings/internal/memutil.h",
-        "absl/strings/internal/stl_type_traits.h",
-        "absl/strings/internal/str_join_internal.h",
-        "absl/strings/internal/str_split_internal.h",
-        "absl/strings/internal/stringify_sink.h",
-    ],
-    out: [
-        "my_include_dir/absl/strings/ascii.h",
-        "my_include_dir/absl/strings/charconv.h",
-        "my_include_dir/absl/strings/escaping.h",
-        "my_include_dir/absl/strings/has_absl_stringify.h",
-        "my_include_dir/absl/strings/internal/damerau_levenshtein_distance.h",
-        "my_include_dir/absl/strings/internal/string_constant.h",
-        "my_include_dir/absl/strings/match.h",
-        "my_include_dir/absl/strings/numbers.h",
-        "my_include_dir/absl/strings/str_cat.h",
-        "my_include_dir/absl/strings/str_join.h",
-        "my_include_dir/absl/strings/str_replace.h",
-        "my_include_dir/absl/strings/str_split.h",
-        "my_include_dir/absl/strings/string_view.h",
-        "my_include_dir/absl/strings/strip.h",
-        "my_include_dir/absl/strings/substitute.h",
-        "my_include_dir/absl/strings/internal/charconv_bigint.h",
-        "my_include_dir/absl/strings/internal/charconv_parse.h",
-        "my_include_dir/absl/strings/internal/memutil.h",
-        "my_include_dir/absl/strings/internal/stl_type_traits.h",
-        "my_include_dir/absl/strings/internal/str_join_internal.h",
-        "my_include_dir/absl/strings/internal/str_split_internal.h",
-        "my_include_dir/absl/strings/internal/stringify_sink.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_strings",
-    defaults: ["absl_defaults"],
-    visibility: ["//visibility:public"],
-    srcs: [
-        "absl/strings/ascii.cc",
-        "absl/strings/charconv.cc",
-        "absl/strings/escaping.cc",
-        "absl/strings/internal/charconv_bigint.cc",
-        "absl/strings/internal/charconv_parse.cc",
-        "absl/strings/internal/damerau_levenshtein_distance.cc",
-        "absl/strings/internal/memutil.cc",
-        "absl/strings/internal/stringify_sink.cc",
-        "absl/strings/match.cc",
-        "absl/strings/numbers.cc",
-        "absl/strings/str_cat.cc",
-        "absl/strings/str_replace.cc",
-        "absl/strings/str_split.cc",
-        "absl/strings/substitute.cc",
-    ],
-    generated_headers: ["absl_strings_hdrs"],
-    export_generated_headers: ["absl_strings_hdrs"],
-
-    whole_static_libs: [
-        "absl_strings_charset",
-        "absl_strings_internal",
-        "absl_strings_string_view",
-        "absl_base",
-        "absl_base_config",
-        "absl_base_core_headers",
-        "absl_base_endian",
-        "absl_base_nullability",
-        "absl_base_raw_logging_internal",
-        "absl_base_throw_delegate",
-        "absl_memory",
-        "absl_meta_type_traits",
-        "absl_numeric_bits",
-        "absl_numeric_int128",
-    ],
-    export_static_lib_headers: [
-        "absl_strings_charset",
-        "absl_strings_internal",
-        "absl_strings_string_view",
-        "absl_base",
-        "absl_base_config",
-        "absl_base_core_headers",
-        "absl_base_endian",
-        "absl_base_nullability",
-        "absl_base_raw_logging_internal",
-        "absl_base_throw_delegate",
-        "absl_memory",
-        "absl_meta_type_traits",
-        "absl_numeric_bits",
-        "absl_numeric_int128",
-    ],
-
-}
-
-genrule {
-    name: "absl_numeric_int128_hdrs",
-    srcs: [
-        "absl/numeric/int128.h",
-        "absl/numeric/int128_have_intrinsic.inc",
-        "absl/numeric/int128_no_intrinsic.inc",
-    ],
-    out: [
-        "my_include_dir/absl/numeric/int128.h",
-        "my_include_dir/absl/numeric/int128_have_intrinsic.inc",
-        "my_include_dir/absl/numeric/int128_no_intrinsic.inc",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_numeric_int128",
-    defaults: ["absl_defaults"],
-    visibility: ["//visibility:public"],
-    srcs: [
-        "absl/numeric/int128.cc",
-    ],
-    generated_headers: ["absl_numeric_int128_hdrs"],
-    export_generated_headers: ["absl_numeric_int128_hdrs"],
-
-    whole_static_libs: [
-        "absl_numeric_bits",
-        "absl_base_config",
-        "absl_base_core_headers",
-        "absl_types_compare",
-    ],
-    export_static_lib_headers: [
-        "absl_numeric_bits",
-        "absl_base_config",
-        "absl_base_core_headers",
-        "absl_types_compare",
-    ],
-
-}
-
-genrule {
-    name: "absl_types_compare_hdrs",
-    srcs: [
-        "absl/types/compare.h",
-    ],
-    out: [
-        "my_include_dir/absl/types/compare.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_types_compare",
+    name: "absl_base_nullability",
     defaults: ["absl_defaults"],
     visibility: ["//visibility:public"],
     srcs: [
 
     ],
-    generated_headers: ["absl_types_compare_hdrs"],
-    export_generated_headers: ["absl_types_compare_hdrs"],
-
-    whole_static_libs: [
-        "absl_base_config",
-        "absl_base_core_headers",
-        "absl_meta_type_traits",
-    ],
-    export_static_lib_headers: [
-        "absl_base_config",
-        "absl_base_core_headers",
-        "absl_meta_type_traits",
-    ],
-
-}
-
-genrule {
-    name: "absl_numeric_bits_hdrs",
-    srcs: [
-        "absl/numeric/bits.h",
-        "absl/numeric/internal/bits.h",
-    ],
-    out: [
-        "my_include_dir/absl/numeric/bits.h",
-        "my_include_dir/absl/numeric/internal/bits.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_numeric_bits",
-    defaults: ["absl_defaults"],
-    visibility: ["//visibility:public"],
-    srcs: [
-
-    ],
-    generated_headers: ["absl_numeric_bits_hdrs"],
-    export_generated_headers: ["absl_numeric_bits_hdrs"],
+    generated_headers: ["absl_base_nullability_hdrs"],
+    export_generated_headers: ["absl_base_nullability_hdrs"],
 
     whole_static_libs: [
         "absl_base_config",
@@ -1080,88 +785,6 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_core_headers",
-    ],
-
-}
-
-genrule {
-    name: "absl_base_throw_delegate_hdrs",
-    srcs: [
-        "absl/base/internal/throw_delegate.h",
-    ],
-    out: [
-        "my_include_dir/absl/base/internal/throw_delegate.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_base_throw_delegate",
-    defaults: ["absl_defaults"],
-
-    srcs: [
-        "absl/base/internal/throw_delegate.cc",
-    ],
-    generated_headers: ["absl_base_throw_delegate_hdrs"],
-    export_generated_headers: ["absl_base_throw_delegate_hdrs"],
-
-    whole_static_libs: [
-        "absl_base_config",
-        "absl_base_raw_logging_internal",
-    ],
-    export_static_lib_headers: [
-        "absl_base_config",
-        "absl_base_raw_logging_internal",
-    ],
-
-}
-
-genrule {
-    name: "absl_base_endian_hdrs",
-    srcs: [
-        "absl/base/internal/endian.h",
-        "absl/base/internal/unaligned_access.h",
-    ],
-    out: [
-        "my_include_dir/absl/base/internal/endian.h",
-        "my_include_dir/absl/base/internal/unaligned_access.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_base_endian",
-    defaults: ["absl_defaults"],
-    visibility: ["//visibility:public"],
-    srcs: [
-
-    ],
-    generated_headers: ["absl_base_endian_hdrs"],
-    export_generated_headers: ["absl_base_endian_hdrs"],
-
-    whole_static_libs: [
-        "absl_base",
-        "absl_base_config",
-        "absl_base_core_headers",
-        "absl_base_nullability",
-    ],
-    export_static_lib_headers: [
-        "absl_base",
-        "absl_base_config",
-        "absl_base_core_headers",
-        "absl_base_nullability",
     ],
 
 }
@@ -1293,6 +916,48 @@ cc_library_static {
 }
 
 genrule {
+    name: "absl_base_base_internal_hdrs",
+    srcs: [
+        "absl/base/internal/hide_ptr.h",
+        "absl/base/internal/identity.h",
+        "absl/base/internal/scheduling_mode.h",
+    ],
+    out: [
+        "my_include_dir/absl/base/internal/hide_ptr.h",
+        "my_include_dir/absl/base/internal/identity.h",
+        "my_include_dir/absl/base/internal/scheduling_mode.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_base_base_internal",
+    defaults: ["absl_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_base_internal_hdrs"],
+    export_generated_headers: ["absl_base_base_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config",
+        "absl_meta_type_traits",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config",
+        "absl_meta_type_traits",
+    ],
+
+}
+
+genrule {
     name: "absl_base_dynamic_annotations_hdrs",
     srcs: [
         "absl/base/dynamic_annotations.h",
@@ -1373,12 +1038,54 @@ cc_library_static {
 }
 
 genrule {
-    name: "absl_strings_string_view_hdrs",
+    name: "absl_strings_hdrs",
     srcs: [
+        "absl/strings/ascii.h",
+        "absl/strings/charconv.h",
+        "absl/strings/escaping.h",
+        "absl/strings/has_absl_stringify.h",
+        "absl/strings/internal/damerau_levenshtein_distance.h",
+        "absl/strings/internal/string_constant.h",
+        "absl/strings/match.h",
+        "absl/strings/numbers.h",
+        "absl/strings/str_cat.h",
+        "absl/strings/str_join.h",
+        "absl/strings/str_replace.h",
+        "absl/strings/str_split.h",
         "absl/strings/string_view.h",
+        "absl/strings/strip.h",
+        "absl/strings/substitute.h",
+        "absl/strings/internal/charconv_bigint.h",
+        "absl/strings/internal/charconv_parse.h",
+        "absl/strings/internal/memutil.h",
+        "absl/strings/internal/stl_type_traits.h",
+        "absl/strings/internal/str_join_internal.h",
+        "absl/strings/internal/str_split_internal.h",
+        "absl/strings/internal/stringify_sink.h",
     ],
     out: [
+        "my_include_dir/absl/strings/ascii.h",
+        "my_include_dir/absl/strings/charconv.h",
+        "my_include_dir/absl/strings/escaping.h",
+        "my_include_dir/absl/strings/has_absl_stringify.h",
+        "my_include_dir/absl/strings/internal/damerau_levenshtein_distance.h",
+        "my_include_dir/absl/strings/internal/string_constant.h",
+        "my_include_dir/absl/strings/match.h",
+        "my_include_dir/absl/strings/numbers.h",
+        "my_include_dir/absl/strings/str_cat.h",
+        "my_include_dir/absl/strings/str_join.h",
+        "my_include_dir/absl/strings/str_replace.h",
+        "my_include_dir/absl/strings/str_split.h",
         "my_include_dir/absl/strings/string_view.h",
+        "my_include_dir/absl/strings/strip.h",
+        "my_include_dir/absl/strings/substitute.h",
+        "my_include_dir/absl/strings/internal/charconv_bigint.h",
+        "my_include_dir/absl/strings/internal/charconv_parse.h",
+        "my_include_dir/absl/strings/internal/memutil.h",
+        "my_include_dir/absl/strings/internal/stl_type_traits.h",
+        "my_include_dir/absl/strings/internal/str_join_internal.h",
+        "my_include_dir/absl/strings/internal/str_split_internal.h",
+        "my_include_dir/absl/strings/internal/stringify_sink.h",
     ],
     export_include_dirs: ["my_include_dir"],
     cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
@@ -1390,28 +1097,309 @@ genrule {
 }
 
 cc_library_static {
-    name: "absl_strings_string_view",
+    name: "absl_strings",
     defaults: ["absl_defaults"],
     visibility: ["//visibility:public"],
     srcs: [
-        "absl/strings/string_view.cc",
+        "absl/strings/ascii.cc",
+        "absl/strings/charconv.cc",
+        "absl/strings/escaping.cc",
+        "absl/strings/internal/charconv_bigint.cc",
+        "absl/strings/internal/charconv_parse.cc",
+        "absl/strings/internal/damerau_levenshtein_distance.cc",
+        "absl/strings/internal/memutil.cc",
+        "absl/strings/internal/stringify_sink.cc",
+        "absl/strings/match.cc",
+        "absl/strings/numbers.cc",
+        "absl/strings/str_cat.cc",
+        "absl/strings/str_replace.cc",
+        "absl/strings/str_split.cc",
+        "absl/strings/substitute.cc",
     ],
-    generated_headers: ["absl_strings_string_view_hdrs"],
-    export_generated_headers: ["absl_strings_string_view_hdrs"],
+    generated_headers: ["absl_strings_hdrs"],
+    export_generated_headers: ["absl_strings_hdrs"],
+
+    whole_static_libs: [
+        "absl_strings_charset",
+        "absl_strings_internal",
+        "absl_strings_string_view",
+        "absl_base",
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_base_endian",
+        "absl_base_iterator_traits_internal",
+        "absl_base_nullability",
+        "absl_base_raw_logging_internal",
+        "absl_base_throw_delegate",
+        "absl_memory",
+        "absl_meta_type_traits",
+        "absl_numeric_bits",
+        "absl_numeric_int128",
+    ],
+    export_static_lib_headers: [
+        "absl_strings_charset",
+        "absl_strings_internal",
+        "absl_strings_string_view",
+        "absl_base",
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_base_endian",
+        "absl_base_iterator_traits_internal",
+        "absl_base_nullability",
+        "absl_base_raw_logging_internal",
+        "absl_base_throw_delegate",
+        "absl_memory",
+        "absl_meta_type_traits",
+        "absl_numeric_bits",
+        "absl_numeric_int128",
+    ],
+
+}
+
+genrule {
+    name: "absl_numeric_int128_hdrs",
+    srcs: [
+        "absl/numeric/int128.h",
+        "absl/numeric/int128_have_intrinsic.inc",
+        "absl/numeric/int128_no_intrinsic.inc",
+    ],
+    out: [
+        "my_include_dir/absl/numeric/int128.h",
+        "my_include_dir/absl/numeric/int128_have_intrinsic.inc",
+        "my_include_dir/absl/numeric/int128_no_intrinsic.inc",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_numeric_int128",
+    defaults: ["absl_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+        "absl/numeric/int128.cc",
+    ],
+    generated_headers: ["absl_numeric_int128_hdrs"],
+    export_generated_headers: ["absl_numeric_int128_hdrs"],
+
+    whole_static_libs: [
+        "absl_numeric_bits",
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_types_compare",
+    ],
+    export_static_lib_headers: [
+        "absl_numeric_bits",
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_types_compare",
+    ],
+
+}
+
+genrule {
+    name: "absl_types_compare_hdrs",
+    srcs: [
+        "absl/types/compare.h",
+    ],
+    out: [
+        "my_include_dir/absl/types/compare.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_types_compare",
+    defaults: ["absl_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_types_compare_hdrs"],
+    export_generated_headers: ["absl_types_compare_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_meta_type_traits",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_meta_type_traits",
+    ],
+
+}
+
+genrule {
+    name: "absl_numeric_bits_hdrs",
+    srcs: [
+        "absl/numeric/bits.h",
+        "absl/numeric/internal/bits.h",
+    ],
+    out: [
+        "my_include_dir/absl/numeric/bits.h",
+        "my_include_dir/absl/numeric/internal/bits.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_numeric_bits",
+    defaults: ["absl_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_numeric_bits_hdrs"],
+    export_generated_headers: ["absl_numeric_bits_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_base_endian",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_base_endian",
+    ],
+
+}
+
+genrule {
+    name: "absl_base_endian_hdrs",
+    srcs: [
+        "absl/base/internal/endian.h",
+        "absl/base/internal/unaligned_access.h",
+    ],
+    out: [
+        "my_include_dir/absl/base/internal/endian.h",
+        "my_include_dir/absl/base/internal/unaligned_access.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_base_endian",
+    defaults: ["absl_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_endian_hdrs"],
+    export_generated_headers: ["absl_base_endian_hdrs"],
 
     whole_static_libs: [
         "absl_base",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_nullability",
-        "absl_base_throw_delegate",
     ],
     export_static_lib_headers: [
         "absl_base",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_nullability",
-        "absl_base_throw_delegate",
+    ],
+
+}
+
+genrule {
+    name: "absl_memory_hdrs",
+    srcs: [
+        "absl/memory/memory.h",
+    ],
+    out: [
+        "my_include_dir/absl/memory/memory.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_memory",
+    defaults: ["absl_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_memory_hdrs"],
+    export_generated_headers: ["absl_memory_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_core_headers",
+        "absl_meta_type_traits",
+    ],
+    export_static_lib_headers: [
+        "absl_base_core_headers",
+        "absl_meta_type_traits",
+    ],
+
+}
+
+genrule {
+    name: "absl_base_iterator_traits_internal_hdrs",
+    srcs: [
+        "absl/base/internal/iterator_traits.h",
+    ],
+    out: [
+        "my_include_dir/absl/base/internal/iterator_traits.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_base_iterator_traits_internal",
+    defaults: ["absl_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_iterator_traits_internal_hdrs"],
+    export_generated_headers: ["absl_base_iterator_traits_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config",
+        "absl_meta_type_traits",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config",
+        "absl_meta_type_traits",
     ],
 
 }
@@ -1497,11 +1485,11 @@ cc_library_static {
 
     whole_static_libs: [
         "absl_strings_string_view",
-        "absl_base_core_headers",
+        "absl_base_config",
     ],
     export_static_lib_headers: [
         "absl_strings_string_view",
-        "absl_base_core_headers",
+        "absl_base_config",
     ],
 
 }
@@ -1824,11 +1812,13 @@ genrule {
     name: "absl_debugging_debugging_internal_hdrs",
     srcs: [
         "absl/debugging/internal/address_is_readable.h",
+        "absl/debugging/internal/addresses.h",
         "absl/debugging/internal/elf_mem_image.h",
         "absl/debugging/internal/vdso_support.h",
     ],
     out: [
         "my_include_dir/absl/debugging/internal/address_is_readable.h",
+        "my_include_dir/absl/debugging/internal/addresses.h",
         "my_include_dir/absl/debugging/internal/elf_mem_image.h",
         "my_include_dir/absl/debugging/internal/vdso_support.h",
     ],
@@ -1930,6 +1920,44 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_base_dynamic_annotations",
         "absl_base_raw_logging_internal",
+    ],
+
+}
+
+genrule {
+    name: "absl_base_tracing_internal_hdrs",
+    srcs: [
+        "absl/base/internal/tracing.h",
+    ],
+    out: [
+        "my_include_dir/absl/base/internal/tracing.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_base_tracing_internal",
+    defaults: ["absl_defaults"],
+
+    srcs: [
+        "absl/base/internal/tracing.cc",
+    ],
+    generated_headers: ["absl_base_tracing_internal_hdrs"],
+    export_generated_headers: ["absl_base_tracing_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config",
+        "absl_base_core_headers",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config",
+        "absl_base_core_headers",
     ],
 
 }
@@ -2088,11 +2116,9 @@ genrule {
     name: "absl_types_variant_hdrs",
     srcs: [
         "absl/types/variant.h",
-        "absl/types/internal/variant.h",
     ],
     out: [
         "my_include_dir/absl/types/variant.h",
-        "my_include_dir/absl/types/internal/variant.h",
     ],
     export_include_dirs: ["my_include_dir"],
     cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
@@ -2114,58 +2140,12 @@ cc_library_static {
     export_generated_headers: ["absl_types_variant_hdrs"],
 
     whole_static_libs: [
-        "absl_types_bad_variant_access",
-        "absl_base_base_internal",
         "absl_base_config",
-        "absl_base_core_headers",
-        "absl_meta_type_traits",
         "absl_utility",
     ],
     export_static_lib_headers: [
-        "absl_types_bad_variant_access",
-        "absl_base_base_internal",
         "absl_base_config",
-        "absl_base_core_headers",
-        "absl_meta_type_traits",
         "absl_utility",
-    ],
-
-}
-
-genrule {
-    name: "absl_types_bad_variant_access_hdrs",
-    srcs: [
-        "absl/types/bad_variant_access.h",
-    ],
-    out: [
-        "my_include_dir/absl/types/bad_variant_access.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_types_bad_variant_access",
-    defaults: ["absl_defaults"],
-    visibility: ["//visibility:public"],
-    srcs: [
-        "absl/types/bad_variant_access.cc",
-    ],
-    generated_headers: ["absl_types_bad_variant_access_hdrs"],
-    export_generated_headers: ["absl_types_bad_variant_access_hdrs"],
-
-    whole_static_libs: [
-        "absl_base_config",
-        "absl_base_raw_logging_internal",
-    ],
-    export_static_lib_headers: [
-        "absl_base_config",
-        "absl_base_raw_logging_internal",
     ],
 
 }
@@ -2247,17 +2227,57 @@ cc_library_static {
 
     whole_static_libs: [
         "absl_algorithm",
+        "absl_base_config",
         "absl_base_core_headers",
         "absl_base_nullability",
         "absl_base_throw_delegate",
+        "absl_hash_weakly_mixed_integer",
         "absl_meta_type_traits",
     ],
     export_static_lib_headers: [
         "absl_algorithm",
+        "absl_base_config",
         "absl_base_core_headers",
         "absl_base_nullability",
         "absl_base_throw_delegate",
+        "absl_hash_weakly_mixed_integer",
         "absl_meta_type_traits",
+    ],
+
+}
+
+genrule {
+    name: "absl_hash_weakly_mixed_integer_hdrs",
+    srcs: [
+        "absl/hash/internal/weakly_mixed_integer.h",
+    ],
+    out: [
+        "my_include_dir/absl/hash/internal/weakly_mixed_integer.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_hash_weakly_mixed_integer",
+    defaults: ["absl_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_hash_weakly_mixed_integer_hdrs"],
+    export_generated_headers: ["absl_hash_weakly_mixed_integer_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config",
     ],
 
 }
@@ -2345,6 +2365,7 @@ cc_library_static {
     export_generated_headers: ["absl_strings_str_format_internal_hdrs"],
 
     whole_static_libs: [
+        "absl_strings_internal",
         "absl_strings",
         "absl_base_config",
         "absl_base_core_headers",
@@ -2360,6 +2381,7 @@ cc_library_static {
         "absl_utility",
     ],
     export_static_lib_headers: [
+        "absl_strings_internal",
         "absl_strings",
         "absl_base_config",
         "absl_base_core_headers",
@@ -2444,13 +2466,11 @@ cc_library_static {
 
     whole_static_libs: [
         "absl_functional_any_invocable",
-        "absl_base_base_internal",
         "absl_base_core_headers",
         "absl_meta_type_traits",
     ],
     export_static_lib_headers: [
         "absl_functional_any_invocable",
-        "absl_base_base_internal",
         "absl_base_core_headers",
         "absl_meta_type_traits",
     ],
@@ -2487,14 +2507,12 @@ cc_library_static {
     export_generated_headers: ["absl_functional_any_invocable_hdrs"],
 
     whole_static_libs: [
-        "absl_base_base_internal",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_meta_type_traits",
         "absl_utility",
     ],
     export_static_lib_headers: [
-        "absl_base_base_internal",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_meta_type_traits",
@@ -2534,7 +2552,9 @@ cc_library_static {
         "absl_container_inlined_vector_internal",
         "absl_algorithm",
         "absl_base_core_headers",
+        "absl_base_iterator_traits_internal",
         "absl_base_throw_delegate",
+        "absl_hash_weakly_mixed_integer",
         "absl_memory",
         "absl_meta_type_traits",
     ],
@@ -2542,7 +2562,9 @@ cc_library_static {
         "absl_container_inlined_vector_internal",
         "absl_algorithm",
         "absl_base_core_headers",
+        "absl_base_iterator_traits_internal",
         "absl_base_throw_delegate",
+        "absl_hash_weakly_mixed_integer",
         "absl_memory",
         "absl_meta_type_traits",
     ],
@@ -2666,7 +2688,9 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_dynamic_annotations",
+        "absl_base_iterator_traits_internal",
         "absl_base_throw_delegate",
+        "absl_hash_weakly_mixed_integer",
         "absl_memory",
     ],
     export_static_lib_headers: [
@@ -2675,7 +2699,9 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_dynamic_annotations",
+        "absl_base_iterator_traits_internal",
         "absl_base_throw_delegate",
+        "absl_hash_weakly_mixed_integer",
         "absl_memory",
     ],
 
@@ -2759,6 +2785,7 @@ cc_library_static {
         "absl_base_raw_logging_internal",
         "absl_base_strerror",
         "absl_container_inlined_vector",
+        "absl_debugging_leak_check",
         "absl_debugging_stacktrace",
         "absl_debugging_symbolize",
         "absl_functional_function_ref",
@@ -2778,6 +2805,7 @@ cc_library_static {
         "absl_base_raw_logging_internal",
         "absl_base_strerror",
         "absl_container_inlined_vector",
+        "absl_debugging_leak_check",
         "absl_debugging_stacktrace",
         "absl_debugging_symbolize",
         "absl_functional_function_ref",
@@ -2819,21 +2847,17 @@ cc_library_static {
     srcs: [
         "absl/strings/cord.cc",
         "absl/strings/cord_analysis.cc",
-        "absl/strings/cord_buffer.cc",
     ],
     generated_headers: ["absl_strings_cord_hdrs"],
     export_generated_headers: ["absl_strings_cord_hdrs"],
 
     whole_static_libs: [
         "absl_strings_cord_internal",
-        "absl_strings_cordz_functions",
         "absl_strings_cordz_info",
-        "absl_strings_cordz_statistics",
         "absl_strings_cordz_update_scope",
         "absl_strings_cordz_update_tracker",
         "absl_strings_internal",
         "absl_strings",
-        "absl_base",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_endian",
@@ -2843,6 +2867,7 @@ cc_library_static {
         "absl_crc_crc32c",
         "absl_crc_crc_cord_state",
         "absl_functional_function_ref",
+        "absl_hash_weakly_mixed_integer",
         "absl_meta_type_traits",
         "absl_numeric_bits",
         "absl_types_compare",
@@ -2851,14 +2876,11 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_strings_cord_internal",
-        "absl_strings_cordz_functions",
         "absl_strings_cordz_info",
-        "absl_strings_cordz_statistics",
         "absl_strings_cordz_update_scope",
         "absl_strings_cordz_update_tracker",
         "absl_strings_internal",
         "absl_strings",
-        "absl_base",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_endian",
@@ -2868,6 +2890,7 @@ cc_library_static {
         "absl_crc_crc32c",
         "absl_crc_crc_cord_state",
         "absl_functional_function_ref",
+        "absl_hash_weakly_mixed_integer",
         "absl_meta_type_traits",
         "absl_numeric_bits",
         "absl_types_compare",
@@ -3217,10 +3240,12 @@ cc_library_static {
     whole_static_libs: [
         "absl_base",
         "absl_base_config",
+        "absl_types_optional",
     ],
     export_static_lib_headers: [
         "absl_base",
         "absl_base_config",
+        "absl_types_optional",
     ],
 
 }
@@ -3575,85 +3600,31 @@ cc_library_static {
 
     whole_static_libs: [
         "absl_strings",
-        "absl_base_base_internal",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_endian",
+        "absl_base_nullability",
         "absl_base_raw_logging_internal",
-        "absl_base_throw_delegate",
         "absl_container_compressed_tuple",
         "absl_container_container_memory",
         "absl_container_inlined_vector",
-        "absl_container_layout",
         "absl_crc_crc_cord_state",
         "absl_functional_function_ref",
-        "absl_meta_type_traits",
         "absl_types_span",
     ],
     export_static_lib_headers: [
         "absl_strings",
-        "absl_base_base_internal",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_endian",
+        "absl_base_nullability",
         "absl_base_raw_logging_internal",
-        "absl_base_throw_delegate",
         "absl_container_compressed_tuple",
         "absl_container_container_memory",
         "absl_container_inlined_vector",
-        "absl_container_layout",
         "absl_crc_crc_cord_state",
         "absl_functional_function_ref",
-        "absl_meta_type_traits",
         "absl_types_span",
-    ],
-
-}
-
-genrule {
-    name: "absl_container_layout_hdrs",
-    srcs: [
-        "absl/container/internal/layout.h",
-    ],
-    out: [
-        "my_include_dir/absl/container/internal/layout.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_container_layout",
-    defaults: ["absl_defaults"],
-    visibility: ["//visibility:public"],
-    srcs: [
-
-    ],
-    generated_headers: ["absl_container_layout_hdrs"],
-    export_generated_headers: ["absl_container_layout_hdrs"],
-
-    whole_static_libs: [
-        "absl_base_config",
-        "absl_base_core_headers",
-        "absl_debugging_demangle_internal",
-        "absl_meta_type_traits",
-        "absl_strings",
-        "absl_types_span",
-        "absl_utility",
-    ],
-    export_static_lib_headers: [
-        "absl_base_config",
-        "absl_base_core_headers",
-        "absl_debugging_demangle_internal",
-        "absl_meta_type_traits",
-        "absl_strings",
-        "absl_types_span",
-        "absl_utility",
     ],
 
 }
@@ -3696,6 +3667,44 @@ cc_library_static {
         "absl_memory",
         "absl_meta_type_traits",
         "absl_utility",
+    ],
+
+}
+
+genrule {
+    name: "absl_debugging_leak_check_hdrs",
+    srcs: [
+        "absl/debugging/leak_check.h",
+    ],
+    out: [
+        "my_include_dir/absl/debugging/leak_check.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_debugging_leak_check",
+    defaults: ["absl_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+        "absl/debugging/leak_check.cc",
+    ],
+    generated_headers: ["absl_debugging_leak_check_hdrs"],
+    export_generated_headers: ["absl_debugging_leak_check_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config",
+        "absl_base_core_headers",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config",
+        "absl_base_core_headers",
     ],
 
 }
@@ -3770,17 +3779,17 @@ cc_library_static {
     whole_static_libs: [
         "absl_random_distributions",
         "absl_random_seed_sequences",
+        "absl_base_config",
         "absl_random_internal_nonsecure_base",
         "absl_random_internal_pcg_engine",
-        "absl_random_internal_pool_urbg",
         "absl_random_internal_randen_engine",
     ],
     export_static_lib_headers: [
         "absl_random_distributions",
         "absl_random_seed_sequences",
+        "absl_base_config",
         "absl_random_internal_nonsecure_base",
         "absl_random_internal_pcg_engine",
-        "absl_random_internal_pool_urbg",
         "absl_random_internal_randen_engine",
     ],
 
@@ -3985,11 +3994,13 @@ cc_library_static {
         "absl_random_internal_platform",
         "absl_random_internal_randen_hwaes_impl",
         "absl_base_config",
+        "absl_types_optional",
     ],
     export_static_lib_headers: [
         "absl_random_internal_platform",
         "absl_random_internal_randen_hwaes_impl",
         "absl_base_config",
+        "absl_types_optional",
     ],
 
 }
@@ -4064,230 +4075,14 @@ cc_library_static {
     export_generated_headers: ["absl_random_internal_iostream_state_saver_hdrs"],
 
     whole_static_libs: [
+        "absl_base_config",
         "absl_meta_type_traits",
         "absl_numeric_int128",
     ],
     export_static_lib_headers: [
-        "absl_meta_type_traits",
-        "absl_numeric_int128",
-    ],
-
-}
-
-genrule {
-    name: "absl_random_internal_pool_urbg_hdrs",
-    srcs: [
-        "absl/random/internal/pool_urbg.h",
-    ],
-    out: [
-        "my_include_dir/absl/random/internal/pool_urbg.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_random_internal_pool_urbg",
-    defaults: ["absl_defaults"],
-
-    srcs: [
-        "absl/random/internal/pool_urbg.cc",
-    ],
-    generated_headers: ["absl_random_internal_pool_urbg_hdrs"],
-    export_generated_headers: ["absl_random_internal_pool_urbg_hdrs"],
-
-    whole_static_libs: [
-        "absl_random_internal_randen",
-        "absl_random_internal_seed_material",
-        "absl_random_internal_traits",
-        "absl_base",
-        "absl_base_config",
-        "absl_base_core_headers",
-        "absl_base_endian",
-        "absl_base_raw_logging_internal",
-        "absl_random_seed_gen_exception",
-        "absl_types_span",
-    ],
-    export_static_lib_headers: [
-        "absl_random_internal_randen",
-        "absl_random_internal_seed_material",
-        "absl_random_internal_traits",
-        "absl_base",
-        "absl_base_config",
-        "absl_base_core_headers",
-        "absl_base_endian",
-        "absl_base_raw_logging_internal",
-        "absl_random_seed_gen_exception",
-        "absl_types_span",
-    ],
-
-}
-
-genrule {
-    name: "absl_random_seed_gen_exception_hdrs",
-    srcs: [
-        "absl/random/seed_gen_exception.h",
-    ],
-    out: [
-        "my_include_dir/absl/random/seed_gen_exception.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_random_seed_gen_exception",
-    defaults: ["absl_defaults"],
-    visibility: ["//visibility:public"],
-    srcs: [
-        "absl/random/seed_gen_exception.cc",
-    ],
-    generated_headers: ["absl_random_seed_gen_exception_hdrs"],
-    export_generated_headers: ["absl_random_seed_gen_exception_hdrs"],
-
-    whole_static_libs: [
-        "absl_base_config",
-    ],
-    export_static_lib_headers: [
-        "absl_base_config",
-    ],
-
-}
-
-genrule {
-    name: "absl_random_internal_traits_hdrs",
-    srcs: [
-        "absl/random/internal/traits.h",
-    ],
-    out: [
-        "my_include_dir/absl/random/internal/traits.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_random_internal_traits",
-    defaults: ["absl_defaults"],
-
-    srcs: [
-
-    ],
-    generated_headers: ["absl_random_internal_traits_hdrs"],
-    export_generated_headers: ["absl_random_internal_traits_hdrs"],
-
-    whole_static_libs: [
-        "absl_base_config",
-        "absl_numeric_bits",
-        "absl_numeric_int128",
-    ],
-    export_static_lib_headers: [
-        "absl_base_config",
-        "absl_numeric_bits",
-        "absl_numeric_int128",
-    ],
-
-}
-
-genrule {
-    name: "absl_random_internal_seed_material_hdrs",
-    srcs: [
-        "absl/random/internal/seed_material.h",
-    ],
-    out: [
-        "my_include_dir/absl/random/internal/seed_material.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_random_internal_seed_material",
-    defaults: ["absl_defaults"],
-
-    srcs: [
-        "absl/random/internal/seed_material.cc",
-    ],
-    generated_headers: ["absl_random_internal_seed_material_hdrs"],
-    export_generated_headers: ["absl_random_internal_seed_material_hdrs"],
-
-    whole_static_libs: [
-        "absl_random_internal_fast_uniform_bits",
-        "absl_base_core_headers",
-        "absl_base_dynamic_annotations",
-        "absl_base_raw_logging_internal",
-        "absl_strings",
-        "absl_types_optional",
-        "absl_types_span",
-    ],
-    export_static_lib_headers: [
-        "absl_random_internal_fast_uniform_bits",
-        "absl_base_core_headers",
-        "absl_base_dynamic_annotations",
-        "absl_base_raw_logging_internal",
-        "absl_strings",
-        "absl_types_optional",
-        "absl_types_span",
-    ],
-
-}
-
-genrule {
-    name: "absl_random_internal_fast_uniform_bits_hdrs",
-    srcs: [
-        "absl/random/internal/fast_uniform_bits.h",
-    ],
-    out: [
-        "my_include_dir/absl/random/internal/fast_uniform_bits.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_random_internal_fast_uniform_bits",
-    defaults: ["absl_defaults"],
-
-    srcs: [
-
-    ],
-    generated_headers: ["absl_random_internal_fast_uniform_bits_hdrs"],
-    export_generated_headers: ["absl_random_internal_fast_uniform_bits_hdrs"],
-
-    whole_static_libs: [
-        "absl_random_internal_traits",
         "absl_base_config",
         "absl_meta_type_traits",
-    ],
-    export_static_lib_headers: [
-        "absl_random_internal_traits",
-        "absl_base_config",
-        "absl_meta_type_traits",
+        "absl_numeric_int128",
     ],
 
 }
@@ -4402,22 +4197,148 @@ cc_library_static {
     export_generated_headers: ["absl_random_internal_nonsecure_base_hdrs"],
 
     whole_static_libs: [
-        "absl_random_internal_pool_urbg",
+        "absl_random_internal_entropy_pool",
         "absl_random_internal_salted_seed_seq",
         "absl_random_internal_seed_material",
-        "absl_base_core_headers",
+        "absl_base_config",
         "absl_container_inlined_vector",
         "absl_meta_type_traits",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_entropy_pool",
+        "absl_random_internal_salted_seed_seq",
+        "absl_random_internal_seed_material",
+        "absl_base_config",
+        "absl_container_inlined_vector",
+        "absl_meta_type_traits",
+    ],
+
+}
+
+genrule {
+    name: "absl_random_internal_seed_material_hdrs",
+    srcs: [
+        "absl/random/internal/seed_material.h",
+    ],
+    out: [
+        "my_include_dir/absl/random/internal/seed_material.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_random_internal_seed_material",
+    defaults: ["absl_defaults"],
+
+    srcs: [
+        "absl/random/internal/seed_material.cc",
+    ],
+    generated_headers: ["absl_random_internal_seed_material_hdrs"],
+    export_generated_headers: ["absl_random_internal_seed_material_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_fast_uniform_bits",
+        "absl_base_config",
+        "absl_base_dynamic_annotations",
+        "absl_base_raw_logging_internal",
+        "absl_strings",
+        "absl_types_optional",
         "absl_types_span",
     ],
     export_static_lib_headers: [
-        "absl_random_internal_pool_urbg",
-        "absl_random_internal_salted_seed_seq",
-        "absl_random_internal_seed_material",
-        "absl_base_core_headers",
-        "absl_container_inlined_vector",
-        "absl_meta_type_traits",
+        "absl_random_internal_fast_uniform_bits",
+        "absl_base_config",
+        "absl_base_dynamic_annotations",
+        "absl_base_raw_logging_internal",
+        "absl_strings",
+        "absl_types_optional",
         "absl_types_span",
+    ],
+
+}
+
+genrule {
+    name: "absl_random_internal_fast_uniform_bits_hdrs",
+    srcs: [
+        "absl/random/internal/fast_uniform_bits.h",
+    ],
+    out: [
+        "my_include_dir/absl/random/internal/fast_uniform_bits.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_random_internal_fast_uniform_bits",
+    defaults: ["absl_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_fast_uniform_bits_hdrs"],
+    export_generated_headers: ["absl_random_internal_fast_uniform_bits_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_traits",
+        "absl_base_config",
+        "absl_meta_type_traits",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_traits",
+        "absl_base_config",
+        "absl_meta_type_traits",
+    ],
+
+}
+
+genrule {
+    name: "absl_random_internal_traits_hdrs",
+    srcs: [
+        "absl/random/internal/traits.h",
+    ],
+    out: [
+        "my_include_dir/absl/random/internal/traits.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_random_internal_traits",
+    defaults: ["absl_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_traits_hdrs"],
+    export_generated_headers: ["absl_random_internal_traits_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config",
+        "absl_numeric_bits",
+        "absl_numeric_int128",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config",
+        "absl_numeric_bits",
+        "absl_numeric_int128",
     ],
 
 }
@@ -4467,6 +4388,94 @@ cc_library_static {
 }
 
 genrule {
+    name: "absl_random_internal_entropy_pool_hdrs",
+    srcs: [
+        "absl/random/internal/entropy_pool.h",
+    ],
+    out: [
+        "my_include_dir/absl/random/internal/entropy_pool.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_random_internal_entropy_pool",
+    defaults: ["absl_defaults"],
+
+    srcs: [
+        "absl/random/internal/entropy_pool.cc",
+    ],
+    generated_headers: ["absl_random_internal_entropy_pool_hdrs"],
+    export_generated_headers: ["absl_random_internal_entropy_pool_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_platform",
+        "absl_random_internal_randen",
+        "absl_random_internal_seed_material",
+        "absl_base",
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_random_seed_gen_exception",
+        "absl_types_span",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_platform",
+        "absl_random_internal_randen",
+        "absl_random_internal_seed_material",
+        "absl_base",
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_random_seed_gen_exception",
+        "absl_types_span",
+    ],
+
+}
+
+genrule {
+    name: "absl_random_seed_gen_exception_hdrs",
+    srcs: [
+        "absl/random/seed_gen_exception.h",
+    ],
+    out: [
+        "my_include_dir/absl/random/seed_gen_exception.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_random_seed_gen_exception",
+    defaults: ["absl_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+        "absl/random/seed_gen_exception.cc",
+    ],
+    generated_headers: ["absl_random_seed_gen_exception_hdrs"],
+    export_generated_headers: ["absl_random_seed_gen_exception_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config",
+        "absl_base_raw_logging_internal",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config",
+        "absl_base_raw_logging_internal",
+    ],
+
+}
+
+genrule {
     name: "absl_random_seed_sequences_hdrs",
     srcs: [
         "absl/random/seed_sequences.h",
@@ -4497,7 +4506,7 @@ cc_library_static {
         "absl_random_seed_gen_exception",
         "absl_base_config",
         "absl_base_nullability",
-        "absl_random_internal_pool_urbg",
+        "absl_random_internal_entropy_pool",
         "absl_random_internal_salted_seed_seq",
         "absl_random_internal_seed_material",
         "absl_strings_string_view",
@@ -4507,7 +4516,7 @@ cc_library_static {
         "absl_random_seed_gen_exception",
         "absl_base_config",
         "absl_base_nullability",
-        "absl_random_internal_pool_urbg",
+        "absl_random_internal_entropy_pool",
         "absl_random_internal_salted_seed_seq",
         "absl_random_internal_seed_material",
         "absl_strings_string_view",
@@ -4569,7 +4578,6 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_meta_type_traits",
-        "absl_numeric_bits",
         "absl_random_internal_distribution_caller",
         "absl_random_internal_fast_uniform_bits",
         "absl_random_internal_fastmath",
@@ -4585,7 +4593,6 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_meta_type_traits",
-        "absl_numeric_bits",
         "absl_random_internal_distribution_caller",
         "absl_random_internal_fast_uniform_bits",
         "absl_random_internal_fastmath",
@@ -4753,11 +4760,13 @@ cc_library_static {
     whole_static_libs: [
         "absl_base_config",
         "absl_base_fast_type_id",
+        "absl_meta_type_traits",
         "absl_utility",
     ],
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_fast_type_id",
+        "absl_meta_type_traits",
         "absl_utility",
     ],
 
@@ -4766,10 +4775,10 @@ cc_library_static {
 genrule {
     name: "absl_base_fast_type_id_hdrs",
     srcs: [
-        "absl/base/internal/fast_type_id.h",
+        "absl/base/fast_type_id.h",
     ],
     out: [
-        "my_include_dir/absl/base/internal/fast_type_id.h",
+        "my_include_dir/absl/base/fast_type_id.h",
     ],
     export_include_dirs: ["my_include_dir"],
     cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
@@ -4783,7 +4792,7 @@ genrule {
 cc_library_static {
     name: "absl_base_fast_type_id",
     defaults: ["absl_defaults"],
-
+    visibility: ["//visibility:public"],
     srcs: [
 
     ],
@@ -4828,6 +4837,7 @@ cc_library_static {
 
     whole_static_libs: [
         "absl_random",
+        "absl_base_config",
         "absl_base_core_headers",
         "absl_base_fast_type_id",
         "absl_meta_type_traits",
@@ -4836,6 +4846,7 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_random",
+        "absl_base_config",
         "absl_base_core_headers",
         "absl_base_fast_type_id",
         "absl_meta_type_traits",
@@ -4931,11 +4942,13 @@ cc_library_static {
     whole_static_libs: [
         "absl_log_log_sink",
         "absl_base_config",
+        "absl_base_nullability",
         "absl_log_internal_log_sink_set",
     ],
     export_static_lib_headers: [
         "absl_log_log_sink",
         "absl_base_config",
+        "absl_base_nullability",
         "absl_log_internal_log_sink_set",
     ],
 
@@ -5071,7 +5084,7 @@ cc_library_static {
     defaults: ["absl_defaults"],
     visibility: ["//visibility:public"],
     srcs: [
-        "absl/log/log_entry.cc",
+
     ],
     generated_headers: ["absl_log_log_entry_hdrs"],
     export_generated_headers: ["absl_log_log_entry_hdrs"],
@@ -5213,22 +5226,24 @@ cc_library_static {
     export_generated_headers: ["absl_log_internal_vlog_config_hdrs"],
 
     whole_static_libs: [
+        "absl_log_internal_fnmatch",
         "absl_base",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_no_destructor",
-        "absl_log_internal_fnmatch",
+        "absl_base_nullability",
         "absl_memory",
         "absl_strings",
         "absl_synchronization",
         "absl_types_optional",
     ],
     export_static_lib_headers: [
+        "absl_log_internal_fnmatch",
         "absl_base",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_no_destructor",
-        "absl_log_internal_fnmatch",
+        "absl_base_nullability",
         "absl_memory",
         "absl_strings",
         "absl_synchronization",
@@ -5307,6 +5322,7 @@ cc_library_static {
     whole_static_libs: [
         "absl_hash_city",
         "absl_hash_low_level_hash",
+        "absl_hash_weakly_mixed_integer",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_endian",
@@ -5323,6 +5339,7 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_hash_city",
         "absl_hash_low_level_hash",
+        "absl_hash_weakly_mixed_integer",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_endian",
@@ -5368,12 +5385,14 @@ cc_library_static {
 
     whole_static_libs: [
         "absl_base_config",
+        "absl_base_core_headers",
         "absl_base_endian",
         "absl_base_prefetch",
         "absl_numeric_int128",
     ],
     export_static_lib_headers: [
         "absl_base_config",
+        "absl_base_core_headers",
         "absl_base_endian",
         "absl_base_prefetch",
         "absl_numeric_int128",
@@ -5489,12 +5508,10 @@ cc_library_static {
     export_generated_headers: ["absl_cleanup_cleanup_internal_hdrs"],
 
     whole_static_libs: [
-        "absl_base_base_internal",
         "absl_base_core_headers",
         "absl_utility",
     ],
     export_static_lib_headers: [
-        "absl_base_base_internal",
         "absl_base_core_headers",
         "absl_utility",
     ],
@@ -5787,11 +5804,13 @@ cc_library_static {
         "absl_log_internal_log_sink_set",
         "absl_log_internal_nullguard",
         "absl_log_internal_proto",
+        "absl_log_internal_structured_proto",
         "absl_base",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_errno_saver",
         "absl_base_log_severity",
+        "absl_base_nullability",
         "absl_base_raw_logging_internal",
         "absl_base_strerror",
         "absl_container_inlined_vector",
@@ -5802,6 +5821,7 @@ cc_library_static {
         "absl_log_log_sink_registry",
         "absl_memory",
         "absl_strings",
+        "absl_strings_internal",
         "absl_time",
         "absl_types_span",
     ],
@@ -5812,11 +5832,13 @@ cc_library_static {
         "absl_log_internal_log_sink_set",
         "absl_log_internal_nullguard",
         "absl_log_internal_proto",
+        "absl_log_internal_structured_proto",
         "absl_base",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_errno_saver",
         "absl_base_log_severity",
+        "absl_base_nullability",
         "absl_base_raw_logging_internal",
         "absl_base_strerror",
         "absl_container_inlined_vector",
@@ -5827,6 +5849,7 @@ cc_library_static {
         "absl_log_log_sink_registry",
         "absl_memory",
         "absl_strings",
+        "absl_strings_internal",
         "absl_time",
         "absl_types_span",
     ],
@@ -5873,6 +5896,50 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_raw_logging_internal",
+    ],
+
+}
+
+genrule {
+    name: "absl_log_internal_structured_proto_hdrs",
+    srcs: [
+        "absl/log/internal/structured_proto.h",
+    ],
+    out: [
+        "my_include_dir/absl/log/internal/structured_proto.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_log_internal_structured_proto",
+    defaults: ["absl_defaults"],
+
+    srcs: [
+        "absl/log/internal/structured_proto.cc",
+    ],
+    generated_headers: ["absl_log_internal_structured_proto_hdrs"],
+    export_generated_headers: ["absl_log_internal_structured_proto_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_proto",
+        "absl_base_config",
+        "absl_strings",
+        "absl_types_span",
+        "absl_types_variant",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_proto",
+        "absl_base_config",
+        "absl_strings",
+        "absl_types_span",
+        "absl_types_variant",
     ],
 
 }
@@ -6043,11 +6110,13 @@ cc_library_static {
     whole_static_libs: [
         "absl_base_config",
         "absl_strings",
+        "absl_strings_internal",
         "absl_types_span",
     ],
     export_static_lib_headers: [
         "absl_base_config",
         "absl_strings",
+        "absl_strings_internal",
         "absl_types_span",
     ],
 
@@ -6124,9 +6193,11 @@ cc_library_static {
 
     whole_static_libs: [
         "absl_base_config",
+        "absl_base_core_headers",
     ],
     export_static_lib_headers: [
         "absl_base_config",
+        "absl_base_core_headers",
     ],
 
 }
@@ -6326,16 +6397,22 @@ cc_library_static {
         "absl_log_internal_nullguard",
         "absl_log_internal_nullstream",
         "absl_log_internal_strip",
+        "absl_base",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_nullability",
+        "absl_debugging_leak_check",
         "absl_strings",
     ],
     export_static_lib_headers: [
         "absl_log_internal_nullguard",
         "absl_log_internal_nullstream",
         "absl_log_internal_strip",
+        "absl_base",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_nullability",
+        "absl_debugging_leak_check",
         "absl_strings",
     ],
 
@@ -6487,13 +6564,11 @@ cc_library_static {
     export_generated_headers: ["absl_functional_bind_front_hdrs"],
 
     whole_static_libs: [
-        "absl_base_base_internal",
         "absl_container_compressed_tuple",
         "absl_meta_type_traits",
         "absl_utility",
     ],
     export_static_lib_headers: [
-        "absl_base_base_internal",
         "absl_container_compressed_tuple",
         "absl_meta_type_traits",
         "absl_utility",
@@ -6544,6 +6619,7 @@ cc_library_static {
         "absl_algorithm_container",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_no_destructor",
         "absl_strings",
         "absl_synchronization",
     ],
@@ -6561,6 +6637,7 @@ cc_library_static {
         "absl_algorithm_container",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_no_destructor",
         "absl_strings",
         "absl_synchronization",
     ],
@@ -6649,6 +6726,7 @@ cc_library_static {
         "absl_flags_reflection",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_no_destructor",
         "absl_strings",
         "absl_synchronization",
     ],
@@ -6663,6 +6741,7 @@ cc_library_static {
         "absl_flags_reflection",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_no_destructor",
         "absl_strings",
         "absl_synchronization",
     ],
@@ -6705,6 +6784,7 @@ cc_library_static {
         "absl_flags_private_handle_accessor",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_fast_type_id",
         "absl_base_no_destructor",
         "absl_container_flat_hash_map",
         "absl_strings",
@@ -6717,6 +6797,7 @@ cc_library_static {
         "absl_flags_private_handle_accessor",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_fast_type_id",
         "absl_base_no_destructor",
         "absl_container_flat_hash_map",
         "absl_strings",
@@ -6799,18 +6880,22 @@ cc_library_static {
     export_generated_headers: ["absl_container_raw_hash_map_hdrs"],
 
     whole_static_libs: [
+        "absl_container_common_policy_traits",
         "absl_container_container_memory",
         "absl_container_raw_hash_set",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_throw_delegate",
+        "absl_meta_type_traits",
     ],
     export_static_lib_headers: [
+        "absl_container_common_policy_traits",
         "absl_container_container_memory",
         "absl_container_raw_hash_set",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_throw_delegate",
+        "absl_meta_type_traits",
     ],
 
 }
@@ -6844,18 +6929,25 @@ cc_library_static {
 
     whole_static_libs: [
         "absl_container_common",
+        "absl_container_common_policy_traits",
         "absl_container_compressed_tuple",
         "absl_container_container_memory",
+        "absl_container_hash_function_defaults",
         "absl_container_hash_policy_traits",
+        "absl_container_hashtable_control_bytes",
         "absl_container_hashtable_debug_hooks",
         "absl_container_hashtablez_sampler",
+        "absl_container_raw_hash_set_resize_impl",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_dynamic_annotations",
         "absl_base_endian",
+        "absl_base_iterator_traits_internal",
         "absl_base_prefetch",
         "absl_base_raw_logging_internal",
+        "absl_functional_function_ref",
         "absl_hash",
+        "absl_hash_weakly_mixed_integer",
         "absl_memory",
         "absl_meta_type_traits",
         "absl_numeric_bits",
@@ -6863,22 +6955,65 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_container_common",
+        "absl_container_common_policy_traits",
         "absl_container_compressed_tuple",
         "absl_container_container_memory",
+        "absl_container_hash_function_defaults",
         "absl_container_hash_policy_traits",
+        "absl_container_hashtable_control_bytes",
         "absl_container_hashtable_debug_hooks",
         "absl_container_hashtablez_sampler",
+        "absl_container_raw_hash_set_resize_impl",
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_dynamic_annotations",
         "absl_base_endian",
+        "absl_base_iterator_traits_internal",
         "absl_base_prefetch",
         "absl_base_raw_logging_internal",
+        "absl_functional_function_ref",
         "absl_hash",
+        "absl_hash_weakly_mixed_integer",
         "absl_memory",
         "absl_meta_type_traits",
         "absl_numeric_bits",
         "absl_utility",
+    ],
+
+}
+
+genrule {
+    name: "absl_container_raw_hash_set_resize_impl_hdrs",
+    srcs: [
+        "absl/container/internal/raw_hash_set_resize_impl.h",
+    ],
+    out: [
+        "my_include_dir/absl/container/internal/raw_hash_set_resize_impl.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_container_raw_hash_set_resize_impl",
+    defaults: ["absl_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_raw_hash_set_resize_impl_hdrs"],
+    export_generated_headers: ["absl_container_raw_hash_set_resize_impl_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config",
     ],
 
 }
@@ -7021,6 +7156,48 @@ cc_library_static {
 }
 
 genrule {
+    name: "absl_container_hashtable_control_bytes_hdrs",
+    srcs: [
+        "absl/container/internal/hashtable_control_bytes.h",
+    ],
+    out: [
+        "my_include_dir/absl/container/internal/hashtable_control_bytes.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_container_hashtable_control_bytes",
+    defaults: ["absl_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_hashtable_control_bytes_hdrs"],
+    export_generated_headers: ["absl_container_hashtable_control_bytes_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_base_endian",
+        "absl_numeric_bits",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_base_endian",
+        "absl_numeric_bits",
+    ],
+
+}
+
+genrule {
     name: "absl_container_hash_policy_traits_hdrs",
     srcs: [
         "absl/container/internal/hash_policy_traits.h",
@@ -7090,6 +7267,52 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_meta_type_traits",
+    ],
+
+}
+
+genrule {
+    name: "absl_container_hash_function_defaults_hdrs",
+    srcs: [
+        "absl/container/internal/hash_function_defaults.h",
+    ],
+    out: [
+        "my_include_dir/absl/container/internal/hash_function_defaults.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_container_hash_function_defaults",
+    defaults: ["absl_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_hash_function_defaults_hdrs"],
+    export_generated_headers: ["absl_container_hash_function_defaults_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_common",
+        "absl_base_config",
+        "absl_hash",
+        "absl_meta_type_traits",
+        "absl_strings",
+        "absl_strings_cord",
+    ],
+    export_static_lib_headers: [
+        "absl_container_common",
+        "absl_base_config",
+        "absl_hash",
+        "absl_meta_type_traits",
+        "absl_strings",
+        "absl_strings_cord",
     ],
 
 }
@@ -7166,52 +7389,6 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_container_hash_function_defaults",
         "absl_base_config",
-    ],
-
-}
-
-genrule {
-    name: "absl_container_hash_function_defaults_hdrs",
-    srcs: [
-        "absl/container/internal/hash_function_defaults.h",
-    ],
-    out: [
-        "my_include_dir/absl/container/internal/hash_function_defaults.h",
-    ],
-    export_include_dirs: ["my_include_dir"],
-    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
-        "cp --parents $(in) $(genDir)/temp && " +
-        // delete empty folders automatically created by soong
-        "rm -rf $(genDir)/my_include_dir/* && " +
-        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
-        "rm -rf $(genDir)/temp",
-}
-
-cc_library_static {
-    name: "absl_container_hash_function_defaults",
-    defaults: ["absl_defaults"],
-
-    srcs: [
-
-    ],
-    generated_headers: ["absl_container_hash_function_defaults_hdrs"],
-    export_generated_headers: ["absl_container_hash_function_defaults_hdrs"],
-
-    whole_static_libs: [
-        "absl_container_common",
-        "absl_base_config",
-        "absl_hash",
-        "absl_meta_type_traits",
-        "absl_strings",
-        "absl_strings_cord",
-    ],
-    export_static_lib_headers: [
-        "absl_container_common",
-        "absl_base_config",
-        "absl_hash",
-        "absl_meta_type_traits",
-        "absl_strings",
-        "absl_strings_cord",
     ],
 
 }
@@ -7374,6 +7551,7 @@ cc_library_static {
         "absl_flags_program_name",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_no_destructor",
         "absl_strings",
         "absl_synchronization",
     ],
@@ -7382,6 +7560,7 @@ cc_library_static {
         "absl_flags_program_name",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_no_destructor",
         "absl_strings",
         "absl_synchronization",
     ],
@@ -7419,6 +7598,7 @@ cc_library_static {
         "absl_flags_path_util",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_no_destructor",
         "absl_strings",
         "absl_synchronization",
     ],
@@ -7426,6 +7606,7 @@ cc_library_static {
         "absl_flags_path_util",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_no_destructor",
         "absl_strings",
         "absl_synchronization",
     ],
@@ -7509,6 +7690,8 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_dynamic_annotations",
+        "absl_base_fast_type_id",
+        "absl_base_no_destructor",
         "absl_memory",
         "absl_meta_type_traits",
         "absl_strings",
@@ -7525,6 +7708,8 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_dynamic_annotations",
+        "absl_base_fast_type_id",
+        "absl_base_no_destructor",
         "absl_memory",
         "absl_meta_type_traits",
         "absl_strings",
@@ -7618,6 +7803,7 @@ cc_library_static {
         "absl_flags_reflection",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_nullability",
         "absl_strings",
     ],
     export_static_lib_headers: [
@@ -7627,6 +7813,7 @@ cc_library_static {
         "absl_flags_reflection",
         "absl_base_config",
         "absl_base_core_headers",
+        "absl_base_nullability",
         "absl_strings",
     ],
 
@@ -7951,6 +8138,7 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_base_raw_logging_internal",
         "absl_base_throw_delegate",
+        "absl_hash_weakly_mixed_integer",
         "absl_memory",
         "absl_meta_type_traits",
         "absl_strings",
@@ -7967,11 +8155,60 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_base_raw_logging_internal",
         "absl_base_throw_delegate",
+        "absl_hash_weakly_mixed_integer",
         "absl_memory",
         "absl_meta_type_traits",
         "absl_strings",
         "absl_strings_cord",
         "absl_types_compare",
+    ],
+
+}
+
+genrule {
+    name: "absl_container_layout_hdrs",
+    srcs: [
+        "absl/container/internal/layout.h",
+    ],
+    out: [
+        "my_include_dir/absl/container/internal/layout.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_container_layout",
+    defaults: ["absl_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_layout_hdrs"],
+    export_generated_headers: ["absl_container_layout_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_debugging_demangle_internal",
+        "absl_meta_type_traits",
+        "absl_strings",
+        "absl_types_span",
+        "absl_utility",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_debugging_demangle_internal",
+        "absl_meta_type_traits",
+        "absl_strings",
+        "absl_types_span",
+        "absl_utility",
     ],
 
 }
