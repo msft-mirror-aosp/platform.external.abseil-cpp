@@ -31,7 +31,7 @@ root_libs = [
     '//absl/synchronization:synchronization',
 ]
 ignored_deps = set([
-    '@com_google_googletest//:gtest'
+    '@googletest//:gtest'
 ])
 
 # Convert names like //foo/bar:baz to foo_bar_baz.
