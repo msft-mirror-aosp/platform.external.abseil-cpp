@@ -2396,8 +2396,6 @@ class raw_hash_set {
   size_t capacity() const {
     const size_t cap = common().capacity();
     // Compiler complains when using functions in ASSUME so use local variable.
-    // Android local modification: Replace ABSL_ATTRIBUTE_UNUSED with
-    // [[maybe_unused]] to avoid -Wused-but-marked-unused
     [[maybe_unused]] static constexpr size_t kDefaultCapacity =
         DefaultCapacity();
     ABSL_ASSUME(cap >= kDefaultCapacity);
@@ -3181,7 +3179,7 @@ class raw_hash_set {
   }
 
   void annotate_for_bug_detection_on_move(
-      ABSL_ATTRIBUTE_UNUSED raw_hash_set& that) {
+      [[maybe_unused]] raw_hash_set& that) {
     // We only enable moved-from validation when generations are enabled (rather
     // than using NDEBUG) to avoid issues in which NDEBUG is enabled in some
     // translation units but not in others.
@@ -3309,7 +3307,7 @@ class raw_hash_set {
  protected:
   // Asserts for correctness that we run on find/find_or_prepare_insert.
   template <class K>
-  void AssertOnFind(ABSL_ATTRIBUTE_UNUSED const K& key) {
+  void AssertOnFind([[maybe_unused]] const K& key) {
     AssertHashEqConsistent(key);
     AssertNotDebugCapacity();
   }
@@ -3373,7 +3371,7 @@ class raw_hash_set {
 
       const size_t hash_of_slot =
           PolicyTraits::apply(HashElement{hash_ref()}, element);
-      ABSL_ATTRIBUTE_UNUSED const bool is_hash_equal =
+      [[maybe_unused]] const bool is_hash_equal =
           hash_of_arg == hash_of_slot;
       assert((!is_key_equal || is_hash_equal) &&
              "eq(k1, k2) must imply that hash(k1) == hash(k2). "
@@ -3655,7 +3653,7 @@ struct HashtableFreeFunctionsAccess {
       c->common().set_empty_soo();
       return 1;
     }
-    ABSL_ATTRIBUTE_UNUSED const size_t original_size_for_assert = c->size();
+    [[maybe_unused]] const size_t original_size_for_assert = c->size();
     size_t num_deleted = 0;
     using SlotType = typename Set::slot_type;
     IterateOverFullSlots(
