@@ -37,11 +37,32 @@ cc_defaults {
 }
 
 cc_defaults {
+    name: "absl_notls_defaults",
+    defaults_visibility: ["//external/protobuf:__subpackages__"],
+    host_supported: true,
+    ramdisk_available: true,
+    recovery_available: true,
+    vendor_ramdisk_available: true,
+    apex_available: [
+        "//apex_available:platform",
+        "com.android.runtime",
+    ],
+    cflags: ["-DANDROID_DISABLE_TLS_FOR_LINKER=1"],
+}
+
+cc_defaults {
     name: "absl_test_defaults",
     host_supported: true,
     product_available: true,
     vendor_available: true,
     stl: "libc++",
+}
+
+cc_defaults {
+    name: "absl_notls_test_defaults",
+    host_supported: true,
+    stl: "libc++",
+    cflags: ["-DANDROID_DISABLE_TLS_FOR_LINKER=1"],
 }
 
 genrule {
@@ -145,6 +166,64 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_synchronization_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/synchronization/barrier.cc",
+        "absl/synchronization/blocking_counter.cc",
+        "absl/synchronization/internal/create_thread_identity.cc",
+        "absl/synchronization/internal/futex_waiter.cc",
+        "absl/synchronization/internal/per_thread_sem.cc",
+        "absl/synchronization/internal/pthread_waiter.cc",
+        "absl/synchronization/internal/sem_waiter.cc",
+        "absl/synchronization/internal/stdcpp_waiter.cc",
+        "absl/synchronization/internal/waiter_base.cc",
+        "absl/synchronization/internal/win32_waiter.cc",
+        "absl/synchronization/mutex.cc",
+        "absl/synchronization/notification.cc",
+    ],
+    generated_headers: ["absl_synchronization_hdrs"],
+    export_generated_headers: ["absl_synchronization_hdrs"],
+
+    whole_static_libs: [
+        "absl_synchronization_graphcycles_internal_notls",
+        "absl_synchronization_kernel_timeout_internal_notls",
+        "absl_base_notls",
+        "absl_base_atomic_hook_notls",
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_malloc_internal_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_base_tracing_internal_notls",
+        "absl_debugging_stacktrace_notls",
+        "absl_debugging_symbolize_notls",
+        "absl_time_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_synchronization_graphcycles_internal_notls",
+        "absl_synchronization_kernel_timeout_internal_notls",
+        "absl_base_notls",
+        "absl_base_atomic_hook_notls",
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_malloc_internal_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_base_tracing_internal_notls",
+        "absl_debugging_stacktrace_notls",
+        "absl_debugging_symbolize_notls",
+        "absl_time_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_time_hdrs",
     srcs: [
@@ -211,6 +290,47 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_time_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/time/civil_time.cc",
+        "absl/time/clock.cc",
+        "absl/time/duration.cc",
+        "absl/time/format.cc",
+        "absl/time/time.cc",
+    ],
+    generated_headers: ["absl_time_hdrs"],
+    export_generated_headers: ["absl_time_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_numeric_int128_notls",
+        "absl_strings_notls",
+        "absl_strings_string_view_notls",
+        "absl_time_internal_cctz_civil_time_notls",
+        "absl_time_internal_cctz_time_zone_notls",
+        "absl_types_optional_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_numeric_int128_notls",
+        "absl_strings_notls",
+        "absl_strings_string_view_notls",
+        "absl_time_internal_cctz_civil_time_notls",
+        "absl_time_internal_cctz_time_zone_notls",
+        "absl_types_optional_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_types_optional_hdrs",
     srcs: [
@@ -245,6 +365,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_utility",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_types_optional_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_types_optional_hdrs"],
+    export_generated_headers: ["absl_types_optional_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_utility_notls",
     ],
 
 }
@@ -287,6 +428,27 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_utility_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_utility_hdrs"],
+    export_generated_headers: ["absl_utility_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_meta_type_traits_hdrs",
     srcs: [
@@ -321,6 +483,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_core_headers",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_meta_type_traits_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_meta_type_traits_hdrs"],
+    export_generated_headers: ["absl_meta_type_traits_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
     ],
 
 }
@@ -371,6 +554,25 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_base_core_headers_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_core_headers_hdrs"],
+    export_generated_headers: ["absl_base_core_headers_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_config_hdrs",
     srcs: [
@@ -396,6 +598,25 @@ cc_library_static {
     name: "absl_base_config",
     defaults: ["absl_defaults"],
     visibility: ["//visibility:public"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_config_hdrs"],
+    export_generated_headers: ["absl_base_config_hdrs"],
+
+    whole_static_libs: [
+
+    ],
+    export_static_lib_headers: [
+
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_config_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
     srcs: [
 
     ],
@@ -473,6 +694,35 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_time_internal_cctz_time_zone_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/time/internal/cctz/src/time_zone_fixed.cc",
+        "absl/time/internal/cctz/src/time_zone_format.cc",
+        "absl/time/internal/cctz/src/time_zone_if.cc",
+        "absl/time/internal/cctz/src/time_zone_impl.cc",
+        "absl/time/internal/cctz/src/time_zone_info.cc",
+        "absl/time/internal/cctz/src/time_zone_libc.cc",
+        "absl/time/internal/cctz/src/time_zone_lookup.cc",
+        "absl/time/internal/cctz/src/time_zone_posix.cc",
+        "absl/time/internal/cctz/src/zone_info_source.cc",
+    ],
+    generated_headers: ["absl_time_internal_cctz_time_zone_hdrs"],
+    export_generated_headers: ["absl_time_internal_cctz_time_zone_hdrs"],
+
+    whole_static_libs: [
+        "absl_time_internal_cctz_civil_time_notls",
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_time_internal_cctz_civil_time_notls",
+        "absl_base_config_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_time_internal_cctz_civil_time_hdrs",
     srcs: [
@@ -507,6 +757,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_time_internal_cctz_civil_time_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/time/internal/cctz/src/civil_time_detail.cc",
+    ],
+    generated_headers: ["absl_time_internal_cctz_civil_time_hdrs"],
+    export_generated_headers: ["absl_time_internal_cctz_civil_time_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -555,6 +824,33 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_strings_string_view_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/strings/string_view.cc",
+    ],
+    generated_headers: ["absl_strings_string_view_hdrs"],
+    export_generated_headers: ["absl_strings_string_view_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_base_throw_delegate_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_base_throw_delegate_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_throw_delegate_hdrs",
     srcs: [
@@ -589,6 +885,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_raw_logging_internal",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_throw_delegate_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/base/internal/throw_delegate.cc",
+    ],
+    generated_headers: ["absl_base_throw_delegate_hdrs"],
+    export_generated_headers: ["absl_base_throw_delegate_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_raw_logging_internal_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_raw_logging_internal_notls",
     ],
 
 }
@@ -637,6 +954,33 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_base_raw_logging_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/base/internal/raw_logging.cc",
+    ],
+    generated_headers: ["absl_base_raw_logging_internal_hdrs"],
+    export_generated_headers: ["absl_base_raw_logging_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_atomic_hook_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_errno_saver_notls",
+        "absl_base_log_severity_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_atomic_hook_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_errno_saver_notls",
+        "absl_base_log_severity_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_log_severity_hdrs",
     srcs: [
@@ -675,6 +1019,27 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_base_log_severity_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/base/log_severity.cc",
+    ],
+    generated_headers: ["absl_base_log_severity_hdrs"],
+    export_generated_headers: ["absl_base_log_severity_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_errno_saver_hdrs",
     srcs: [
@@ -707,6 +1072,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_errno_saver_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_errno_saver_hdrs"],
+    export_generated_headers: ["absl_base_errno_saver_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -749,6 +1133,27 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_base_atomic_hook_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_atomic_hook_hdrs"],
+    export_generated_headers: ["absl_base_atomic_hook_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_nullability_hdrs",
     srcs: [
@@ -785,6 +1190,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_core_headers",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_nullability_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_nullability_hdrs"],
+    export_generated_headers: ["absl_base_nullability_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
     ],
 
 }
@@ -867,6 +1293,49 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_base_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/base/internal/cycleclock.cc",
+        "absl/base/internal/spinlock.cc",
+        "absl/base/internal/sysinfo.cc",
+        "absl/base/internal/thread_identity.cc",
+        "absl/base/internal/unscaledcycleclock.cc",
+    ],
+    generated_headers: ["absl_base_hdrs"],
+    export_generated_headers: ["absl_base_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_atomic_hook_notls",
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_cycleclock_internal_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_log_severity_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_base_spinlock_wait_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_atomic_hook_notls",
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_cycleclock_internal_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_log_severity_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_base_spinlock_wait_notls",
+        "absl_meta_type_traits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_spinlock_wait_hdrs",
     srcs: [
@@ -915,6 +1384,29 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_base_spinlock_wait_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/base/internal/spinlock_wait.cc",
+    ],
+    generated_headers: ["absl_base_spinlock_wait_hdrs"],
+    export_generated_headers: ["absl_base_spinlock_wait_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_base_internal_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_errno_saver_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_base_internal_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_errno_saver_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_base_internal_hdrs",
     srcs: [
@@ -953,6 +1445,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_meta_type_traits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_base_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_base_internal_hdrs"],
+    export_generated_headers: ["absl_base_base_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
     ],
 
 }
@@ -997,6 +1510,27 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_base_dynamic_annotations_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_dynamic_annotations_hdrs"],
+    export_generated_headers: ["absl_base_dynamic_annotations_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_cycleclock_internal_hdrs",
     srcs: [
@@ -1033,6 +1567,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_base_internal",
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_cycleclock_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_cycleclock_internal_hdrs"],
+    export_generated_headers: ["absl_base_cycleclock_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
     ],
 
 }
@@ -1156,6 +1711,66 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_strings_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/strings/ascii.cc",
+        "absl/strings/charconv.cc",
+        "absl/strings/escaping.cc",
+        "absl/strings/internal/charconv_bigint.cc",
+        "absl/strings/internal/charconv_parse.cc",
+        "absl/strings/internal/damerau_levenshtein_distance.cc",
+        "absl/strings/internal/memutil.cc",
+        "absl/strings/internal/stringify_sink.cc",
+        "absl/strings/match.cc",
+        "absl/strings/numbers.cc",
+        "absl/strings/str_cat.cc",
+        "absl/strings/str_replace.cc",
+        "absl/strings/str_split.cc",
+        "absl/strings/substitute.cc",
+    ],
+    generated_headers: ["absl_strings_hdrs"],
+    export_generated_headers: ["absl_strings_hdrs"],
+
+    whole_static_libs: [
+        "absl_strings_charset_notls",
+        "absl_strings_internal_notls",
+        "absl_strings_string_view_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_iterator_traits_internal_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_base_throw_delegate_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+        "absl_numeric_int128_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_strings_charset_notls",
+        "absl_strings_internal_notls",
+        "absl_strings_string_view_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_iterator_traits_internal_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_base_throw_delegate_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+        "absl_numeric_int128_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_numeric_int128_hdrs",
     srcs: [
@@ -1202,6 +1817,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_numeric_int128_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/numeric/int128.cc",
+    ],
+    generated_headers: ["absl_numeric_int128_hdrs"],
+    export_generated_headers: ["absl_numeric_int128_hdrs"],
+
+    whole_static_libs: [
+        "absl_numeric_bits_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_types_compare_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_numeric_bits_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_types_compare_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_types_compare_hdrs",
     srcs: [
@@ -1238,6 +1878,29 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_meta_type_traits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_types_compare_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_types_compare_hdrs"],
+    export_generated_headers: ["absl_types_compare_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_meta_type_traits_notls",
     ],
 
 }
@@ -1280,6 +1943,29 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_endian",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_numeric_bits_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_numeric_bits_hdrs"],
+    export_generated_headers: ["absl_numeric_bits_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
     ],
 
 }
@@ -1328,6 +2014,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_base_endian_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_endian_hdrs"],
+    export_generated_headers: ["absl_base_endian_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_memory_hdrs",
     srcs: [
@@ -1366,6 +2077,27 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_memory_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_memory_hdrs"],
+    export_generated_headers: ["absl_memory_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_core_headers_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_core_headers_notls",
+        "absl_meta_type_traits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_iterator_traits_internal_hdrs",
     srcs: [
@@ -1400,6 +2132,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_meta_type_traits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_iterator_traits_internal_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_iterator_traits_internal_hdrs"],
+    export_generated_headers: ["absl_base_iterator_traits_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
     ],
 
 }
@@ -1456,6 +2209,35 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_strings_internal_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/strings/internal/escaping.cc",
+        "absl/strings/internal/ostringstream.cc",
+        "absl/strings/internal/utf8.cc",
+    ],
+    generated_headers: ["absl_strings_internal_hdrs"],
+    export_generated_headers: ["absl_strings_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_meta_type_traits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_strings_charset_hdrs",
     srcs: [
@@ -1490,6 +2272,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_strings_string_view",
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_strings_charset_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_strings_charset_hdrs"],
+    export_generated_headers: ["absl_strings_charset_hdrs"],
+
+    whole_static_libs: [
+        "absl_strings_string_view_notls",
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_strings_string_view_notls",
+        "absl_base_config_notls",
     ],
 
 }
@@ -1558,6 +2361,41 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_debugging_symbolize_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/debugging/symbolize.cc",
+    ],
+    generated_headers: ["absl_debugging_symbolize_hdrs"],
+    export_generated_headers: ["absl_debugging_symbolize_hdrs"],
+
+    whole_static_libs: [
+        "absl_debugging_debugging_internal_notls",
+        "absl_debugging_demangle_internal_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_malloc_internal_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_strings_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_debugging_debugging_internal_notls",
+        "absl_debugging_demangle_internal_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_malloc_internal_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_strings_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_malloc_internal_hdrs",
     srcs: [
@@ -1602,6 +2440,35 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_base_dynamic_annotations",
         "absl_base_raw_logging_internal",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_malloc_internal_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/base/internal/low_level_alloc.cc",
+    ],
+    generated_headers: ["absl_base_malloc_internal_hdrs"],
+    export_generated_headers: ["absl_base_malloc_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_notls",
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_raw_logging_internal_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_notls",
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_raw_logging_internal_notls",
     ],
 
 }
@@ -1652,6 +2519,35 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_debugging_demangle_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/debugging/internal/demangle.cc",
+    ],
+    generated_headers: ["absl_debugging_demangle_internal_hdrs"],
+    export_generated_headers: ["absl_debugging_demangle_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_debugging_demangle_rust_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_numeric_bits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_debugging_demangle_rust_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_numeric_bits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_debugging_demangle_rust_hdrs",
     srcs: [
@@ -1688,6 +2584,29 @@ cc_library_static {
         "absl_debugging_decode_rust_punycode",
         "absl_base_config",
         "absl_base_core_headers",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_debugging_demangle_rust_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/debugging/internal/demangle_rust.cc",
+    ],
+    generated_headers: ["absl_debugging_demangle_rust_hdrs"],
+    export_generated_headers: ["absl_debugging_demangle_rust_hdrs"],
+
+    whole_static_libs: [
+        "absl_debugging_decode_rust_punycode_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_debugging_decode_rust_punycode_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
     ],
 
 }
@@ -1734,6 +2653,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_debugging_decode_rust_punycode_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/debugging/internal/decode_rust_punycode.cc",
+    ],
+    generated_headers: ["absl_debugging_decode_rust_punycode_hdrs"],
+    export_generated_headers: ["absl_debugging_decode_rust_punycode_hdrs"],
+
+    whole_static_libs: [
+        "absl_debugging_bounded_utf8_length_sequence_notls",
+        "absl_debugging_utf8_for_code_point_notls",
+        "absl_base_config_notls",
+        "absl_base_nullability_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_debugging_bounded_utf8_length_sequence_notls",
+        "absl_debugging_utf8_for_code_point_notls",
+        "absl_base_config_notls",
+        "absl_base_nullability_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_debugging_utf8_for_code_point_hdrs",
     srcs: [
@@ -1766,6 +2710,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_debugging_utf8_for_code_point_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/debugging/internal/utf8_for_code_point.cc",
+    ],
+    generated_headers: ["absl_debugging_utf8_for_code_point_hdrs"],
+    export_generated_headers: ["absl_debugging_utf8_for_code_point_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -1804,6 +2767,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_numeric_bits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_debugging_bounded_utf8_length_sequence_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_debugging_bounded_utf8_length_sequence_hdrs"],
+    export_generated_headers: ["absl_debugging_bounded_utf8_length_sequence_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_numeric_bits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_numeric_bits_notls",
     ],
 
 }
@@ -1856,6 +2840,35 @@ cc_library_static {
         "absl_base_dynamic_annotations",
         "absl_base_errno_saver",
         "absl_base_raw_logging_internal",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_debugging_debugging_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/debugging/internal/address_is_readable.cc",
+        "absl/debugging/internal/elf_mem_image.cc",
+        "absl/debugging/internal/vdso_support.cc",
+    ],
+    generated_headers: ["absl_debugging_debugging_internal_hdrs"],
+    export_generated_headers: ["absl_debugging_debugging_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_errno_saver_notls",
+        "absl_base_raw_logging_internal_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_errno_saver_notls",
+        "absl_base_raw_logging_internal_notls",
     ],
 
 }
@@ -1924,6 +2937,33 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_debugging_stacktrace_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/debugging/stacktrace.cc",
+    ],
+    generated_headers: ["absl_debugging_stacktrace_hdrs"],
+    export_generated_headers: ["absl_debugging_stacktrace_hdrs"],
+
+    whole_static_libs: [
+        "absl_debugging_debugging_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_raw_logging_internal_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_debugging_debugging_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_raw_logging_internal_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_tracing_internal_hdrs",
     srcs: [
@@ -1958,6 +2998,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_core_headers",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_tracing_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/base/internal/tracing.cc",
+    ],
+    generated_headers: ["absl_base_tracing_internal_hdrs"],
+    export_generated_headers: ["absl_base_tracing_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
     ],
 
 }
@@ -2006,6 +3067,33 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_synchronization_kernel_timeout_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/synchronization/internal/kernel_timeout.cc",
+    ],
+    generated_headers: ["absl_synchronization_kernel_timeout_internal_hdrs"],
+    export_generated_headers: ["absl_synchronization_kernel_timeout_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_time_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_time_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_synchronization_graphcycles_internal_hdrs",
     srcs: [
@@ -2048,6 +3136,35 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_base_malloc_internal",
         "absl_base_raw_logging_internal",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_synchronization_graphcycles_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/synchronization/internal/graphcycles.cc",
+    ],
+    generated_headers: ["absl_synchronization_graphcycles_internal_hdrs"],
+    export_generated_headers: ["absl_synchronization_graphcycles_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_notls",
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_malloc_internal_notls",
+        "absl_base_raw_logging_internal_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_notls",
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_malloc_internal_notls",
+        "absl_base_raw_logging_internal_notls",
     ],
 
 }
@@ -2112,6 +3229,47 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_status_statusor_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/status/statusor.cc",
+    ],
+    generated_headers: ["absl_status_statusor_hdrs"],
+    export_generated_headers: ["absl_status_statusor_hdrs"],
+
+    whole_static_libs: [
+        "absl_status_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_meta_type_traits_notls",
+        "absl_strings_notls",
+        "absl_strings_has_ostream_operator_notls",
+        "absl_strings_str_format_notls",
+        "absl_types_variant_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_status_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_meta_type_traits_notls",
+        "absl_strings_notls",
+        "absl_strings_has_ostream_operator_notls",
+        "absl_strings_str_format_notls",
+        "absl_types_variant_notls",
+        "absl_utility_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_types_variant_hdrs",
     srcs: [
@@ -2146,6 +3304,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_utility",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_types_variant_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_types_variant_hdrs"],
+    export_generated_headers: ["absl_types_variant_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_utility_notls",
     ],
 
 }
@@ -2192,6 +3371,35 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_base_nullability",
         "absl_types_span",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_strings_str_format_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_strings_str_format_hdrs"],
+    export_generated_headers: ["absl_strings_str_format_hdrs"],
+
+    whole_static_libs: [
+        "absl_strings_str_format_internal_notls",
+        "absl_strings_string_view_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_strings_str_format_internal_notls",
+        "absl_strings_string_view_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_types_span_notls",
     ],
 
 }
@@ -2246,6 +3454,37 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_types_span_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_types_span_hdrs"],
+    export_generated_headers: ["absl_types_span_hdrs"],
+
+    whole_static_libs: [
+        "absl_algorithm_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_base_throw_delegate_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_algorithm_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_base_throw_delegate_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_meta_type_traits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_hash_weakly_mixed_integer_hdrs",
     srcs: [
@@ -2282,6 +3521,25 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_hash_weakly_mixed_integer_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_hash_weakly_mixed_integer_hdrs"],
+    export_generated_headers: ["absl_hash_weakly_mixed_integer_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_algorithm_hdrs",
     srcs: [
@@ -2314,6 +3572,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_algorithm_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_algorithm_hdrs"],
+    export_generated_headers: ["absl_algorithm_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -2399,6 +3676,56 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_strings_str_format_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/strings/internal/str_format/arg.cc",
+        "absl/strings/internal/str_format/bind.cc",
+        "absl/strings/internal/str_format/extension.cc",
+        "absl/strings/internal/str_format/float_conversion.cc",
+        "absl/strings/internal/str_format/output.cc",
+        "absl/strings/internal/str_format/parser.cc",
+    ],
+    generated_headers: ["absl_strings_str_format_internal_hdrs"],
+    export_generated_headers: ["absl_strings_str_format_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_strings_internal_notls",
+        "absl_strings_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_container_fixed_array_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_functional_function_ref_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+        "absl_numeric_int128_notls",
+        "absl_numeric_representation_notls",
+        "absl_types_optional_notls",
+        "absl_types_span_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_strings_internal_notls",
+        "absl_strings_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_container_fixed_array_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_functional_function_ref_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+        "absl_numeric_int128_notls",
+        "absl_numeric_representation_notls",
+        "absl_types_optional_notls",
+        "absl_types_span_notls",
+        "absl_utility_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_numeric_representation_hdrs",
     srcs: [
@@ -2431,6 +3758,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_numeric_representation_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_numeric_representation_hdrs"],
+    export_generated_headers: ["absl_numeric_representation_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -2477,6 +3823,29 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_functional_function_ref_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_functional_function_ref_hdrs"],
+    export_generated_headers: ["absl_functional_function_ref_hdrs"],
+
+    whole_static_libs: [
+        "absl_functional_any_invocable_notls",
+        "absl_base_core_headers_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_functional_any_invocable_notls",
+        "absl_base_core_headers_notls",
+        "absl_meta_type_traits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_functional_any_invocable_hdrs",
     srcs: [
@@ -2517,6 +3886,31 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_meta_type_traits",
         "absl_utility",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_functional_any_invocable_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_functional_any_invocable_hdrs"],
+    export_generated_headers: ["absl_functional_any_invocable_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_meta_type_traits_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_meta_type_traits_notls",
+        "absl_utility_notls",
     ],
 
 }
@@ -2571,6 +3965,39 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_inlined_vector_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_inlined_vector_hdrs"],
+    export_generated_headers: ["absl_container_inlined_vector_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_inlined_vector_internal_notls",
+        "absl_algorithm_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_iterator_traits_internal_notls",
+        "absl_base_throw_delegate_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_inlined_vector_internal_notls",
+        "absl_algorithm_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_iterator_traits_internal_notls",
+        "absl_base_throw_delegate_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_inlined_vector_internal_hdrs",
     srcs: [
@@ -2619,6 +4046,37 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_inlined_vector_internal_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_inlined_vector_internal_hdrs"],
+    export_generated_headers: ["absl_container_inlined_vector_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_compressed_tuple_notls",
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_compressed_tuple_notls",
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+        "absl_types_span_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_compressed_tuple_hdrs",
     srcs: [
@@ -2651,6 +4109,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_utility",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_container_compressed_tuple_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_compressed_tuple_hdrs"],
+    export_generated_headers: ["absl_container_compressed_tuple_hdrs"],
+
+    whole_static_libs: [
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_utility_notls",
     ],
 
 }
@@ -2707,6 +4184,41 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_fixed_array_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_fixed_array_hdrs"],
+    export_generated_headers: ["absl_container_fixed_array_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_compressed_tuple_notls",
+        "absl_algorithm_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_iterator_traits_internal_notls",
+        "absl_base_throw_delegate_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_memory_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_compressed_tuple_notls",
+        "absl_algorithm_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_iterator_traits_internal_notls",
+        "absl_base_throw_delegate_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_memory_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_strings_has_ostream_operator_hdrs",
     srcs: [
@@ -2739,6 +4251,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_strings_has_ostream_operator_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_strings_has_ostream_operator_hdrs"],
+    export_generated_headers: ["absl_strings_has_ostream_operator_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -2815,6 +4346,61 @@ cc_library_static {
         "absl_strings_str_format",
         "absl_types_optional",
         "absl_types_span",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_status_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/status/internal/status_internal.cc",
+        "absl/status/status.cc",
+        "absl/status/status_payload_printer.cc",
+    ],
+    generated_headers: ["absl_status_hdrs"],
+    export_generated_headers: ["absl_status_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_atomic_hook_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_base_strerror_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_debugging_leak_check_notls",
+        "absl_debugging_stacktrace_notls",
+        "absl_debugging_symbolize_notls",
+        "absl_functional_function_ref_notls",
+        "absl_memory_notls",
+        "absl_strings_notls",
+        "absl_strings_cord_notls",
+        "absl_strings_str_format_notls",
+        "absl_types_optional_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_atomic_hook_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_base_strerror_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_debugging_leak_check_notls",
+        "absl_debugging_stacktrace_notls",
+        "absl_debugging_symbolize_notls",
+        "absl_functional_function_ref_notls",
+        "absl_memory_notls",
+        "absl_strings_notls",
+        "absl_strings_cord_notls",
+        "absl_strings_str_format_notls",
+        "absl_types_optional_notls",
+        "absl_types_span_notls",
     ],
 
 }
@@ -2900,6 +4486,66 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_strings_cord_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/strings/cord.cc",
+        "absl/strings/cord_analysis.cc",
+    ],
+    generated_headers: ["absl_strings_cord_hdrs"],
+    export_generated_headers: ["absl_strings_cord_hdrs"],
+
+    whole_static_libs: [
+        "absl_strings_cord_internal_notls",
+        "absl_strings_cordz_info_notls",
+        "absl_strings_cordz_update_scope_notls",
+        "absl_strings_cordz_update_tracker_notls",
+        "absl_strings_internal_notls",
+        "absl_strings_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_crc_crc32c_notls",
+        "absl_crc_crc_cord_state_notls",
+        "absl_functional_function_ref_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+        "absl_types_compare_notls",
+        "absl_types_optional_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_strings_cord_internal_notls",
+        "absl_strings_cordz_info_notls",
+        "absl_strings_cordz_update_scope_notls",
+        "absl_strings_cordz_update_tracker_notls",
+        "absl_strings_internal_notls",
+        "absl_strings_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_crc_crc32c_notls",
+        "absl_crc_crc_cord_state_notls",
+        "absl_functional_function_ref_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+        "absl_types_compare_notls",
+        "absl_types_optional_notls",
+        "absl_types_span_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_crc_crc_cord_state_hdrs",
     srcs: [
@@ -2942,6 +4588,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_crc_crc_cord_state_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/crc/internal/crc_cord_state.cc",
+    ],
+    generated_headers: ["absl_crc_crc_cord_state_hdrs"],
+    export_generated_headers: ["absl_crc_crc_cord_state_hdrs"],
+
+    whole_static_libs: [
+        "absl_crc_crc32c_notls",
+        "absl_base_config_notls",
+        "absl_base_no_destructor_notls",
+        "absl_numeric_bits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_crc_crc32c_notls",
+        "absl_base_config_notls",
+        "absl_base_no_destructor_notls",
+        "absl_numeric_bits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_no_destructor_hdrs",
     srcs: [
@@ -2976,6 +4647,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_nullability",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_no_destructor_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_no_destructor_hdrs"],
+    export_generated_headers: ["absl_base_no_destructor_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_nullability_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_nullability_notls",
     ],
 
 }
@@ -3041,6 +4733,44 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_crc_crc32c_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/crc/crc32c.cc",
+        "absl/crc/internal/crc_memcpy_fallback.cc",
+        "absl/crc/internal/crc_memcpy_x86_arm_combined.cc",
+        "absl/crc/internal/crc_non_temporal_memcpy.cc",
+    ],
+    generated_headers: ["absl_crc_crc32c_hdrs"],
+    export_generated_headers: ["absl_crc_crc32c_hdrs"],
+
+    whole_static_libs: [
+        "absl_crc_cpu_detect_notls",
+        "absl_crc_crc_internal_notls",
+        "absl_crc_non_temporal_memcpy_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_prefetch_notls",
+        "absl_strings_notls",
+        "absl_strings_str_format_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_crc_cpu_detect_notls",
+        "absl_crc_crc_internal_notls",
+        "absl_crc_non_temporal_memcpy_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_prefetch_notls",
+        "absl_strings_notls",
+        "absl_strings_str_format_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_prefetch_hdrs",
     srcs: [
@@ -3075,6 +4805,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_core_headers",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_prefetch_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_prefetch_hdrs"],
+    export_generated_headers: ["absl_base_prefetch_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
     ],
 
 }
@@ -3119,6 +4870,29 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_crc_non_temporal_memcpy_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_crc_non_temporal_memcpy_hdrs"],
+    export_generated_headers: ["absl_crc_non_temporal_memcpy_hdrs"],
+
+    whole_static_libs: [
+        "absl_crc_non_temporal_arm_intrinsics_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_crc_non_temporal_arm_intrinsics_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_crc_non_temporal_arm_intrinsics_hdrs",
     srcs: [
@@ -3151,6 +4925,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_crc_non_temporal_arm_intrinsics_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_crc_non_temporal_arm_intrinsics_hdrs"],
+    export_generated_headers: ["absl_crc_non_temporal_arm_intrinsics_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -3210,6 +5003,40 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_crc_crc_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/crc/internal/crc.cc",
+        "absl/crc/internal/crc_x86_arm_combined.cc",
+    ],
+    generated_headers: ["absl_crc_crc_internal_hdrs"],
+    export_generated_headers: ["absl_crc_crc_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_crc_cpu_detect_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_prefetch_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_memory_notls",
+        "absl_numeric_bits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_crc_cpu_detect_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_prefetch_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_memory_notls",
+        "absl_numeric_bits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_crc_cpu_detect_hdrs",
     srcs: [
@@ -3250,6 +5077,29 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_crc_cpu_detect_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/crc/internal/cpu_detect.cc",
+    ],
+    generated_headers: ["absl_crc_cpu_detect_hdrs"],
+    export_generated_headers: ["absl_crc_cpu_detect_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_types_optional_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_types_optional_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_strings_cordz_update_tracker_hdrs",
     srcs: [
@@ -3282,6 +5132,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_strings_cordz_update_tracker_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_strings_cordz_update_tracker_hdrs"],
+    export_generated_headers: ["absl_strings_cordz_update_tracker_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -3326,6 +5195,33 @@ cc_library_static {
         "absl_strings_cordz_update_tracker",
         "absl_base_config",
         "absl_base_core_headers",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_strings_cordz_update_scope_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_strings_cordz_update_scope_hdrs"],
+    export_generated_headers: ["absl_strings_cordz_update_scope_hdrs"],
+
+    whole_static_libs: [
+        "absl_strings_cord_internal_notls",
+        "absl_strings_cordz_info_notls",
+        "absl_strings_cordz_update_tracker_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_strings_cord_internal_notls",
+        "absl_strings_cordz_info_notls",
+        "absl_strings_cordz_update_tracker_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
     ],
 
 }
@@ -3392,6 +5288,51 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_strings_cordz_info_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/strings/internal/cordz_info.cc",
+    ],
+    generated_headers: ["absl_strings_cordz_info_hdrs"],
+    export_generated_headers: ["absl_strings_cordz_info_hdrs"],
+
+    whole_static_libs: [
+        "absl_strings_cord_internal_notls",
+        "absl_strings_cordz_functions_notls",
+        "absl_strings_cordz_handle_notls",
+        "absl_strings_cordz_statistics_notls",
+        "absl_strings_cordz_update_tracker_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_debugging_stacktrace_notls",
+        "absl_synchronization_notls",
+        "absl_time_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_strings_cord_internal_notls",
+        "absl_strings_cordz_functions_notls",
+        "absl_strings_cordz_handle_notls",
+        "absl_strings_cordz_statistics_notls",
+        "absl_strings_cordz_update_tracker_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_debugging_stacktrace_notls",
+        "absl_synchronization_notls",
+        "absl_time_notls",
+        "absl_types_span_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_strings_cordz_statistics_hdrs",
     srcs: [
@@ -3426,6 +5367,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_strings_cordz_update_tracker",
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_strings_cordz_statistics_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_strings_cordz_statistics_hdrs"],
+    export_generated_headers: ["absl_strings_cordz_statistics_hdrs"],
+
+    whole_static_libs: [
+        "absl_strings_cordz_update_tracker_notls",
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_strings_cordz_update_tracker_notls",
+        "absl_base_config_notls",
     ],
 
 }
@@ -3472,6 +5434,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_strings_cordz_handle_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/strings/internal/cordz_handle.cc",
+    ],
+    generated_headers: ["absl_strings_cordz_handle_hdrs"],
+    export_generated_headers: ["absl_strings_cordz_handle_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_no_destructor_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_synchronization_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_no_destructor_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_synchronization_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_strings_cordz_functions_hdrs",
     srcs: [
@@ -3514,6 +5501,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_strings_cordz_functions_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/strings/internal/cordz_functions.cc",
+    ],
+    generated_headers: ["absl_strings_cordz_functions_hdrs"],
+    export_generated_headers: ["absl_strings_cordz_functions_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_profiling_exponential_biased_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_profiling_exponential_biased_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_profiling_exponential_biased_hdrs",
     srcs: [
@@ -3548,6 +5560,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_core_headers",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_profiling_exponential_biased_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/profiling/internal/exponential_biased.cc",
+    ],
+    generated_headers: ["absl_profiling_exponential_biased_hdrs"],
+    export_generated_headers: ["absl_profiling_exponential_biased_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
     ],
 
 }
@@ -3629,6 +5662,52 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_strings_cord_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/strings/internal/cord_internal.cc",
+        "absl/strings/internal/cord_rep_btree.cc",
+        "absl/strings/internal/cord_rep_btree_navigator.cc",
+        "absl/strings/internal/cord_rep_btree_reader.cc",
+        "absl/strings/internal/cord_rep_consume.cc",
+        "absl/strings/internal/cord_rep_crc.cc",
+    ],
+    generated_headers: ["absl_strings_cord_internal_hdrs"],
+    export_generated_headers: ["absl_strings_cord_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_strings_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_container_compressed_tuple_notls",
+        "absl_container_container_memory_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_crc_crc_cord_state_notls",
+        "absl_functional_function_ref_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_strings_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_container_compressed_tuple_notls",
+        "absl_container_container_memory_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_crc_crc_cord_state_notls",
+        "absl_functional_function_ref_notls",
+        "absl_types_span_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_container_memory_hdrs",
     srcs: [
@@ -3671,6 +5750,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_container_memory_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_container_memory_hdrs"],
+    export_generated_headers: ["absl_container_container_memory_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+        "absl_utility_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_debugging_leak_check_hdrs",
     srcs: [
@@ -3705,6 +5809,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_core_headers",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_debugging_leak_check_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/debugging/leak_check.cc",
+    ],
+    generated_headers: ["absl_debugging_leak_check_hdrs"],
+    export_generated_headers: ["absl_debugging_leak_check_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
     ],
 
 }
@@ -3745,6 +5870,29 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_errno_saver",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_strerror_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/base/internal/strerror.cc",
+    ],
+    generated_headers: ["absl_base_strerror_hdrs"],
+    export_generated_headers: ["absl_base_strerror_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_errno_saver_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_errno_saver_notls",
     ],
 
 }
@@ -3795,6 +5943,35 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_hdrs"],
+    export_generated_headers: ["absl_random_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_distributions_notls",
+        "absl_random_seed_sequences_notls",
+        "absl_base_config_notls",
+        "absl_random_internal_nonsecure_base_notls",
+        "absl_random_internal_pcg_engine_notls",
+        "absl_random_internal_randen_engine_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_distributions_notls",
+        "absl_random_seed_sequences_notls",
+        "absl_base_config_notls",
+        "absl_random_internal_nonsecure_base_notls",
+        "absl_random_internal_pcg_engine_notls",
+        "absl_random_internal_randen_engine_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_random_internal_randen_engine_hdrs",
     srcs: [
@@ -3837,6 +6014,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_internal_randen_engine_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_randen_engine_hdrs"],
+    export_generated_headers: ["absl_random_internal_randen_engine_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_iostream_state_saver_notls",
+        "absl_random_internal_randen_notls",
+        "absl_base_endian_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_iostream_state_saver_notls",
+        "absl_random_internal_randen_notls",
+        "absl_base_endian_notls",
+        "absl_meta_type_traits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_random_internal_randen_hdrs",
     srcs: [
@@ -3875,6 +6077,31 @@ cc_library_static {
         "absl_random_internal_randen_hwaes",
         "absl_random_internal_randen_slow",
         "absl_base_raw_logging_internal",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_random_internal_randen_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/random/internal/randen.cc",
+    ],
+    generated_headers: ["absl_random_internal_randen_hdrs"],
+    export_generated_headers: ["absl_random_internal_randen_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_platform_notls",
+        "absl_random_internal_randen_hwaes_notls",
+        "absl_random_internal_randen_slow_notls",
+        "absl_base_raw_logging_internal_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_platform_notls",
+        "absl_random_internal_randen_hwaes_notls",
+        "absl_random_internal_randen_slow_notls",
+        "absl_base_raw_logging_internal_notls",
     ],
 
 }
@@ -3923,6 +6150,33 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_internal_randen_slow_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/random/internal/randen_slow.cc",
+    ],
+    generated_headers: ["absl_random_internal_randen_slow_hdrs"],
+    export_generated_headers: ["absl_random_internal_randen_slow_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_platform_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_numeric_int128_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_platform_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_numeric_int128_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_random_internal_platform_hdrs",
     srcs: [
@@ -3957,6 +6211,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_random_internal_platform_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/random/internal/randen_round_keys.cc",
+    ],
+    generated_headers: ["absl_random_internal_platform_hdrs"],
+    export_generated_headers: ["absl_random_internal_platform_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -4005,6 +6278,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_internal_randen_hwaes_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/random/internal/randen_detect.cc",
+    ],
+    generated_headers: ["absl_random_internal_randen_hwaes_hdrs"],
+    export_generated_headers: ["absl_random_internal_randen_hwaes_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_platform_notls",
+        "absl_random_internal_randen_hwaes_impl_notls",
+        "absl_base_config_notls",
+        "absl_types_optional_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_platform_notls",
+        "absl_random_internal_randen_hwaes_impl_notls",
+        "absl_base_config_notls",
+        "absl_types_optional_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_random_internal_randen_hwaes_impl_hdrs",
     srcs: [
@@ -4047,6 +6345,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_internal_randen_hwaes_impl_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/random/internal/randen_hwaes.cc",
+    ],
+    generated_headers: ["absl_random_internal_randen_hwaes_impl_hdrs"],
+    export_generated_headers: ["absl_random_internal_randen_hwaes_impl_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_platform_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_numeric_int128_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_platform_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_numeric_int128_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_random_internal_iostream_state_saver_hdrs",
     srcs: [
@@ -4083,6 +6406,29 @@ cc_library_static {
         "absl_base_config",
         "absl_meta_type_traits",
         "absl_numeric_int128",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_random_internal_iostream_state_saver_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_iostream_state_saver_hdrs"],
+    export_generated_headers: ["absl_random_internal_iostream_state_saver_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_int128_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_int128_notls",
     ],
 
 }
@@ -4133,6 +6479,35 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_internal_pcg_engine_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_pcg_engine_hdrs"],
+    export_generated_headers: ["absl_random_internal_pcg_engine_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_fastmath_notls",
+        "absl_random_internal_iostream_state_saver_notls",
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+        "absl_numeric_int128_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_fastmath_notls",
+        "absl_random_internal_iostream_state_saver_notls",
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+        "absl_numeric_int128_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_random_internal_fastmath_hdrs",
     srcs: [
@@ -4165,6 +6540,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_numeric_bits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_random_internal_fastmath_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_fastmath_hdrs"],
+    export_generated_headers: ["absl_random_internal_fastmath_hdrs"],
+
+    whole_static_libs: [
+        "absl_numeric_bits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_numeric_bits_notls",
     ],
 
 }
@@ -4211,6 +6605,35 @@ cc_library_static {
         "absl_base_config",
         "absl_container_inlined_vector",
         "absl_meta_type_traits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_random_internal_nonsecure_base_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_nonsecure_base_hdrs"],
+    export_generated_headers: ["absl_random_internal_nonsecure_base_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_entropy_pool_notls",
+        "absl_random_internal_salted_seed_seq_notls",
+        "absl_random_internal_seed_material_notls",
+        "absl_base_config_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_entropy_pool_notls",
+        "absl_random_internal_salted_seed_seq_notls",
+        "absl_random_internal_seed_material_notls",
+        "absl_base_config_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_meta_type_traits_notls",
     ],
 
 }
@@ -4263,6 +6686,37 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_internal_seed_material_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/random/internal/seed_material.cc",
+    ],
+    generated_headers: ["absl_random_internal_seed_material_hdrs"],
+    export_generated_headers: ["absl_random_internal_seed_material_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_fast_uniform_bits_notls",
+        "absl_base_config_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_strings_notls",
+        "absl_types_optional_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_fast_uniform_bits_notls",
+        "absl_base_config_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_strings_notls",
+        "absl_types_optional_notls",
+        "absl_types_span_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_random_internal_fast_uniform_bits_hdrs",
     srcs: [
@@ -4299,6 +6753,29 @@ cc_library_static {
         "absl_random_internal_traits",
         "absl_base_config",
         "absl_meta_type_traits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_random_internal_fast_uniform_bits_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_fast_uniform_bits_hdrs"],
+    export_generated_headers: ["absl_random_internal_fast_uniform_bits_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_traits_notls",
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_traits_notls",
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
     ],
 
 }
@@ -4343,6 +6820,29 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_internal_traits_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_traits_hdrs"],
+    export_generated_headers: ["absl_random_internal_traits_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_numeric_bits_notls",
+        "absl_numeric_int128_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_numeric_bits_notls",
+        "absl_numeric_int128_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_random_internal_salted_seed_seq_hdrs",
     srcs: [
@@ -4383,6 +6883,33 @@ cc_library_static {
         "absl_meta_type_traits",
         "absl_types_optional",
         "absl_types_span",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_random_internal_salted_seed_seq_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_salted_seed_seq_hdrs"],
+    export_generated_headers: ["absl_random_internal_salted_seed_seq_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_seed_material_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_meta_type_traits_notls",
+        "absl_types_optional_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_seed_material_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_meta_type_traits_notls",
+        "absl_types_optional_notls",
+        "absl_types_span_notls",
     ],
 
 }
@@ -4437,6 +6964,39 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_internal_entropy_pool_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/random/internal/entropy_pool.cc",
+    ],
+    generated_headers: ["absl_random_internal_entropy_pool_hdrs"],
+    export_generated_headers: ["absl_random_internal_entropy_pool_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_platform_notls",
+        "absl_random_internal_randen_notls",
+        "absl_random_internal_seed_material_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_random_seed_gen_exception_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_platform_notls",
+        "absl_random_internal_randen_notls",
+        "absl_random_internal_seed_material_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_random_seed_gen_exception_notls",
+        "absl_types_span_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_random_seed_gen_exception_hdrs",
     srcs: [
@@ -4471,6 +7031,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_raw_logging_internal",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_random_seed_gen_exception_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/random/seed_gen_exception.cc",
+    ],
+    generated_headers: ["absl_random_seed_gen_exception_hdrs"],
+    export_generated_headers: ["absl_random_seed_gen_exception_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_raw_logging_internal_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_raw_logging_internal_notls",
     ],
 
 }
@@ -4521,6 +7102,39 @@ cc_library_static {
         "absl_random_internal_seed_material",
         "absl_strings_string_view",
         "absl_types_span",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_random_seed_sequences_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/random/seed_sequences.cc",
+    ],
+    generated_headers: ["absl_random_seed_sequences_hdrs"],
+    export_generated_headers: ["absl_random_seed_sequences_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_seed_gen_exception_notls",
+        "absl_base_config_notls",
+        "absl_base_nullability_notls",
+        "absl_random_internal_entropy_pool_notls",
+        "absl_random_internal_salted_seed_seq_notls",
+        "absl_random_internal_seed_material_notls",
+        "absl_strings_string_view_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_seed_gen_exception_notls",
+        "absl_base_config_notls",
+        "absl_base_nullability_notls",
+        "absl_random_internal_entropy_pool_notls",
+        "absl_random_internal_salted_seed_seq_notls",
+        "absl_random_internal_seed_material_notls",
+        "absl_strings_string_view_notls",
+        "absl_types_span_notls",
     ],
 
 }
@@ -4606,6 +7220,50 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_distributions_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/random/discrete_distribution.cc",
+        "absl/random/gaussian_distribution.cc",
+    ],
+    generated_headers: ["absl_random_distributions_hdrs"],
+    export_generated_headers: ["absl_random_distributions_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_meta_type_traits_notls",
+        "absl_random_internal_distribution_caller_notls",
+        "absl_random_internal_fast_uniform_bits_notls",
+        "absl_random_internal_fastmath_notls",
+        "absl_random_internal_generate_real_notls",
+        "absl_random_internal_iostream_state_saver_notls",
+        "absl_random_internal_traits_notls",
+        "absl_random_internal_uniform_helper_notls",
+        "absl_random_internal_wide_multiply_notls",
+        "absl_strings_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_base_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_meta_type_traits_notls",
+        "absl_random_internal_distribution_caller_notls",
+        "absl_random_internal_fast_uniform_bits_notls",
+        "absl_random_internal_fastmath_notls",
+        "absl_random_internal_generate_real_notls",
+        "absl_random_internal_iostream_state_saver_notls",
+        "absl_random_internal_traits_notls",
+        "absl_random_internal_uniform_helper_notls",
+        "absl_random_internal_wide_multiply_notls",
+        "absl_strings_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_random_internal_wide_multiply_hdrs",
     srcs: [
@@ -4648,6 +7306,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_internal_wide_multiply_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_wide_multiply_hdrs"],
+    export_generated_headers: ["absl_random_internal_wide_multiply_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_traits_notls",
+        "absl_base_config_notls",
+        "absl_numeric_bits_notls",
+        "absl_numeric_int128_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_traits_notls",
+        "absl_base_config_notls",
+        "absl_numeric_bits_notls",
+        "absl_numeric_int128_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_random_internal_uniform_helper_hdrs",
     srcs: [
@@ -4684,6 +7367,29 @@ cc_library_static {
         "absl_random_internal_traits",
         "absl_base_config",
         "absl_meta_type_traits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_random_internal_uniform_helper_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_uniform_helper_hdrs"],
+    export_generated_headers: ["absl_random_internal_uniform_helper_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_traits_notls",
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_traits_notls",
+        "absl_base_config_notls",
+        "absl_meta_type_traits_notls",
     ],
 
 }
@@ -4730,6 +7436,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_internal_generate_real_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_generate_real_hdrs"],
+    export_generated_headers: ["absl_random_internal_generate_real_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_internal_fastmath_notls",
+        "absl_random_internal_traits_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_internal_fastmath_notls",
+        "absl_random_internal_traits_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_random_internal_distribution_caller_hdrs",
     srcs: [
@@ -4772,6 +7503,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_random_internal_distribution_caller_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_internal_distribution_caller_hdrs"],
+    export_generated_headers: ["absl_random_internal_distribution_caller_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_fast_type_id_notls",
+        "absl_meta_type_traits_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_fast_type_id_notls",
+        "absl_meta_type_traits_notls",
+        "absl_utility_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_base_fast_type_id_hdrs",
     srcs: [
@@ -4804,6 +7560,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_base_fast_type_id_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_base_fast_type_id_hdrs"],
+    export_generated_headers: ["absl_base_fast_type_id_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -4852,6 +7627,37 @@ cc_library_static {
         "absl_meta_type_traits",
         "absl_random_internal_distribution_caller",
         "absl_random_internal_fast_uniform_bits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_random_bit_gen_ref_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_random_bit_gen_ref_hdrs"],
+    export_generated_headers: ["absl_random_bit_gen_ref_hdrs"],
+
+    whole_static_libs: [
+        "absl_random_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_fast_type_id_notls",
+        "absl_meta_type_traits_notls",
+        "absl_random_internal_distribution_caller_notls",
+        "absl_random_internal_fast_uniform_bits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_random_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_fast_type_id_notls",
+        "absl_meta_type_traits_notls",
+        "absl_random_internal_distribution_caller_notls",
+        "absl_random_internal_fast_uniform_bits_notls",
     ],
 
 }
@@ -4912,6 +7718,45 @@ cc_test_library {
 
 }
 
+cc_test_library {
+    name: "absl_log_scoped_mock_log_notls",
+    defaults: ["absl_notls_test_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/log/scoped_mock_log.cc",
+    ],
+    generated_headers: ["absl_log_scoped_mock_log_hdrs"],
+    export_generated_headers: ["absl_log_scoped_mock_log_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_log_entry_notls",
+        "absl_log_log_sink_notls",
+        "absl_log_log_sink_registry_notls",
+        "absl_base_config_notls",
+        "absl_base_log_severity_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_strings_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_log_entry_notls",
+        "absl_log_log_sink_notls",
+        "absl_log_log_sink_registry_notls",
+        "absl_base_config_notls",
+        "absl_base_log_severity_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_strings_notls",
+    ],
+
+    static_libs: [
+        "libgmock",
+        "libgtest",
+    ],
+    shared: {
+        enabled: false,
+    },
+
+}
+
 genrule {
     name: "absl_log_log_sink_registry_hdrs",
     srcs: [
@@ -4950,6 +7795,31 @@ cc_library_static {
         "absl_base_config",
         "absl_base_nullability",
         "absl_log_internal_log_sink_set",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_log_sink_registry_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_log_sink_registry_hdrs"],
+    export_generated_headers: ["absl_log_log_sink_registry_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_log_sink_notls",
+        "absl_base_config_notls",
+        "absl_base_nullability_notls",
+        "absl_log_internal_log_sink_set_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_log_sink_notls",
+        "absl_base_config_notls",
+        "absl_base_nullability_notls",
+        "absl_log_internal_log_sink_set_notls",
     ],
 
 }
@@ -5024,6 +7894,59 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_log_sink_set_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/log/internal/log_sink_set.cc",
+    ],
+    generated_headers: ["absl_log_internal_log_sink_set_hdrs"],
+    export_generated_headers: ["absl_log_internal_log_sink_set_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_config_notls",
+        "absl_log_internal_globals_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_base_no_destructor_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_cleanup_notls",
+        "absl_log_globals_notls",
+        "absl_log_log_entry_notls",
+        "absl_log_log_sink_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_config_notls",
+        "absl_log_internal_globals_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_base_no_destructor_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_cleanup_notls",
+        "absl_log_globals_notls",
+        "absl_log_log_entry_notls",
+        "absl_log_log_sink_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+        "absl_types_span_notls",
+    ],
+
+    target: {
+        android: {
+            shared_libs: ["liblog"],
+        },
+    },
+
+}
+
 genrule {
     name: "absl_log_log_sink_hdrs",
     srcs: [
@@ -5058,6 +7981,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_log_log_entry",
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_log_sink_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/log/log_sink.cc",
+    ],
+    generated_headers: ["absl_log_log_sink_hdrs"],
+    export_generated_headers: ["absl_log_log_sink_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_log_entry_notls",
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_log_entry_notls",
+        "absl_base_config_notls",
     ],
 
 }
@@ -5110,6 +8054,37 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_log_entry_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_log_entry_hdrs"],
+    export_generated_headers: ["absl_log_log_entry_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_log_internal_config_notls",
+        "absl_strings_notls",
+        "absl_time_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_log_internal_config_notls",
+        "absl_strings_notls",
+        "absl_time_notls",
+        "absl_types_span_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_internal_config_hdrs",
     srcs: [
@@ -5144,6 +8119,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_core_headers",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_internal_config_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_internal_config_hdrs"],
+    export_generated_headers: ["absl_log_internal_config_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
     ],
 
 }
@@ -5194,6 +8190,39 @@ cc_library_static {
         "absl_hash",
         "absl_log_internal_vlog_config",
         "absl_strings",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_globals_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/log/globals.cc",
+    ],
+    generated_headers: ["absl_log_globals_hdrs"],
+    export_generated_headers: ["absl_log_globals_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_atomic_hook_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_hash_notls",
+        "absl_log_internal_vlog_config_notls",
+        "absl_strings_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_atomic_hook_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_hash_notls",
+        "absl_log_internal_vlog_config_notls",
+        "absl_strings_notls",
     ],
 
 }
@@ -5252,6 +8281,43 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_vlog_config_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/log/internal/vlog_config.cc",
+    ],
+    generated_headers: ["absl_log_internal_vlog_config_hdrs"],
+    export_generated_headers: ["absl_log_internal_vlog_config_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_fnmatch_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_base_nullability_notls",
+        "absl_memory_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+        "absl_types_optional_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_fnmatch_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_base_nullability_notls",
+        "absl_memory_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+        "absl_types_optional_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_internal_fnmatch_hdrs",
     srcs: [
@@ -5286,6 +8352,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_strings",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_internal_fnmatch_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/log/internal/fnmatch.cc",
+    ],
+    generated_headers: ["absl_log_internal_fnmatch_hdrs"],
+    export_generated_headers: ["absl_log_internal_fnmatch_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_strings_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_strings_notls",
     ],
 
 }
@@ -5356,6 +8443,53 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_hash_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/hash/internal/hash.cc",
+    ],
+    generated_headers: ["absl_hash_hdrs"],
+    export_generated_headers: ["absl_hash_hdrs"],
+
+    whole_static_libs: [
+        "absl_hash_city_notls",
+        "absl_hash_low_level_hash_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_container_fixed_array_notls",
+        "absl_functional_function_ref_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+        "absl_numeric_int128_notls",
+        "absl_strings_notls",
+        "absl_types_optional_notls",
+        "absl_types_variant_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_hash_city_notls",
+        "absl_hash_low_level_hash_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_container_fixed_array_notls",
+        "absl_functional_function_ref_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+        "absl_numeric_int128_notls",
+        "absl_strings_notls",
+        "absl_types_optional_notls",
+        "absl_types_variant_notls",
+        "absl_utility_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_hash_low_level_hash_hdrs",
     srcs: [
@@ -5400,6 +8534,33 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_hash_low_level_hash_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/hash/internal/low_level_hash.cc",
+    ],
+    generated_headers: ["absl_hash_low_level_hash_hdrs"],
+    export_generated_headers: ["absl_hash_low_level_hash_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_prefetch_notls",
+        "absl_numeric_int128_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_base_prefetch_notls",
+        "absl_numeric_int128_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_hash_city_hdrs",
     srcs: [
@@ -5436,6 +8597,29 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_endian",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_hash_city_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/hash/internal/city.cc",
+    ],
+    generated_headers: ["absl_hash_city_hdrs"],
+    export_generated_headers: ["absl_hash_city_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
     ],
 
 }
@@ -5480,6 +8664,29 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_cleanup_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_cleanup_hdrs"],
+    export_generated_headers: ["absl_cleanup_hdrs"],
+
+    whole_static_libs: [
+        "absl_cleanup_cleanup_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_cleanup_cleanup_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_cleanup_cleanup_internal_hdrs",
     srcs: [
@@ -5514,6 +8721,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_core_headers",
         "absl_utility",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_cleanup_cleanup_internal_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_cleanup_cleanup_internal_hdrs"],
+    export_generated_headers: ["absl_cleanup_cleanup_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_core_headers_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_core_headers_notls",
+        "absl_utility_notls",
     ],
 
 }
@@ -5564,6 +8792,35 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_globals_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/log/internal/globals.cc",
+    ],
+    generated_headers: ["absl_log_internal_globals_hdrs"],
+    export_generated_headers: ["absl_log_internal_globals_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_strings_notls",
+        "absl_time_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_strings_notls",
+        "absl_time_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_hdrs",
     srcs: [
@@ -5598,6 +8855,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_log_vlog_is_on",
         "absl_log_internal_log_impl",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_hdrs"],
+    export_generated_headers: ["absl_log_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_vlog_is_on_notls",
+        "absl_log_internal_log_impl_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_vlog_is_on_notls",
+        "absl_log_internal_log_impl_notls",
     ],
 
 }
@@ -5644,6 +8922,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_log_impl_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_internal_log_impl_hdrs"],
+    export_generated_headers: ["absl_log_internal_log_impl_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_conditions_notls",
+        "absl_log_internal_log_message_notls",
+        "absl_log_internal_strip_notls",
+        "absl_log_absl_vlog_is_on_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_conditions_notls",
+        "absl_log_internal_log_message_notls",
+        "absl_log_internal_strip_notls",
+        "absl_log_absl_vlog_is_on_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_absl_vlog_is_on_hdrs",
     srcs: [
@@ -5682,6 +8985,31 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_log_internal_vlog_config",
         "absl_strings",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_absl_vlog_is_on_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_absl_vlog_is_on_hdrs"],
+    export_generated_headers: ["absl_log_absl_vlog_is_on_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_log_internal_vlog_config_notls",
+        "absl_strings_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_log_internal_vlog_config_notls",
+        "absl_strings_notls",
     ],
 
 }
@@ -5728,6 +9056,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_strip_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_internal_strip_hdrs"],
+    export_generated_headers: ["absl_log_internal_strip_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_log_message_notls",
+        "absl_log_internal_nullstream_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_log_message_notls",
+        "absl_log_internal_nullstream_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_internal_nullstream_hdrs",
     srcs: [
@@ -5766,6 +9119,31 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_base_log_severity",
         "absl_strings",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_internal_nullstream_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_internal_nullstream_hdrs"],
+    export_generated_headers: ["absl_log_internal_nullstream_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_strings_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_strings_notls",
     ],
 
 }
@@ -5856,6 +9234,75 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_log_message_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/log/internal/log_message.cc",
+    ],
+    generated_headers: ["absl_log_internal_log_message_hdrs"],
+    export_generated_headers: ["absl_log_internal_log_message_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_append_truncated_notls",
+        "absl_log_internal_format_notls",
+        "absl_log_internal_globals_notls",
+        "absl_log_internal_log_sink_set_notls",
+        "absl_log_internal_nullguard_notls",
+        "absl_log_internal_proto_notls",
+        "absl_log_internal_structured_proto_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_errno_saver_notls",
+        "absl_base_log_severity_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_base_strerror_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_debugging_examine_stack_notls",
+        "absl_log_globals_notls",
+        "absl_log_log_entry_notls",
+        "absl_log_log_sink_notls",
+        "absl_log_log_sink_registry_notls",
+        "absl_memory_notls",
+        "absl_strings_notls",
+        "absl_strings_internal_notls",
+        "absl_time_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_append_truncated_notls",
+        "absl_log_internal_format_notls",
+        "absl_log_internal_globals_notls",
+        "absl_log_internal_log_sink_set_notls",
+        "absl_log_internal_nullguard_notls",
+        "absl_log_internal_proto_notls",
+        "absl_log_internal_structured_proto_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_errno_saver_notls",
+        "absl_base_log_severity_notls",
+        "absl_base_nullability_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_base_strerror_notls",
+        "absl_container_inlined_vector_notls",
+        "absl_debugging_examine_stack_notls",
+        "absl_log_globals_notls",
+        "absl_log_log_entry_notls",
+        "absl_log_log_sink_notls",
+        "absl_log_log_sink_registry_notls",
+        "absl_memory_notls",
+        "absl_strings_notls",
+        "absl_strings_internal_notls",
+        "absl_time_notls",
+        "absl_types_span_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_debugging_examine_stack_hdrs",
     srcs: [
@@ -5896,6 +9343,33 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_raw_logging_internal",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_debugging_examine_stack_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/debugging/internal/examine_stack.cc",
+    ],
+    generated_headers: ["absl_debugging_examine_stack_hdrs"],
+    export_generated_headers: ["absl_debugging_examine_stack_hdrs"],
+
+    whole_static_libs: [
+        "absl_debugging_stacktrace_notls",
+        "absl_debugging_symbolize_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_debugging_stacktrace_notls",
+        "absl_debugging_symbolize_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
     ],
 
 }
@@ -5944,6 +9418,33 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_structured_proto_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/log/internal/structured_proto.cc",
+    ],
+    generated_headers: ["absl_log_internal_structured_proto_hdrs"],
+    export_generated_headers: ["absl_log_internal_structured_proto_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_proto_notls",
+        "absl_base_config_notls",
+        "absl_strings_notls",
+        "absl_types_span_notls",
+        "absl_types_variant_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_proto_notls",
+        "absl_base_config_notls",
+        "absl_strings_notls",
+        "absl_types_span_notls",
+        "absl_types_variant_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_internal_proto_hdrs",
     srcs: [
@@ -5988,6 +9489,33 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_proto_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/log/internal/proto.cc",
+    ],
+    generated_headers: ["absl_log_internal_proto_hdrs"],
+    export_generated_headers: ["absl_log_internal_proto_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_strings_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_strings_notls",
+        "absl_types_span_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_internal_nullguard_hdrs",
     srcs: [
@@ -6022,6 +9550,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_core_headers",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_internal_nullguard_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/log/internal/nullguard.cc",
+    ],
+    generated_headers: ["absl_log_internal_nullguard_hdrs"],
+    export_generated_headers: ["absl_log_internal_nullguard_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
     ],
 
 }
@@ -6080,6 +9629,43 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_format_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/log/internal/log_format.cc",
+    ],
+    generated_headers: ["absl_log_internal_format_hdrs"],
+    export_generated_headers: ["absl_log_internal_format_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_append_truncated_notls",
+        "absl_log_internal_config_notls",
+        "absl_log_internal_globals_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_strings_notls",
+        "absl_strings_str_format_notls",
+        "absl_time_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_append_truncated_notls",
+        "absl_log_internal_config_notls",
+        "absl_log_internal_globals_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_strings_notls",
+        "absl_strings_str_format_notls",
+        "absl_time_notls",
+        "absl_types_span_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_internal_append_truncated_hdrs",
     srcs: [
@@ -6118,6 +9704,31 @@ cc_library_static {
         "absl_strings",
         "absl_strings_internal",
         "absl_types_span",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_internal_append_truncated_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_internal_append_truncated_hdrs"],
+    export_generated_headers: ["absl_log_internal_append_truncated_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_strings_notls",
+        "absl_strings_internal_notls",
+        "absl_types_span_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_strings_notls",
+        "absl_strings_internal_notls",
+        "absl_types_span_notls",
     ],
 
 }
@@ -6164,6 +9775,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_conditions_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/log/internal/conditions.cc",
+    ],
+    generated_headers: ["absl_log_internal_conditions_hdrs"],
+    export_generated_headers: ["absl_log_internal_conditions_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_voidify_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_voidify_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_internal_voidify_hdrs",
     srcs: [
@@ -6202,6 +9838,27 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_voidify_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_internal_voidify_hdrs"],
+    export_generated_headers: ["absl_log_internal_voidify_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_vlog_is_on_hdrs",
     srcs: [
@@ -6234,6 +9891,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_log_absl_vlog_is_on",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_vlog_is_on_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_vlog_is_on_hdrs"],
+    export_generated_headers: ["absl_log_vlog_is_on_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_absl_vlog_is_on_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_absl_vlog_is_on_notls",
     ],
 
 }
@@ -6280,6 +9956,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_initialize_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/log/initialize.cc",
+    ],
+    generated_headers: ["absl_log_initialize_hdrs"],
+    export_generated_headers: ["absl_log_initialize_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_globals_notls",
+        "absl_base_config_notls",
+        "absl_log_internal_globals_notls",
+        "absl_time_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_globals_notls",
+        "absl_base_config_notls",
+        "absl_log_internal_globals_notls",
+        "absl_time_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_die_if_null_hdrs",
     srcs: [
@@ -6318,6 +10019,31 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_strings",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_die_if_null_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/log/die_if_null.cc",
+    ],
+    generated_headers: ["absl_log_die_if_null_hdrs"],
+    export_generated_headers: ["absl_log_die_if_null_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_strings_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_strings_notls",
     ],
 
 }
@@ -6362,6 +10088,33 @@ cc_library_static {
         "absl_log_internal_conditions",
         "absl_log_internal_log_message",
         "absl_log_internal_strip",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_check_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_check_hdrs"],
+    export_generated_headers: ["absl_log_check_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_check_impl_notls",
+        "absl_log_internal_check_op_notls",
+        "absl_log_internal_conditions_notls",
+        "absl_log_internal_log_message_notls",
+        "absl_log_internal_strip_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_check_impl_notls",
+        "absl_log_internal_check_op_notls",
+        "absl_log_internal_conditions_notls",
+        "absl_log_internal_log_message_notls",
+        "absl_log_internal_strip_notls",
     ],
 
 }
@@ -6418,6 +10171,41 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_check_op_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/log/internal/check_op.cc",
+    ],
+    generated_headers: ["absl_log_internal_check_op_hdrs"],
+    export_generated_headers: ["absl_log_internal_check_op_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_nullguard_notls",
+        "absl_log_internal_nullstream_notls",
+        "absl_log_internal_strip_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_debugging_leak_check_notls",
+        "absl_strings_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_nullguard_notls",
+        "absl_log_internal_nullstream_notls",
+        "absl_log_internal_strip_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_debugging_leak_check_notls",
+        "absl_strings_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_internal_check_impl_hdrs",
     srcs: [
@@ -6462,6 +10250,33 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_internal_check_impl_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_internal_check_impl_hdrs"],
+    export_generated_headers: ["absl_log_internal_check_impl_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_check_op_notls",
+        "absl_log_internal_conditions_notls",
+        "absl_log_internal_log_message_notls",
+        "absl_log_internal_strip_notls",
+        "absl_base_core_headers_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_check_op_notls",
+        "absl_log_internal_conditions_notls",
+        "absl_log_internal_log_message_notls",
+        "absl_log_internal_strip_notls",
+        "absl_base_core_headers_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_absl_log_hdrs",
     srcs: [
@@ -6498,6 +10313,25 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_log_absl_log_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_absl_log_hdrs"],
+    export_generated_headers: ["absl_log_absl_log_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_log_impl_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_log_impl_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_log_absl_check_hdrs",
     srcs: [
@@ -6530,6 +10364,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_log_internal_check_impl",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_log_absl_check_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_log_absl_check_hdrs"],
+    export_generated_headers: ["absl_log_absl_check_hdrs"],
+
+    whole_static_libs: [
+        "absl_log_internal_check_impl_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_log_internal_check_impl_notls",
     ],
 
 }
@@ -6572,6 +10425,29 @@ cc_library_static {
         "absl_container_compressed_tuple",
         "absl_meta_type_traits",
         "absl_utility",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_functional_bind_front_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_functional_bind_front_hdrs"],
+    export_generated_headers: ["absl_functional_bind_front_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_compressed_tuple_notls",
+        "absl_meta_type_traits_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_compressed_tuple_notls",
+        "absl_meta_type_traits_notls",
+        "absl_utility_notls",
     ],
 
 }
@@ -6644,6 +10520,55 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_flags_parse_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/flags/parse.cc",
+    ],
+    generated_headers: ["absl_flags_parse_hdrs"],
+    export_generated_headers: ["absl_flags_parse_hdrs"],
+
+    whole_static_libs: [
+        "absl_flags_commandlineflag_notls",
+        "absl_flags_commandlineflag_internal_notls",
+        "absl_flags_config_notls",
+        "absl_flags_flag_notls",
+        "absl_flags_flag_internal_notls",
+        "absl_flags_private_handle_accessor_notls",
+        "absl_flags_program_name_notls",
+        "absl_flags_reflection_notls",
+        "absl_flags_usage_notls",
+        "absl_flags_usage_internal_notls",
+        "absl_algorithm_container_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_flags_commandlineflag_notls",
+        "absl_flags_commandlineflag_internal_notls",
+        "absl_flags_config_notls",
+        "absl_flags_flag_notls",
+        "absl_flags_flag_internal_notls",
+        "absl_flags_private_handle_accessor_notls",
+        "absl_flags_program_name_notls",
+        "absl_flags_reflection_notls",
+        "absl_flags_usage_notls",
+        "absl_flags_usage_internal_notls",
+        "absl_algorithm_container_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_algorithm_container_hdrs",
     srcs: [
@@ -6684,6 +10609,33 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_base_nullability",
         "absl_meta_type_traits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_algorithm_container_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_algorithm_container_hdrs"],
+    export_generated_headers: ["absl_algorithm_container_hdrs"],
+
+    whole_static_libs: [
+        "absl_algorithm_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_algorithm_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_meta_type_traits_notls",
     ],
 
 }
@@ -6748,6 +10700,49 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_flags_usage_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/flags/internal/usage.cc",
+    ],
+    generated_headers: ["absl_flags_usage_internal_hdrs"],
+    export_generated_headers: ["absl_flags_usage_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_flags_commandlineflag_notls",
+        "absl_flags_config_notls",
+        "absl_flags_flag_notls",
+        "absl_flags_flag_internal_notls",
+        "absl_flags_path_util_notls",
+        "absl_flags_private_handle_accessor_notls",
+        "absl_flags_program_name_notls",
+        "absl_flags_reflection_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_flags_commandlineflag_notls",
+        "absl_flags_config_notls",
+        "absl_flags_flag_notls",
+        "absl_flags_flag_internal_notls",
+        "absl_flags_path_util_notls",
+        "absl_flags_private_handle_accessor_notls",
+        "absl_flags_program_name_notls",
+        "absl_flags_reflection_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_flags_reflection_hdrs",
     srcs: [
@@ -6806,6 +10801,45 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_flags_reflection_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/flags/reflection.cc",
+    ],
+    generated_headers: ["absl_flags_reflection_hdrs"],
+    export_generated_headers: ["absl_flags_reflection_hdrs"],
+
+    whole_static_libs: [
+        "absl_flags_commandlineflag_notls",
+        "absl_flags_commandlineflag_internal_notls",
+        "absl_flags_config_notls",
+        "absl_flags_private_handle_accessor_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_fast_type_id_notls",
+        "absl_base_no_destructor_notls",
+        "absl_container_flat_hash_map_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_flags_commandlineflag_notls",
+        "absl_flags_commandlineflag_internal_notls",
+        "absl_flags_config_notls",
+        "absl_flags_private_handle_accessor_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_fast_type_id_notls",
+        "absl_base_no_destructor_notls",
+        "absl_container_flat_hash_map_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_flat_hash_map_hdrs",
     srcs: [
@@ -6848,6 +10882,35 @@ cc_library_static {
         "absl_algorithm_container",
         "absl_base_core_headers",
         "absl_meta_type_traits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_container_flat_hash_map_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_flat_hash_map_hdrs"],
+    export_generated_headers: ["absl_container_flat_hash_map_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_container_memory_notls",
+        "absl_container_hash_container_defaults_notls",
+        "absl_container_raw_hash_map_notls",
+        "absl_algorithm_container_notls",
+        "absl_base_core_headers_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_container_memory_notls",
+        "absl_container_hash_container_defaults_notls",
+        "absl_container_raw_hash_map_notls",
+        "absl_algorithm_container_notls",
+        "absl_base_core_headers_notls",
+        "absl_meta_type_traits_notls",
     ],
 
 }
@@ -6896,6 +10959,37 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_base_throw_delegate",
         "absl_meta_type_traits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_container_raw_hash_map_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_raw_hash_map_hdrs"],
+    export_generated_headers: ["absl_container_raw_hash_map_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_common_policy_traits_notls",
+        "absl_container_container_memory_notls",
+        "absl_container_raw_hash_set_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_throw_delegate_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_common_policy_traits_notls",
+        "absl_container_container_memory_notls",
+        "absl_container_raw_hash_set_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_throw_delegate_notls",
+        "absl_meta_type_traits_notls",
     ],
 
 }
@@ -6982,6 +11076,71 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_raw_hash_set_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/container/internal/raw_hash_set.cc",
+    ],
+    generated_headers: ["absl_container_raw_hash_set_hdrs"],
+    export_generated_headers: ["absl_container_raw_hash_set_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_common_notls",
+        "absl_container_common_policy_traits_notls",
+        "absl_container_compressed_tuple_notls",
+        "absl_container_container_memory_notls",
+        "absl_container_hash_function_defaults_notls",
+        "absl_container_hash_policy_traits_notls",
+        "absl_container_hashtable_control_bytes_notls",
+        "absl_container_hashtable_debug_hooks_notls",
+        "absl_container_hashtablez_sampler_notls",
+        "absl_container_raw_hash_set_resize_impl_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_endian_notls",
+        "absl_base_iterator_traits_internal_notls",
+        "absl_base_prefetch_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_functional_function_ref_notls",
+        "absl_hash_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_common_notls",
+        "absl_container_common_policy_traits_notls",
+        "absl_container_compressed_tuple_notls",
+        "absl_container_container_memory_notls",
+        "absl_container_hash_function_defaults_notls",
+        "absl_container_hash_policy_traits_notls",
+        "absl_container_hashtable_control_bytes_notls",
+        "absl_container_hashtable_debug_hooks_notls",
+        "absl_container_hashtablez_sampler_notls",
+        "absl_container_raw_hash_set_resize_impl_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_endian_notls",
+        "absl_base_iterator_traits_internal_notls",
+        "absl_base_prefetch_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_functional_function_ref_notls",
+        "absl_hash_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+        "absl_numeric_bits_notls",
+        "absl_utility_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_raw_hash_set_resize_impl_hdrs",
     srcs: [
@@ -7014,6 +11173,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_container_raw_hash_set_resize_impl_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_raw_hash_set_resize_impl_hdrs"],
+    export_generated_headers: ["absl_container_raw_hash_set_resize_impl_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -7077,6 +11255,48 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_hashtablez_sampler_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/container/internal/hashtablez_sampler.cc",
+        "absl/container/internal/hashtablez_sampler_force_weak_definition.cc",
+    ],
+    generated_headers: ["absl_container_hashtablez_sampler_hdrs"],
+    export_generated_headers: ["absl_container_hashtablez_sampler_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_debugging_stacktrace_notls",
+        "absl_memory_notls",
+        "absl_profiling_exponential_biased_notls",
+        "absl_profiling_sample_recorder_notls",
+        "absl_synchronization_notls",
+        "absl_time_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_debugging_stacktrace_notls",
+        "absl_memory_notls",
+        "absl_profiling_exponential_biased_notls",
+        "absl_profiling_sample_recorder_notls",
+        "absl_synchronization_notls",
+        "absl_time_notls",
+        "absl_utility_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_profiling_sample_recorder_hdrs",
     srcs: [
@@ -7119,6 +11339,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_profiling_sample_recorder_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_profiling_sample_recorder_hdrs"],
+    export_generated_headers: ["absl_profiling_sample_recorder_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_synchronization_notls",
+        "absl_time_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_synchronization_notls",
+        "absl_time_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_hashtable_debug_hooks_hdrs",
     srcs: [
@@ -7151,6 +11396,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_container_hashtable_debug_hooks_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_hashtable_debug_hooks_hdrs"],
+    export_generated_headers: ["absl_container_hashtable_debug_hooks_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -7197,6 +11461,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_hashtable_control_bytes_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_hashtable_control_bytes_hdrs"],
+    export_generated_headers: ["absl_container_hashtable_control_bytes_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_numeric_bits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_endian_notls",
+        "absl_numeric_bits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_hash_policy_traits_hdrs",
     srcs: [
@@ -7235,6 +11524,27 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_hash_policy_traits_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_hash_policy_traits_hdrs"],
+    export_generated_headers: ["absl_container_hash_policy_traits_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_common_policy_traits_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_common_policy_traits_notls",
+        "absl_meta_type_traits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_common_policy_traits_hdrs",
     srcs: [
@@ -7267,6 +11577,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_meta_type_traits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_container_common_policy_traits_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_common_policy_traits_hdrs"],
+    export_generated_headers: ["absl_container_common_policy_traits_hdrs"],
+
+    whole_static_libs: [
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_meta_type_traits_notls",
     ],
 
 }
@@ -7317,6 +11646,35 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_hash_function_defaults_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_hash_function_defaults_hdrs"],
+    export_generated_headers: ["absl_container_hash_function_defaults_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_common_notls",
+        "absl_base_config_notls",
+        "absl_hash_notls",
+        "absl_meta_type_traits_notls",
+        "absl_strings_notls",
+        "absl_strings_cord_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_common_notls",
+        "absl_base_config_notls",
+        "absl_hash_notls",
+        "absl_meta_type_traits_notls",
+        "absl_strings_notls",
+        "absl_strings_cord_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_common_hdrs",
     srcs: [
@@ -7355,6 +11713,27 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_common_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_common_hdrs"],
+    export_generated_headers: ["absl_container_common_hdrs"],
+
+    whole_static_libs: [
+        "absl_meta_type_traits_notls",
+        "absl_types_optional_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_meta_type_traits_notls",
+        "absl_types_optional_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_hash_container_defaults_hdrs",
     srcs: [
@@ -7389,6 +11768,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_container_hash_function_defaults",
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_container_hash_container_defaults_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_hash_container_defaults_hdrs"],
+    export_generated_headers: ["absl_container_hash_container_defaults_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_hash_function_defaults_notls",
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_hash_function_defaults_notls",
+        "absl_base_config_notls",
     ],
 
 }
@@ -7435,6 +11835,31 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_flags_private_handle_accessor_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/flags/internal/private_handle_accessor.cc",
+    ],
+    generated_headers: ["absl_flags_private_handle_accessor_hdrs"],
+    export_generated_headers: ["absl_flags_private_handle_accessor_hdrs"],
+
+    whole_static_libs: [
+        "absl_flags_commandlineflag_notls",
+        "absl_flags_commandlineflag_internal_notls",
+        "absl_base_config_notls",
+        "absl_strings_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_flags_commandlineflag_notls",
+        "absl_flags_commandlineflag_internal_notls",
+        "absl_base_config_notls",
+        "absl_strings_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_flags_commandlineflag_internal_hdrs",
     srcs: [
@@ -7469,6 +11894,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_base_fast_type_id",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_flags_commandlineflag_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/flags/internal/commandlineflag.cc",
+    ],
+    generated_headers: ["absl_flags_commandlineflag_internal_hdrs"],
+    export_generated_headers: ["absl_flags_commandlineflag_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_fast_type_id_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_fast_type_id_notls",
     ],
 
 }
@@ -7513,6 +11959,33 @@ cc_library_static {
         "absl_base_fast_type_id",
         "absl_strings",
         "absl_types_optional",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_flags_commandlineflag_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/flags/commandlineflag.cc",
+    ],
+    generated_headers: ["absl_flags_commandlineflag_hdrs"],
+    export_generated_headers: ["absl_flags_commandlineflag_hdrs"],
+
+    whole_static_libs: [
+        "absl_flags_commandlineflag_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_fast_type_id_notls",
+        "absl_strings_notls",
+        "absl_types_optional_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_flags_commandlineflag_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_fast_type_id_notls",
+        "absl_strings_notls",
+        "absl_types_optional_notls",
     ],
 
 }
@@ -7567,6 +12040,37 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_flags_config_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/flags/usage_config.cc",
+    ],
+    generated_headers: ["absl_flags_config_hdrs"],
+    export_generated_headers: ["absl_flags_config_hdrs"],
+
+    whole_static_libs: [
+        "absl_flags_path_util_notls",
+        "absl_flags_program_name_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_flags_path_util_notls",
+        "absl_flags_program_name_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_flags_program_name_hdrs",
     srcs: [
@@ -7613,6 +12117,35 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_flags_program_name_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/flags/internal/program_name.cc",
+    ],
+    generated_headers: ["absl_flags_program_name_hdrs"],
+    export_generated_headers: ["absl_flags_program_name_hdrs"],
+
+    whole_static_libs: [
+        "absl_flags_path_util_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_flags_path_util_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_no_destructor_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_flags_path_util_hdrs",
     srcs: [
@@ -7647,6 +12180,27 @@ cc_library_static {
     export_static_lib_headers: [
         "absl_base_config",
         "absl_strings",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_flags_path_util_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_flags_path_util_hdrs"],
+    export_generated_headers: ["absl_flags_path_util_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_strings_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_strings_notls",
     ],
 
 }
@@ -7719,6 +12273,55 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_flags_flag_internal_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+        "absl/flags/internal/flag.cc",
+    ],
+    generated_headers: ["absl_flags_flag_internal_hdrs"],
+    export_generated_headers: ["absl_flags_flag_internal_hdrs"],
+
+    whole_static_libs: [
+        "absl_flags_commandlineflag_notls",
+        "absl_flags_commandlineflag_internal_notls",
+        "absl_flags_config_notls",
+        "absl_flags_marshalling_notls",
+        "absl_flags_reflection_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_fast_type_id_notls",
+        "absl_base_no_destructor_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_flags_commandlineflag_notls",
+        "absl_flags_commandlineflag_internal_notls",
+        "absl_flags_config_notls",
+        "absl_flags_marshalling_notls",
+        "absl_flags_reflection_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_dynamic_annotations_notls",
+        "absl_base_fast_type_id_notls",
+        "absl_base_no_destructor_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+        "absl_utility_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_flags_marshalling_hdrs",
     srcs: [
@@ -7763,6 +12366,37 @@ cc_library_static {
         "absl_strings",
         "absl_strings_str_format",
         "absl_types_optional",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_flags_marshalling_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/flags/marshalling.cc",
+    ],
+    generated_headers: ["absl_flags_marshalling_hdrs"],
+    export_generated_headers: ["absl_flags_marshalling_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_numeric_int128_notls",
+        "absl_strings_notls",
+        "absl_strings_str_format_notls",
+        "absl_types_optional_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_numeric_int128_notls",
+        "absl_strings_notls",
+        "absl_strings_str_format_notls",
+        "absl_types_optional_notls",
     ],
 
 }
@@ -7819,6 +12453,39 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_flags_flag_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_flags_flag_hdrs"],
+    export_generated_headers: ["absl_flags_flag_hdrs"],
+
+    whole_static_libs: [
+        "absl_flags_commandlineflag_notls",
+        "absl_flags_config_notls",
+        "absl_flags_flag_internal_notls",
+        "absl_flags_reflection_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_strings_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_flags_commandlineflag_notls",
+        "absl_flags_config_notls",
+        "absl_flags_flag_internal_notls",
+        "absl_flags_reflection_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_nullability_notls",
+        "absl_strings_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_flags_usage_hdrs",
     srcs: [
@@ -7865,6 +12532,35 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_flags_usage_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/flags/usage.cc",
+    ],
+    generated_headers: ["absl_flags_usage_hdrs"],
+    export_generated_headers: ["absl_flags_usage_hdrs"],
+
+    whole_static_libs: [
+        "absl_flags_usage_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_flags_usage_internal_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_strings_notls",
+        "absl_synchronization_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_debugging_failure_signal_handler_hdrs",
     srcs: [
@@ -7907,6 +12603,35 @@ cc_library_static {
         "absl_base_config",
         "absl_base_core_headers",
         "absl_base_raw_logging_internal",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_debugging_failure_signal_handler_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/debugging/failure_signal_handler.cc",
+    ],
+    generated_headers: ["absl_debugging_failure_signal_handler_hdrs"],
+    export_generated_headers: ["absl_debugging_failure_signal_handler_hdrs"],
+
+    whole_static_libs: [
+        "absl_debugging_examine_stack_notls",
+        "absl_debugging_stacktrace_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_debugging_examine_stack_notls",
+        "absl_debugging_stacktrace_notls",
+        "absl_base_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
     ],
 
 }
@@ -7961,6 +12686,39 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_node_hash_set_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_node_hash_set_hdrs"],
+    export_generated_headers: ["absl_container_node_hash_set_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_container_memory_notls",
+        "absl_container_hash_container_defaults_notls",
+        "absl_container_node_slot_policy_notls",
+        "absl_container_raw_hash_set_notls",
+        "absl_algorithm_container_notls",
+        "absl_base_core_headers_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_container_memory_notls",
+        "absl_container_hash_container_defaults_notls",
+        "absl_container_node_slot_policy_notls",
+        "absl_container_raw_hash_set_notls",
+        "absl_algorithm_container_notls",
+        "absl_base_core_headers_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_node_slot_policy_hdrs",
     srcs: [
@@ -7993,6 +12751,25 @@ cc_library_static {
     ],
     export_static_lib_headers: [
         "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_container_node_slot_policy_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_node_slot_policy_hdrs"],
+    export_generated_headers: ["absl_container_node_slot_policy_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
     ],
 
 }
@@ -8047,6 +12824,39 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_node_hash_map_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_node_hash_map_hdrs"],
+    export_generated_headers: ["absl_container_node_hash_map_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_container_memory_notls",
+        "absl_container_hash_container_defaults_notls",
+        "absl_container_node_slot_policy_notls",
+        "absl_container_raw_hash_map_notls",
+        "absl_algorithm_container_notls",
+        "absl_base_core_headers_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_container_memory_notls",
+        "absl_container_hash_container_defaults_notls",
+        "absl_container_node_slot_policy_notls",
+        "absl_container_raw_hash_map_notls",
+        "absl_algorithm_container_notls",
+        "absl_base_core_headers_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_flat_hash_set_hdrs",
     srcs: [
@@ -8091,6 +12901,37 @@ cc_library_static {
         "absl_base_core_headers",
         "absl_memory",
         "absl_meta_type_traits",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_container_flat_hash_set_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_flat_hash_set_hdrs"],
+    export_generated_headers: ["absl_container_flat_hash_set_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_container_memory_notls",
+        "absl_container_hash_container_defaults_notls",
+        "absl_container_raw_hash_set_notls",
+        "absl_algorithm_container_notls",
+        "absl_base_core_headers_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_container_memory_notls",
+        "absl_container_hash_container_defaults_notls",
+        "absl_container_raw_hash_set_notls",
+        "absl_algorithm_container_notls",
+        "absl_base_core_headers_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
     ],
 
 }
@@ -8165,6 +13006,53 @@ cc_library_static {
 
 }
 
+cc_library_static {
+    name: "absl_container_btree_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_btree_hdrs"],
+    export_generated_headers: ["absl_container_btree_hdrs"],
+
+    whole_static_libs: [
+        "absl_container_common_notls",
+        "absl_container_common_policy_traits_notls",
+        "absl_container_compressed_tuple_notls",
+        "absl_container_container_memory_notls",
+        "absl_container_layout_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_base_throw_delegate_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+        "absl_strings_notls",
+        "absl_strings_cord_notls",
+        "absl_types_compare_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_container_common_notls",
+        "absl_container_common_policy_traits_notls",
+        "absl_container_compressed_tuple_notls",
+        "absl_container_container_memory_notls",
+        "absl_container_layout_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_raw_logging_internal_notls",
+        "absl_base_throw_delegate_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_memory_notls",
+        "absl_meta_type_traits_notls",
+        "absl_strings_notls",
+        "absl_strings_cord_notls",
+        "absl_types_compare_notls",
+    ],
+
+}
+
 genrule {
     name: "absl_container_layout_hdrs",
     srcs: [
@@ -8209,6 +13097,37 @@ cc_library_static {
         "absl_strings",
         "absl_types_span",
         "absl_utility",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_container_layout_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_container_layout_hdrs"],
+    export_generated_headers: ["absl_container_layout_hdrs"],
+
+    whole_static_libs: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_debugging_demangle_internal_notls",
+        "absl_meta_type_traits_notls",
+        "absl_strings_notls",
+        "absl_types_span_notls",
+        "absl_utility_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_debugging_demangle_internal_notls",
+        "absl_meta_type_traits_notls",
+        "absl_strings_notls",
+        "absl_types_span_notls",
+        "absl_utility_notls",
     ],
 
 }
