@@ -80,6 +80,11 @@ class Span;
 ABSL_NAMESPACE_END
 }  // namespace absl
 
+// Android local modification: some security tests use "#define private public"
+// to access private implementation details. libc++'s <ranges> is currently not
+// compatible with that.
+#if !defined(private)
+
 // If std::ranges is available, mark Span as satisfying the `view` and
 // `borrowed_range` concepts, just like std::span.
 #if !defined(__has_include)
@@ -97,6 +102,8 @@ template <typename T>
  // NOLINTNEXTLINE(build/c++20)
 inline constexpr bool std::ranges::enable_borrowed_range<absl::Span<T>> = true;
 #endif
+
+#endif // !defined(private)
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
