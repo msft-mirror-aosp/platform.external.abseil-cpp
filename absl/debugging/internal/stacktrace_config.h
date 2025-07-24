@@ -43,9 +43,7 @@
   "absl/debugging/internal/stacktrace_emscripten-inl.inc"
 
 #elif defined(__ANDROID__)
-#if defined(ABSL_HAVE_THREAD_LOCAL) && \
-    (__ANDROID_API__ >= 33 ||          \
-     defined(__ANDROID_UNAVAILABLE_SYMBOLS_ARE_WEAK__))
+#if defined(ABSL_HAVE_THREAD_LOCAL)
 #define ABSL_STACKTRACE_INL_HEADER \
   "absl/debugging/internal/stacktrace_generic-inl.inc"
 #endif
