@@ -40,8 +40,8 @@ enum class MockLogDefault { kIgnoreUnexpected, kDisallowUnexpected };
 
 // ScopedMockLog
 //
-// ScopedMockLog is a LogSink that intercepts LOG() messages issued during its
-// lifespan.
+// ScopedMockLog is a LogSink that intercepts LOG() messages issued by all
+// threads when active.
 //
 // Using this together with GoogleTest, it's easy to test how a piece of code
 // calls LOG(). The typical usage, noting the distinction between
@@ -185,6 +185,9 @@ class ScopedMockLog final {
 
   ForwardingSink sink_;
   bool is_capturing_logs_;
+  // Until C++20, the default constructor leaves the underlying value wrapped in
+  // std::atomic uninitialized, so all constructors should be sure to initialize
+  // is_triggered_.
   std::atomic<bool> is_triggered_;
 };
 
