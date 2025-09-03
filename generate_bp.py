@@ -31,7 +31,7 @@ root_libs = [
     '//absl/synchronization:synchronization',
 ]
 ignored_deps = set([
-    '@com_google_googletest//:gtest'
+    '@googletest//:gtest'
 ])
 
 # Convert names like //foo/bar:baz to foo_bar_baz.
@@ -92,11 +92,32 @@ def main():
     }
 
     cc_defaults {
+        name: "absl_notls_defaults",
+        defaults_visibility: ["//external/protobuf:__subpackages__"],
+        host_supported: true,
+        ramdisk_available: true,
+        recovery_available: true,
+        vendor_ramdisk_available: true,
+        apex_available: [
+            "//apex_available:platform",
+            "com.android.runtime",
+        ],
+        cflags: ["-DANDROID_DISABLE_TLS_FOR_LINKER=1"],
+    }
+
+    cc_defaults {
         name: "absl_test_defaults",
         host_supported: true,
         product_available: true,
         vendor_available: true,
         stl: "libc++",
+    }
+
+    cc_defaults {
+        name: "absl_notls_test_defaults",
+        host_supported: true,
+        stl: "libc++",
+        cflags: ["-DANDROID_DISABLE_TLS_FOR_LINKER=1"],
     }
     '''
 
@@ -201,6 +222,7 @@ def main():
 
         module_type = 'cc_library_static'
         defaults_module = 'absl_defaults'
+        notls_defaults_module = 'absl_notls_defaults'
         bp_deps = [bazel_name_to_bp_name(d) for d in deps if d not in ignored_deps]
         extra_attributes = ''
 
@@ -208,6 +230,7 @@ def main():
         if testonly:
             module_type = 'cc_test_library'
             defaults_module = 'absl_test_defaults'
+            notls_defaults_module = 'absl_notls_test_defaults'
             extra_attributes = '''
             static_libs: ["libgmock", "libgtest"],
             shared: {
@@ -227,8 +250,10 @@ def main():
             '''
 
         visibility_prop = ''
+        visibility_prop_notls = ''
         if name in public_libs:
             visibility_prop = 'visibility: ["//visibility:public"],'
+            visibility_prop_notls = 'visibility: ["//external/protobuf"],'
 
         bp_deps_for_bp = ['"' + d + '"' for d in bp_deps]
         src_files_for_bp = ['"' + h + '"' for h in srcs]
@@ -246,6 +271,29 @@ def main():
             ],
             export_static_lib_headers: [
                 {',\n'.join(bp_deps_for_bp)}
+            ],
+            {extra_attributes}
+        }}
+        '''
+
+        # We need to generate separate versions of the library with TLS disabled
+        # for use in the dynamic linker and its dependencies, which does not
+        # support ELF TLS segments when loading itself.
+        bp_notls_deps_for_bp = ['"' + d + '_notls"' for d in bp_deps]
+        bp += f'''
+        {module_type} {{
+            name: "{bp_mod_name}_notls",
+            defaults: ["{notls_defaults_module}"],
+            {visibility_prop_notls}
+            srcs: [
+                {',\n'.join(src_files_for_bp)}
+            ],
+            {generated_hdrs_attr}
+            whole_static_libs: [
+                {',\n'.join(bp_notls_deps_for_bp)}
+            ],
+            export_static_lib_headers: [
+                {',\n'.join(bp_notls_deps_for_bp)}
             ],
             {extra_attributes}
         }}
