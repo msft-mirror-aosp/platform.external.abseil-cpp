@@ -53,8 +53,6 @@ uint64_t MixingHashState::CombineLargeContiguousImpl64(
                                std::integral_constant<int, 8>{});
 }
 
-ABSL_CONST_INIT const void* const MixingHashState::kSeed = &kSeed;
-
 uint64_t MixingHashState::LowLevelHashImpl(const unsigned char* data,
                                            size_t len) {
   return LowLevelHashLenGt32(data, len, Seed(), &kStaticRandomData[0]);
