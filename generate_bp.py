@@ -17,6 +17,7 @@ root_libs = [
     '//absl/flags:flag',
     '//absl/flags:parse',
     '//absl/functional:bind_front',
+    '//absl/hash:hash_testing',
     '//absl/log:absl_check',
     '//absl/log:absl_log',
     '//absl/log:check',
