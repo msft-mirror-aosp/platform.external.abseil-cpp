@@ -10388,6 +10388,172 @@ cc_library_static {
 }
 
 genrule {
+    name: "absl_hash_hash_testing_hdrs",
+    srcs: [
+        "absl/hash/hash_testing.h",
+    ],
+    out: [
+        "my_include_dir/absl/hash/hash_testing.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_test_library {
+    name: "absl_hash_hash_testing",
+    defaults: ["absl_test_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_hash_hash_testing_hdrs"],
+    export_generated_headers: ["absl_hash_hash_testing_hdrs"],
+
+    whole_static_libs: [
+        "absl_hash_spy_hash_state",
+        "absl_meta_type_traits",
+        "absl_strings",
+        "absl_types_variant",
+    ],
+    export_static_lib_headers: [
+        "absl_hash_spy_hash_state",
+        "absl_meta_type_traits",
+        "absl_strings",
+        "absl_types_variant",
+    ],
+
+    static_libs: [
+        "libgmock",
+        "libgtest",
+    ],
+    shared: {
+        enabled: false,
+    },
+
+}
+
+cc_test_library {
+    name: "absl_hash_hash_testing_notls",
+    defaults: ["absl_notls_test_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_hash_hash_testing_hdrs"],
+    export_generated_headers: ["absl_hash_hash_testing_hdrs"],
+
+    whole_static_libs: [
+        "absl_hash_spy_hash_state_notls",
+        "absl_meta_type_traits_notls",
+        "absl_strings_notls",
+        "absl_types_variant_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_hash_spy_hash_state_notls",
+        "absl_meta_type_traits_notls",
+        "absl_strings_notls",
+        "absl_types_variant_notls",
+    ],
+
+    static_libs: [
+        "libgmock",
+        "libgtest",
+    ],
+    shared: {
+        enabled: false,
+    },
+
+}
+
+genrule {
+    name: "absl_hash_spy_hash_state_hdrs",
+    srcs: [
+        "absl/hash/internal/spy_hash_state.h",
+    ],
+    out: [
+        "my_include_dir/absl/hash/internal/spy_hash_state.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_test_library {
+    name: "absl_hash_spy_hash_state",
+    defaults: ["absl_test_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_hash_spy_hash_state_hdrs"],
+    export_generated_headers: ["absl_hash_spy_hash_state_hdrs"],
+
+    whole_static_libs: [
+        "absl_hash",
+        "absl_hash_weakly_mixed_integer",
+        "absl_strings",
+        "absl_strings_str_format",
+    ],
+    export_static_lib_headers: [
+        "absl_hash",
+        "absl_hash_weakly_mixed_integer",
+        "absl_strings",
+        "absl_strings_str_format",
+    ],
+
+    static_libs: [
+        "libgmock",
+        "libgtest",
+    ],
+    shared: {
+        enabled: false,
+    },
+
+}
+
+cc_test_library {
+    name: "absl_hash_spy_hash_state_notls",
+    defaults: ["absl_notls_test_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_hash_spy_hash_state_hdrs"],
+    export_generated_headers: ["absl_hash_spy_hash_state_hdrs"],
+
+    whole_static_libs: [
+        "absl_hash_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_strings_notls",
+        "absl_strings_str_format_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_hash_notls",
+        "absl_hash_weakly_mixed_integer_notls",
+        "absl_strings_notls",
+        "absl_strings_str_format_notls",
+    ],
+
+    static_libs: [
+        "libgmock",
+        "libgtest",
+    ],
+    shared: {
+        enabled: false,
+    },
+
+}
+
+genrule {
     name: "absl_functional_bind_front_hdrs",
     srcs: [
         "absl/functional/bind_front.h",
