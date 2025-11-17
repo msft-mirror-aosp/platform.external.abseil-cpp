@@ -58,13 +58,6 @@ cc_defaults {
     stl: "libc++",
 }
 
-cc_defaults {
-    name: "absl_notls_test_defaults",
-    host_supported: true,
-    stl: "libc++",
-    cflags: ["-DANDROID_DISABLE_TLS_FOR_LINKER=1"],
-}
-
 genrule {
     name: "absl_synchronization_hdrs",
     srcs: [
@@ -3209,39 +3202,6 @@ cc_test_library {
         "absl_status_statusor",
         "absl_base_config",
         "absl_strings_string_view",
-    ],
-
-    static_libs: [
-        "libgmock",
-        "libgtest",
-    ],
-    shared: {
-        enabled: false,
-    },
-
-}
-
-cc_test_library {
-    name: "absl_status_status_matchers_notls",
-    defaults: ["absl_notls_test_defaults"],
-    visibility: ["//external/protobuf"],
-    srcs: [
-        "absl/status/internal/status_matchers.cc",
-    ],
-    generated_headers: ["absl_status_status_matchers_hdrs"],
-    export_generated_headers: ["absl_status_status_matchers_hdrs"],
-
-    whole_static_libs: [
-        "absl_status_notls",
-        "absl_status_statusor_notls",
-        "absl_base_config_notls",
-        "absl_strings_string_view_notls",
-    ],
-    export_static_lib_headers: [
-        "absl_status_notls",
-        "absl_status_statusor_notls",
-        "absl_base_config_notls",
-        "absl_strings_string_view_notls",
     ],
 
     static_libs: [
@@ -7803,45 +7763,6 @@ cc_test_library {
 
 }
 
-cc_test_library {
-    name: "absl_log_scoped_mock_log_notls",
-    defaults: ["absl_notls_test_defaults"],
-    visibility: ["//external/protobuf"],
-    srcs: [
-        "absl/log/scoped_mock_log.cc",
-    ],
-    generated_headers: ["absl_log_scoped_mock_log_hdrs"],
-    export_generated_headers: ["absl_log_scoped_mock_log_hdrs"],
-
-    whole_static_libs: [
-        "absl_log_log_entry_notls",
-        "absl_log_log_sink_notls",
-        "absl_log_log_sink_registry_notls",
-        "absl_base_config_notls",
-        "absl_base_log_severity_notls",
-        "absl_base_raw_logging_internal_notls",
-        "absl_strings_notls",
-    ],
-    export_static_lib_headers: [
-        "absl_log_log_entry_notls",
-        "absl_log_log_sink_notls",
-        "absl_log_log_sink_registry_notls",
-        "absl_base_config_notls",
-        "absl_base_log_severity_notls",
-        "absl_base_raw_logging_internal_notls",
-        "absl_strings_notls",
-    ],
-
-    static_libs: [
-        "libgmock",
-        "libgtest",
-    ],
-    shared: {
-        enabled: false,
-    },
-
-}
-
 genrule {
     name: "absl_log_log_sink_registry_hdrs",
     srcs: [
@@ -10601,39 +10522,6 @@ cc_test_library {
 
 }
 
-cc_test_library {
-    name: "absl_hash_hash_testing_notls",
-    defaults: ["absl_notls_test_defaults"],
-    visibility: ["//external/protobuf"],
-    srcs: [
-
-    ],
-    generated_headers: ["absl_hash_hash_testing_hdrs"],
-    export_generated_headers: ["absl_hash_hash_testing_hdrs"],
-
-    whole_static_libs: [
-        "absl_hash_spy_hash_state_notls",
-        "absl_meta_type_traits_notls",
-        "absl_strings_notls",
-        "absl_types_variant_notls",
-    ],
-    export_static_lib_headers: [
-        "absl_hash_spy_hash_state_notls",
-        "absl_meta_type_traits_notls",
-        "absl_strings_notls",
-        "absl_types_variant_notls",
-    ],
-
-    static_libs: [
-        "libgmock",
-        "libgtest",
-    ],
-    shared: {
-        enabled: false,
-    },
-
-}
-
 genrule {
     name: "absl_hash_spy_hash_state_hdrs",
     srcs: [
@@ -10672,39 +10560,6 @@ cc_test_library {
         "absl_hash_weakly_mixed_integer",
         "absl_strings",
         "absl_strings_str_format",
-    ],
-
-    static_libs: [
-        "libgmock",
-        "libgtest",
-    ],
-    shared: {
-        enabled: false,
-    },
-
-}
-
-cc_test_library {
-    name: "absl_hash_spy_hash_state_notls",
-    defaults: ["absl_notls_test_defaults"],
-
-    srcs: [
-
-    ],
-    generated_headers: ["absl_hash_spy_hash_state_hdrs"],
-    export_generated_headers: ["absl_hash_spy_hash_state_hdrs"],
-
-    whole_static_libs: [
-        "absl_hash_notls",
-        "absl_hash_weakly_mixed_integer_notls",
-        "absl_strings_notls",
-        "absl_strings_str_format_notls",
-    ],
-    export_static_lib_headers: [
-        "absl_hash_notls",
-        "absl_hash_weakly_mixed_integer_notls",
-        "absl_strings_notls",
-        "absl_strings_str_format_notls",
     ],
 
     static_libs: [
