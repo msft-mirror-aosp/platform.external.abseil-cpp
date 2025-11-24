@@ -17,6 +17,7 @@ root_libs = [
     '//absl/flags:flag',
     '//absl/flags:parse',
     '//absl/functional:bind_front',
+    '//absl/functional:overload',
     '//absl/hash:hash_testing',
     '//absl/log:absl_check',
     '//absl/log:absl_log',
@@ -24,10 +25,12 @@ root_libs = [
     '//absl/log:die_if_null',
     '//absl/log:initialize',
     '//absl/log:log',
+    '//absl/log:log_streamer',
     '//absl/log:scoped_mock_log',
     '//absl/random:bit_gen_ref',
     '//absl/random:random',
     '//absl/status:statusor',
+    '//absl/status:status_matchers',
     '//absl/strings:strings',
     '//absl/synchronization:synchronization',
 ]
@@ -112,13 +115,6 @@ def main():
         product_available: true,
         vendor_available: true,
         stl: "libc++",
-    }
-
-    cc_defaults {
-        name: "absl_notls_test_defaults",
-        host_supported: true,
-        stl: "libc++",
-        cflags: ["-DANDROID_DISABLE_TLS_FOR_LINKER=1"],
     }
     '''
 
@@ -231,7 +227,6 @@ def main():
         if testonly:
             module_type = 'cc_test_library'
             defaults_module = 'absl_test_defaults'
-            notls_defaults_module = 'absl_notls_test_defaults'
             extra_attributes = '''
             static_libs: ["libgmock", "libgtest"],
             shared: {
@@ -277,28 +272,29 @@ def main():
         }}
         '''
 
-        # We need to generate separate versions of the library with TLS disabled
-        # for use in the dynamic linker and its dependencies, which does not
-        # support ELF TLS segments when loading itself.
-        bp_notls_deps_for_bp = ['"' + d + '_notls"' for d in bp_deps]
-        bp += f'''
-        {module_type} {{
-            name: "{bp_mod_name}_notls",
-            defaults: ["{notls_defaults_module}"],
-            {visibility_prop_notls}
-            srcs: [
-                {',\n'.join(src_files_for_bp)}
-            ],
-            {generated_hdrs_attr}
-            whole_static_libs: [
-                {',\n'.join(bp_notls_deps_for_bp)}
-            ],
-            export_static_lib_headers: [
-                {',\n'.join(bp_notls_deps_for_bp)}
-            ],
-            {extra_attributes}
-        }}
-        '''
+        if not testonly:
+            # We need to generate separate versions of the library with TLS disabled
+            # for use in the dynamic linker and its dependencies, which does not
+            # support ELF TLS segments when loading itself.
+            bp_notls_deps_for_bp = ['"' + d + '_notls"' for d in bp_deps]
+            bp += f'''
+            {module_type} {{
+                name: "{bp_mod_name}_notls",
+                defaults: ["{notls_defaults_module}"],
+                {visibility_prop_notls}
+                srcs: [
+                    {',\n'.join(src_files_for_bp)}
+                ],
+                {generated_hdrs_attr}
+                whole_static_libs: [
+                    {',\n'.join(bp_notls_deps_for_bp)}
+                ],
+                export_static_lib_headers: [
+                    {',\n'.join(bp_notls_deps_for_bp)}
+                ],
+                {extra_attributes}
+            }}
+            '''
 
         queue.extend(deps)
 
