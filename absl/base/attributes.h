@@ -277,6 +277,16 @@
 #define ABSL_ATTRIBUTE_NO_SANITIZE_UNDEFINED
 #endif
 
+// Android local modification: add attribute for disabling unsigned overflow
+// sanitization for code where it's intentional, to support vendor code that
+// enables it.
+#if ABSL_HAVE_ATTRIBUTE(no_sanitize)
+#define ABSL_ATTRIBUTE_NO_SANITIZE_UNSIGNED_OVERFLOW \
+  __attribute__((no_sanitize("unsigned-integer-overflow")))
+#else
+#define ABSL_ATTRIBUTE_NO_SANITIZE_UNSIGNED_OVERFLOW
+#endif
+
 // ABSL_ATTRIBUTE_NO_SANITIZE_CFI
 //
 // Tells the ControlFlowIntegrity sanitizer to not instrument a given function.
