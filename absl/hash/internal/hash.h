@@ -1136,6 +1136,9 @@ class ABSL_DLL MixingHashState : public HashStateBase<MixingHashState> {
   friend H absl::hash_internal::hash_weakly_mixed_integer(H,
                                                           WeaklyMixedInteger);
 
+  // Android local modification: disable unsigned integer overflow sanitizer
+  // here to support enabling it in the clients.
+  ABSL_ATTRIBUTE_NO_SANITIZE_UNSIGNED_OVERFLOW
   static MixingHashState combine_weakly_mixed_integer(
       MixingHashState hash_state, WeaklyMixedInteger value) {
     // Some transformation for the value is needed to make an empty
@@ -1315,6 +1318,9 @@ class ABSL_DLL MixingHashState : public HashStateBase<MixingHashState> {
     return mem0 | mem1;
   }
 
+  // Android local modification: disable unsigned integer overflow sanitizer
+  // here to support enabling it in the clients.
+  ABSL_ATTRIBUTE_NO_SANITIZE_UNSIGNED_OVERFLOW
   ABSL_ATTRIBUTE_ALWAYS_INLINE static uint64_t Mix(uint64_t lhs, uint64_t rhs) {
     // For 32 bit platforms we are trying to use all 64 lower bits.
     if constexpr (sizeof(size_t) < 8) {
@@ -1330,6 +1336,9 @@ class ABSL_DLL MixingHashState : public HashStateBase<MixingHashState> {
 
   // Slightly lower latency than Mix, but with lower quality. The byte swap
   // helps ensure that low bits still have high quality.
+  // Android local modification: disable unsigned integer overflow sanitizer
+  // here to support enabling it in the clients.
+  ABSL_ATTRIBUTE_NO_SANITIZE_UNSIGNED_OVERFLOW
   ABSL_ATTRIBUTE_ALWAYS_INLINE static uint64_t WeakMix(uint64_t lhs,
                                                        uint64_t rhs) {
     const uint64_t n = lhs ^ rhs;
