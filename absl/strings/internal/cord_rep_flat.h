@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/base/macros.h"
 #include "absl/strings/internal/cord_internal.h"
@@ -75,6 +76,9 @@ static_assert(AllocatedSizeToTagUnchecked(kMaxLargeFlatSize) == MAX_FLAT_TAG,
 
 // RoundUp logically performs `((n + m - 1) / m) * m` to round up to the nearest
 // multiple of `m`, optimized for the invariant that `m` is a power of 2.
+// Android local modification: disable unsigned integer overflow sanitizer here
+// to support enabling it in the clients.
+ABSL_ATTRIBUTE_NO_SANITIZE_UNSIGNED_OVERFLOW
 constexpr size_t RoundUp(size_t n, size_t m) {
   return (n + m - 1) & (0 - m);
 }
@@ -120,8 +124,16 @@ struct CordRepFlat : public CordRep {
     // Round size up so it matches a size we can exactly express in a tag.
     const size_t size = RoundUpForTag(len + kFlatOverhead);
     void* const raw_rep = ::operator new(size);
+    // GCC 13 has a false-positive -Wstringop-overflow warning here.
+    #if ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(13, 0)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wstringop-overflow"
+    #endif
     CordRepFlat* rep = new (raw_rep) CordRepFlat();
     rep->tag = AllocatedSizeToTag(size);
+    #if ABSL_INTERNAL_HAVE_MIN_GNUC_VERSION(13, 0)
+    #pragma GCC diagnostic pop
+    #endif
     return rep;
   }
 

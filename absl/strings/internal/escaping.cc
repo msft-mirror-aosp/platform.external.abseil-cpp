@@ -14,6 +14,8 @@
 
 #include "absl/strings/internal/escaping.h"
 
+#include <limits>
+
 #include "absl/base/internal/endian.h"
 #include "absl/base/internal/raw_logging.h"
 
@@ -21,14 +23,24 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace strings_internal {
 
+// The two strings below provide maps from normal 6-bit characters to their
+// base64-escaped equivalent.
+// For the inverse case, see kUn(WebSafe)Base64 in the external
+// escaping.cc.
 ABSL_CONST_INIT const char kBase64Chars[] =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+ABSL_CONST_INIT const char kWebSafeBase64Chars[] =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 size_t CalculateBase64EscapedLenInternal(size_t input_len, bool do_padding) {
   // Base64 encodes three bytes of input at a time. If the input is not
   // divisible by three, we pad as appropriate.
   //
   // Base64 encodes each three bytes of input into four bytes of output.
+  constexpr size_t kMaxSize = (std::numeric_limits<size_t>::max() - 1) / 4 * 3;
+  ABSL_INTERNAL_CHECK(input_len <= kMaxSize,
+                      "CalculateBase64EscapedLenInternal() overflow");
   size_t len = (input_len / 3) * 4;
 
   // Since all base 64 input is an integral number of octets, only the following
@@ -58,10 +70,24 @@ size_t CalculateBase64EscapedLenInternal(size_t input_len, bool do_padding) {
     }
   }
 
-  assert(len >= input_len);  // make sure we didn't overflow
   return len;
 }
 
+// ----------------------------------------------------------------------
+//   Take the input in groups of 4 characters and turn each
+//   character into a code 0 to 63 thus:
+//           A-Z map to 0 to 25
+//           a-z map to 26 to 51
+//           0-9 map to 52 to 61
+//           +(- for WebSafe) maps to 62
+//           /(_ for WebSafe) maps to 63
+//   There will be four numbers, all less than 64 which can be represented
+//   by a 6 digit binary number (aaaaaa, bbbbbb, cccccc, dddddd respectively).
+//   Arrange the 6 digit binary numbers into three bytes as such:
+//   aaaaaabb bbbbcccc ccdddddd
+//   Equals signs (one or two) are used at the end of the encoded block to
+//   indicate that the text was not an integer multiple of three bytes long.
+// ----------------------------------------------------------------------
 size_t Base64EscapeInternal(const unsigned char* src, size_t szsrc, char* dest,
                             size_t szdest, const char* base64,
                             bool do_padding) {
