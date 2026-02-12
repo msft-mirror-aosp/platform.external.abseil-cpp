@@ -15,6 +15,7 @@ third_party {
   identifier {
     type: "Git"
     value: "https://github.com/abseil/abseil-cpp"
-    version: "20250512.1"
+    version: "76bb24329e8bf5f39704eb10d21b9a80befa7c81"
+    closest_version: "20250512.1"
   }
 }

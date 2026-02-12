@@ -1136,6 +1136,9 @@ class ABSL_DLL MixingHashState : public HashStateBase<MixingHashState> {
   friend H absl::hash_internal::hash_weakly_mixed_integer(H,
                                                           WeaklyMixedInteger);
 
+  // Android local modification: disable unsigned integer overflow sanitizer
+  // here to support enabling it in the clients.
+  ABSL_ATTRIBUTE_NO_SANITIZE_UNSIGNED_OVERFLOW
   static MixingHashState combine_weakly_mixed_integer(
       MixingHashState hash_state, WeaklyMixedInteger value) {
     // Some transformation for the value is needed to make an empty
@@ -1315,6 +1318,9 @@ class ABSL_DLL MixingHashState : public HashStateBase<MixingHashState> {
     return mem0 | mem1;
   }
 
+  // Android local modification: disable unsigned integer overflow sanitizer
+  // here to support enabling it in the clients.
+  ABSL_ATTRIBUTE_NO_SANITIZE_UNSIGNED_OVERFLOW
   ABSL_ATTRIBUTE_ALWAYS_INLINE static uint64_t Mix(uint64_t lhs, uint64_t rhs) {
     // For 32 bit platforms we are trying to use all 64 lower bits.
     if constexpr (sizeof(size_t) < 8) {
@@ -1330,6 +1336,9 @@ class ABSL_DLL MixingHashState : public HashStateBase<MixingHashState> {
 
   // Slightly lower latency than Mix, but with lower quality. The byte swap
   // helps ensure that low bits still have high quality.
+  // Android local modification: disable unsigned integer overflow sanitizer
+  // here to support enabling it in the clients.
+  ABSL_ATTRIBUTE_NO_SANITIZE_UNSIGNED_OVERFLOW
   ABSL_ATTRIBUTE_ALWAYS_INLINE static uint64_t WeakMix(uint64_t lhs,
                                                        uint64_t rhs) {
     const uint64_t n = lhs ^ rhs;
@@ -1368,15 +1377,10 @@ class ABSL_DLL MixingHashState : public HashStateBase<MixingHashState> {
   // On other platforms this is still going to be non-deterministic but most
   // probably per-build and not per-process.
   ABSL_ATTRIBUTE_ALWAYS_INLINE static uint64_t Seed() {
-#if (!defined(__clang__) || __clang_major__ > 11) && \
-    (!defined(__apple_build_version__) ||            \
-     __apple_build_version__ >= 19558921)  // Xcode 12
-    return static_cast<uint64_t>(reinterpret_cast<uintptr_t>(&kSeed));
-#else
-    // Workaround the absence of
-    // https://github.com/llvm/llvm-project/commit/bc15bf66dcca76cc06fe71fca35b74dc4d521021.
-    return static_cast<uint64_t>(reinterpret_cast<uintptr_t>(kSeed));
-#endif
+    // Android local modification: use an address of a function in libc instead
+    // of a local constant, so that the result is the same even if this code is
+    // linked multiple times in the same process. See b/436318577.
+    return static_cast<uint64_t>(reinterpret_cast<uintptr_t>(&strcmp));
   }
   static const void* const kSeed;
 
