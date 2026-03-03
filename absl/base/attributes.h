@@ -277,6 +277,16 @@
 #define ABSL_ATTRIBUTE_NO_SANITIZE_UNDEFINED
 #endif
 
+// Android local modification: add attribute for disabling unsigned overflow
+// sanitization for code where it's intentional, to support vendor code that
+// enables it.
+#if ABSL_HAVE_ATTRIBUTE(no_sanitize)
+#define ABSL_ATTRIBUTE_NO_SANITIZE_UNSIGNED_OVERFLOW \
+  __attribute__((no_sanitize("unsigned-integer-overflow")))
+#else
+#define ABSL_ATTRIBUTE_NO_SANITIZE_UNSIGNED_OVERFLOW
+#endif
+
 // ABSL_ATTRIBUTE_NO_SANITIZE_CFI
 //
 // Tells the ControlFlowIntegrity sanitizer to not instrument a given function.
@@ -553,7 +563,7 @@
 //
 // Prevents the compiler from complaining about variables that appear unused.
 //
-// Deprecated: Use the standard C++17 `[[maybe_unused]` instead.
+// Deprecated: Use the standard C++17 `[[maybe_unused]]` instead.
 //
 // Due to differences in positioning requirements between the old, compiler
 // specific __attribute__ syntax and the now standard `[[maybe_unused]]`, this
@@ -580,7 +590,11 @@
 // Instructs the compiler not to use natural alignment for a tagged data
 // structure, but instead to reduce its alignment to 1.
 //
-// Therefore, DO NOT APPLY THIS ATTRIBUTE TO STRUCTS CONTAINING ATOMICS. Doing
+// Use of this attribute is HIGHLY DISCOURAGED. Taking the address of or
+// binding a reference to any unaligned member is UB, and it is very easy to
+// do so unintentionally when passing such members as function arguments.
+//
+// DO NOT APPLY THIS ATTRIBUTE TO STRUCTS CONTAINING ATOMICS. Doing
 // so can cause atomic variables to be mis-aligned and silently violate
 // atomicity on x86.
 //
