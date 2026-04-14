@@ -51,6 +51,10 @@ struct IntPolicy {
   using key_type = int64_t;
   using init_type = int64_t;
 
+  using DefaultHash = void;
+  using DefaultEq = void;
+  using DefaultAlloc = void;
+
   static void construct(void*, int64_t* slot, int64_t v) { *slot = v; }
   static void destroy(void*, int64_t*) {}
   static void transfer(void*, int64_t* new_slot, int64_t* old_slot) {
@@ -64,7 +68,7 @@ struct IntPolicy {
     return std::forward<F>(f)(x, x);
   }
 
-  template <class Hash>
+  template <class Hash, bool kIsDefault>
   static constexpr HashSlotFn get_hash_slot_fn() {
     return nullptr;
   }
@@ -97,6 +101,10 @@ class StringPolicy {
   using key_type = std::string;
   using init_type = std::pair<std::string, std::string>;
 
+  using DefaultHash = void;
+  using DefaultEq = void;
+  using DefaultAlloc = void;
+
   template <class allocator_type, class... Args>
   static void construct(allocator_type* alloc, slot_type* slot, Args... args) {
     std::allocator_traits<allocator_type>::construct(
@@ -127,7 +135,7 @@ class StringPolicy {
                       PairArgs(std::forward<Args>(args)...));
   }
 
-  template <class Hash>
+  template <class Hash, bool kIsDefault>
   static constexpr HashSlotFn get_hash_slot_fn() {
     return nullptr;
   }
@@ -518,17 +526,6 @@ void BM_Group_MaskNonFull(benchmark::State& state) {
   }
 }
 BENCHMARK(BM_Group_MaskNonFull);
-
-void BM_Group_CountLeadingEmptyOrDeleted(benchmark::State& state) {
-  std::array<ctrl_t, Group::kWidth> group;
-  Iota(group.begin(), group.end(), -2);
-  Group g{group.data()};
-  for (auto _ : state) {
-    ::benchmark::DoNotOptimize(g);
-    ::benchmark::DoNotOptimize(g.CountLeadingEmptyOrDeleted());
-  }
-}
-BENCHMARK(BM_Group_CountLeadingEmptyOrDeleted);
 
 void BM_Group_MatchFirstEmptyOrDeleted(benchmark::State& state) {
   std::array<ctrl_t, Group::kWidth> group;
