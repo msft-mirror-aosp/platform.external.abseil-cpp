@@ -20,12 +20,25 @@
 #ifndef ABSL_DEBUGGING_INTERNAL_STACKTRACE_GENERIC_INL_H_
 #define ABSL_DEBUGGING_INTERNAL_STACKTRACE_GENERIC_INL_H_
 
+#ifndef __ANDROID__
 #include <execinfo.h>
+#endif
+
 #include <atomic>
+#include <cstdint>
 #include <cstring>
 
 #include "absl/debugging/stacktrace.h"
 #include "absl/base/attributes.h"
+
+// Android local modification: locally declare backtrace() as a weak symbol.
+// Normally we would use NDK's weak symbol mode, but for an unclear reason it
+// causes backtrace() to be strongly linked into some tests even when we set
+// sdk_version to 29, which breaks Mainline backwards compatibility tests.
+// TODO: b/432562276 - investigate root cause and remove this workaround.
+#ifdef __ANDROID__
+int backtrace(void** buffer, int size) ABSL_ATTRIBUTE_WEAK;
+#endif
 
 // Sometimes, we can try to get a stack trace from within a stack
 // trace, because we don't block signals inside this code (which would be too
@@ -46,6 +59,11 @@ static std::atomic<bool> disable_stacktraces(true);  // Disabled until healthy.
 // Waiting until static initializers run seems to be late enough.
 // This file is included into stacktrace.cc so this will only run once.
 ABSL_ATTRIBUTE_UNUSED static int stacktraces_enabler = []() {
+#ifdef __ANDROID__
+  if (&backtrace == nullptr) {
+    return 0;
+  }
+#endif
   void* unused_stack[1];
   // Force the first backtrace to happen early to get the one-time shared lib
   // loading (allocation) out of the way. After the first call it is much safer
@@ -56,8 +74,9 @@ ABSL_ATTRIBUTE_UNUSED static int stacktraces_enabler = []() {
 }();
 
 template <bool IS_STACK_FRAMES, bool IS_WITH_CONTEXT>
-static int UnwindImpl(void** result, int* sizes, int max_depth, int skip_count,
-                      const void *ucp, int *min_dropped_frames) {
+static int UnwindImpl(void** result, uintptr_t* frames, int* sizes,
+                      int max_depth, int skip_count, const void* ucp,
+                      int* min_dropped_frames) {
   if (recursive || disable_stacktraces.load(std::memory_order_relaxed)) {
     return 0;
   }
@@ -79,8 +98,13 @@ static int UnwindImpl(void** result, int* sizes, int max_depth, int skip_count,
     result[i] = stack[i + skip_count];
 
   if (IS_STACK_FRAMES) {
-    // No implementation for finding out the stack frame sizes yet.
-    memset(sizes, 0, sizeof(*sizes) * static_cast<size_t>(result_count));
+    // No implementation for finding out the stack frames yet.
+    if (frames != nullptr) {
+      memset(frames, 0, sizeof(*frames) * static_cast<size_t>(result_count));
+    }
+    if (sizes != nullptr) {
+      memset(sizes, 0, sizeof(*sizes) * static_cast<size_t>(result_count));
+    }
   }
   if (min_dropped_frames != nullptr) {
     if (size - skip_count - max_depth > 0) {
