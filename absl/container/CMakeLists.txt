@@ -349,7 +349,6 @@ absl_cc_test(
     "flat_hash_set_test.cc"
   COPTS
     ${ABSL_TEST_COPTS}
-    "-DUNORDERED_SET_CXX17"
   DEPS
     absl::check
     absl::config
@@ -432,7 +431,6 @@ absl_cc_test(
     "node_hash_set_test.cc"
   COPTS
     ${ABSL_TEST_COPTS}
-    "-DUNORDERED_SET_CXX17"
   DEPS
     absl::hash_generator_testing
     absl::hash_policy_testing
@@ -469,6 +467,7 @@ absl_cc_library(
     ${ABSL_DEFAULT_COPTS}
   DEPS
     absl::config
+    absl::hash
     absl::memory
     absl::type_traits
     absl::utility
@@ -483,6 +482,7 @@ absl_cc_test(
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
+    absl::config
     absl::container_memory
     absl::no_destructor
     absl::strings
@@ -539,6 +539,7 @@ absl_cc_library(
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
+    absl::config
     absl::hash_policy_testing
     absl::memory
     absl::meta
@@ -583,6 +584,7 @@ absl_cc_library(
   COPTS
     ${ABSL_DEFAULT_COPTS}
   DEPS
+    absl::container_memory
     absl::common_policy_traits
     absl::meta
   PUBLIC
@@ -761,6 +763,19 @@ absl_cc_library(
     absl::endian
 )
 
+absl_cc_test(
+  NAME
+    hashtable_control_bytes_test
+  SRCS
+    "internal/hashtable_control_bytes_test.cc"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  DEPS
+    absl::config
+    absl::hashtable_control_bytes
+    GTest::gmock_main
+)
+
 # Internal-only target, do not depend on directly.
 absl_cc_library(
   NAME
@@ -772,6 +787,7 @@ absl_cc_library(
   COPTS
     ${ABSL_DEFAULT_COPTS}
   DEPS
+    absl::base
     absl::bits
     absl::common_policy_traits
     absl::compressed_tuple
@@ -933,6 +949,7 @@ absl_cc_library(
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
+    absl::config
     absl::hash_generator_testing
     absl::hash_policy_testing
     GTest::gmock
@@ -992,6 +1009,7 @@ absl_cc_library(
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
+    absl::config
     absl::hash_generator_testing
     absl::hash_policy_testing
     GTest::gmock
@@ -1085,5 +1103,137 @@ absl_cc_test(
     absl::node_hash_map
     absl::node_hash_set
     absl::hashtablez_sampler
+    GTest::gmock_main
+)
+
+absl_cc_library(
+  NAME
+    heterogeneous_lookup_testing
+  HDRS
+    "internal/heterogeneous_lookup_testing.h"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  LINKOPTS
+    ${ABSL_DEFAULT_LINKOPTS}
+  DEPS
+    absl::config
+    absl::test_instance_tracker
+    GTest::gmock
+)
+
+absl_cc_library(
+  NAME
+    linked_hash_set
+  HDRS
+    "linked_hash_set.h"
+  COPTS
+    ${ABSL_DEFAULT_COPTS}
+  LINKOPTS
+    ${ABSL_DEFAULT_LINKOPTS}
+  DEPS
+     absl::container_common
+     absl::config
+     absl::core_headers
+     absl::flat_hash_set
+)
+
+absl_cc_test(
+  NAME
+    linked_hash_set_test
+  SRCS
+    "linked_hash_set_test.cc"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  LINKOPTS
+    ${ABSL_DEFAULT_LINKOPTS}
+  DEPS
+    absl::linked_hash_set
+    absl::config
+    absl::heterogeneous_lookup_testing
+    absl::hash_generator_testing
+    absl::hash_policy_testing
+    absl::string_view
+    absl::test_instance_tracker
+    absl::unordered_set_constructor_test
+    absl::unordered_set_lookup_test
+    absl::unordered_set_members_test
+    absl::unordered_set_modifiers_test
+    GTest::gmock_main
+)
+
+absl_cc_library(
+  NAME
+    linked_hash_map
+  HDRS
+    "linked_hash_map.h"
+  COPTS
+    ${ABSL_DEFAULT_COPTS}
+  LINKOPTS
+    ${ABSL_DEFAULT_LINKOPTS}
+  DEPS
+     absl::container_common
+     absl::config
+     absl::core_headers
+     absl::flat_hash_set
+     absl::throw_delegate
+)
+
+absl_cc_test(
+  NAME
+    linked_hash_map_test
+  SRCS
+    "linked_hash_map_test.cc"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  LINKOPTS
+    ${ABSL_DEFAULT_LINKOPTS}
+  DEPS
+    absl::linked_hash_map
+    absl::config
+    absl::exception_testing
+    absl::heterogeneous_lookup_testing
+    absl::hash_generator_testing
+    absl::hash_policy_testing
+    absl::string_view
+    absl::test_instance_tracker
+    absl::unordered_set_constructor_test
+    absl::unordered_set_lookup_test
+    absl::unordered_set_members_test
+    absl::unordered_set_modifiers_test
+    GTest::gmock_main
+)
+
+absl_cc_library(
+  NAME
+    chunked_queue
+  HDRS
+    "chunked_queue.h"
+    "internal/chunked_queue.h"
+  COPTS
+    ${ABSL_DEFAULT_COPTS}
+  LINKOPTS
+    ${ABSL_DEFAULT_LINKOPTS}
+  DEPS
+     absl::config
+     absl::core_headers
+     absl::iterator_traits_internal
+     absl::layout
+)
+
+absl_cc_test(
+  NAME
+    chunked_queue_test
+  SRCS
+    "chunked_queue_test.cc"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  LINKOPTS
+    ${ABSL_DEFAULT_LINKOPTS}
+  DEPS
+    absl::chunked_queue
+    absl::config
+    absl::core_headers
+    absl::strings
+    absl::test_allocator
     GTest::gmock_main
 )
