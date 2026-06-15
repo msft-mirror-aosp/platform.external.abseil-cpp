@@ -65,7 +65,6 @@ cc_library(
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
-        "//absl:friends",
     ],
     deps = [
         "//absl/base",
@@ -296,7 +295,6 @@ cc_library(
     copts = ABSL_TEST_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
-        "//absl:friends",
     ],
     deps = [
         ":synchronization",
@@ -345,7 +343,6 @@ cc_library(
     copts = ABSL_TEST_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
-        "//absl:friends",
     ],
     deps = [
         ":synchronization",

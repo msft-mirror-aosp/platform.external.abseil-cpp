@@ -56,26 +56,8 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
     deps = [":config"],
-)
-
-cc_library(
-    name = "hardening",
-    hdrs = [
-        "internal/hardening.h",
-    ],
-    copts = ABSL_DEFAULT_COPTS,
-    linkopts = ABSL_DEFAULT_LINKOPTS,
-    visibility = [
-        "//absl:__subpackages__",
-        "//absl:friends",
-    ],
-    deps = [
-        ":config",
-        ":core_headers",
-    ],
 )
 
 cc_library(
@@ -131,7 +113,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
     deps = [
         ":atomic_hook",
@@ -155,7 +136,6 @@ cc_library(
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
-        "//absl:friends",
         "//absl/base:__pkg__",
     ],
     deps = [
@@ -186,7 +166,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
     deps = [
         ":base_internal",
@@ -268,7 +247,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
     deps = [
         ":config",
@@ -399,14 +377,13 @@ cc_test(
 
 cc_library(
     name = "throw_delegate",
-    srcs = [
-        "throw_delegate.cc",
-    ],
-    hdrs = [
-        "throw_delegate.h",
-    ],
+    srcs = ["internal/throw_delegate.cc"],
+    hdrs = ["internal/throw_delegate.h"],
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
+    visibility = [
+        "//absl:__subpackages__",
+    ],
     deps = [
         ":config",
         ":raw_logging_internal",
@@ -448,7 +425,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
     deps = [
         ":config",
@@ -462,7 +438,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
 )
 
@@ -543,7 +518,6 @@ cc_library(
     copts = ABSL_TEST_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
-        "//absl:friends",
         "//absl/base:__pkg__",
     ],
     deps = [
@@ -579,7 +553,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
     deps = [
         ":base",
@@ -639,23 +612,6 @@ cc_test(
     deps = [
         ":base",
         ":config",
-        "@googletest//:gtest",
-        "@googletest//:gtest_main",
-    ],
-)
-
-cc_test(
-    name = "hardening_test",
-    size = "small",
-    srcs = [
-        "internal/hardening_test.cc",
-    ],
-    copts = ABSL_TEST_COPTS,
-    linkopts = ABSL_DEFAULT_LINKOPTS,
-    deps = [
-        ":config",
-        ":core_headers",
-        ":hardening",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
@@ -850,7 +806,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
     deps = [
         ":config",
@@ -949,7 +904,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
     deps = [
         ":config",
@@ -998,6 +952,7 @@ cc_test(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     deps = [
         ":core_headers",
+        "//absl/types:optional",
         "@googletest//:gtest",
         "@googletest//:gtest_main",
     ],
@@ -1010,7 +965,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
     deps = [
         ":config",
@@ -1040,7 +994,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
     deps = [
         "//absl/base:config",

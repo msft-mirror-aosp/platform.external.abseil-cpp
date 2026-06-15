@@ -24,9 +24,6 @@
 
 namespace {
 
-// Ensure that absl::bit_cast works between FastTypeIdType and void*.
-static_assert(sizeof(absl::FastTypeIdType) == sizeof(void*));
-
 // NOLINTBEGIN(runtime/int)
 #define PRIM_TYPES(A)   \
   A(bool)               \

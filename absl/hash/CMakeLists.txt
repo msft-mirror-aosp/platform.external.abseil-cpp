@@ -76,8 +76,10 @@ absl_cc_test(
     absl::hash_testing
     absl::memory
     absl::meta
+    absl::optional
     absl::spy_hash_state
     absl::string_view
+    absl::variant
     GTest::gmock_main
 )
 
@@ -135,7 +137,6 @@ absl_cc_library(
   DEPS
     absl::config
     absl::core_headers
-    absl::bits
     absl::endian
 )
 
