@@ -30,12 +30,6 @@
 #ifndef ABSL_FUNCTIONAL_BIND_FRONT_H_
 #define ABSL_FUNCTIONAL_BIND_FRONT_H_
 
-#ifdef __has_include
-#if __has_include(<version>)
-#include <version>
-#endif
-#endif
-
 #if defined(__cpp_lib_bind_front) && __cpp_lib_bind_front >= 201907L
 #include <functional>  // For std::bind_front.
 #endif  // defined(__cpp_lib_bind_front) && __cpp_lib_bind_front >= 201907L
@@ -190,7 +184,7 @@ template <class F, class... BoundArgs>
 constexpr functional_internal::bind_front_t<F, BoundArgs...> bind_front(
     F&& func, BoundArgs&&... args) {
   return functional_internal::bind_front_t<F, BoundArgs...>(
-      std::in_place, std::forward<F>(func), std::forward<BoundArgs>(args)...);
+      absl::in_place, std::forward<F>(func), std::forward<BoundArgs>(args)...);
 }
 #endif  // defined(__cpp_lib_bind_front) && __cpp_lib_bind_front >= 201907L
 

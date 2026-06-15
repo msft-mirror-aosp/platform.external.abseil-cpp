@@ -67,7 +67,6 @@
 #include <cstring>
 #include <iosfwd>
 #include <iterator>
-#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
@@ -75,7 +74,6 @@
 #include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/base/internal/endian.h"
-#include "absl/base/internal/hardening.h"
 #include "absl/base/macros.h"
 #include "absl/base/nullability.h"
 #include "absl/base/optimization.h"
@@ -98,7 +96,6 @@
 #include "absl/strings/string_view.h"
 #include "absl/types/compare.h"
 #include "absl/types/optional.h"
-#include "absl/types/span.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -108,7 +105,6 @@ template <typename Releaser>
 Cord MakeCordFromExternal(absl::string_view, Releaser&&);
 void CopyCordToString(const Cord& src, std::string* absl_nonnull dst);
 void AppendCordToString(const Cord& src, std::string* absl_nonnull dst);
-[[nodiscard]] size_t CopyCordToSpan(const Cord& src, absl::Span<char> dst);
 
 // Cord memory accounting modes
 enum class CordMemoryAccounting {
@@ -177,7 +173,7 @@ class Cord {
  private:
   template <typename T>
   using EnableIfString =
-      std::enable_if_t<std::is_same<T, std::string>::value, int>;
+      absl::enable_if_t<std::is_same<T, std::string>::value, int>;
 
  public:
   // Cord::Cord() Constructors.
@@ -226,7 +222,7 @@ class Cord {
   // remain live until the releaser is invoked. The callable releaser also must:
   //
   //   * be move constructible
-  //   * support `void operator()(absl::string_view)` or `void operator()()`
+  //   * support `void operator()(absl::string_view) const` or `void operator()`
   //
   // Example:
   //
@@ -435,12 +431,6 @@ class Cord {
   // conversion operator to `std::string`.
   friend void AppendCordToString(const Cord& src,
                                  std::string* absl_nonnull dst);
-
-  // CopyCordToSpan()
-  //
-  // Copies up to `dst.size()` bytes starting from the beginning of `src` to
-  // `dst`.  Returns the number of bytes copied.
-  friend size_t CopyCordToSpan(const Cord& src, absl::Span<char> dst);
 
   class CharIterator;
 
@@ -773,7 +763,7 @@ class Cord {
   //
   // If this cord's representation is a single flat array, returns a
   // string_view referencing that array.  Otherwise returns nullopt.
-  std::optional<absl::string_view> TryFlat() const
+  absl::optional<absl::string_view> TryFlat() const
       ABSL_ATTRIBUTE_LIFETIME_BOUND;
 
   // Cord::Flatten()
@@ -826,11 +816,11 @@ class Cord {
 
   // Returns this cord's expected checksum, if it has one.  Otherwise, returns
   // nullopt.
-  std::optional<uint32_t> ExpectedChecksum() const;
+  absl::optional<uint32_t> ExpectedChecksum() const;
 
   template <typename H>
   friend H AbslHashValue(H hash_state, const absl::Cord& c) {
-    std::optional<absl::string_view> maybe_flat = c.TryFlat();
+    absl::optional<absl::string_view> maybe_flat = c.TryFlat();
     if (maybe_flat.has_value()) {
       return H::combine(std::move(hash_state), *maybe_flat);
     }
@@ -1146,7 +1136,7 @@ template <typename Releaser>
 CordRep* absl_nonnull NewExternalRep(absl::string_view data,
                                      Releaser&& releaser) {
   assert(!data.empty());
-  using ReleaserType = std::decay_t<Releaser>;
+  using ReleaserType = absl::decay_t<Releaser>;
   CordRepExternal* rep = new CordRepExternalImpl<ReleaserType>(
       std::forward<Releaser>(releaser), 0);
   InitializeCordRepExternal(data, rep);
@@ -1171,7 +1161,7 @@ Cord MakeCordFromExternal(absl::string_view data, Releaser&& releaser) {
                                    data, std::forward<Releaser>(releaser)),
                                Cord::MethodIdentifier::kMakeCordFromExternal);
   } else {
-    using ReleaserType = std::decay_t<Releaser>;
+    using ReleaserType = absl::decay_t<Releaser>;
     cord_internal::InvokeReleaser(
         cord_internal::Rank1{}, ReleaserType(std::forward<Releaser>(releaser)),
         data);
@@ -1406,7 +1396,7 @@ inline size_t Cord::EstimatedMemoryUsage(
   return result;
 }
 
-inline std::optional<absl::string_view> Cord::TryFlat() const
+inline absl::optional<absl::string_view> Cord::TryFlat() const
     ABSL_ATTRIBUTE_LIFETIME_BOUND {
   absl::cord_internal::CordRep* rep = contents_.tree();
   if (rep == nullptr) {
@@ -1416,7 +1406,7 @@ inline std::optional<absl::string_view> Cord::TryFlat() const
   if (GetFlatAux(rep, &fragment)) {
     return fragment;
   }
-  return std::nullopt;
+  return absl::nullopt;
 }
 
 inline absl::string_view Cord::Flatten() ABSL_ATTRIBUTE_LIFETIME_BOUND {
@@ -1562,8 +1552,8 @@ inline void Cord::ChunkIterator::AdvanceBytesBtree(size_t n) {
 }
 
 inline Cord::ChunkIterator& Cord::ChunkIterator::operator++() {
-  // Failure of this assertion indicates an attempt to iterate past `end()`.
-  absl::base_internal::HardeningAssertGT(bytes_remaining_, size_t{0});
+  ABSL_HARDENING_ASSERT(bytes_remaining_ > 0 &&
+                        "Attempted to iterate past `end()`");
   assert(bytes_remaining_ >= current_chunk_.size());
   bytes_remaining_ -= current_chunk_.size();
   if (bytes_remaining_ > 0) {
@@ -1592,12 +1582,12 @@ inline bool Cord::ChunkIterator::operator!=(const ChunkIterator& other) const {
 }
 
 inline Cord::ChunkIterator::reference Cord::ChunkIterator::operator*() const {
-  absl::base_internal::HardeningAssertGT(bytes_remaining_, size_t{0});
+  ABSL_HARDENING_ASSERT(bytes_remaining_ != 0);
   return current_chunk_;
 }
 
 inline Cord::ChunkIterator::pointer Cord::ChunkIterator::operator->() const {
-  absl::base_internal::HardeningAssertGT(bytes_remaining_, size_t{0});
+  ABSL_HARDENING_ASSERT(bytes_remaining_ != 0);
   return &current_chunk_;
 }
 

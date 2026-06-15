@@ -67,7 +67,6 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
-#include <memory>
 
 #include "absl/base/casts.h"
 #include "absl/base/dynamic_annotations.h"
@@ -146,7 +145,16 @@ inline constexpr bool kPlatformUsesOPDSections = false;
 // pointers and the first one is the function's entry.
 const size_t kFunctionDescriptorSize = sizeof(void *) * 2;
 
-std::atomic<SymbolDecorator::Factory*> g_decorator_factory = nullptr;
+const int kMaxDecorators = 10;  // Seems like a reasonable upper limit.
+
+struct InstalledSymbolDecorator {
+  SymbolDecorator fn;
+  void *arg;
+  int ticket;
+};
+
+int g_num_decorators;
+InstalledSymbolDecorator g_decorators[kMaxDecorators];
 
 struct FileMappingHint {
   const void *start;
@@ -154,6 +162,16 @@ struct FileMappingHint {
   uint64_t offset;
   const char *filename;
 };
+
+// Protects g_decorators.
+// We are using SpinLock and not a Mutex here, because we may be called
+// from inside Mutex::Lock itself, and it prohibits recursive calls.
+// This happens in e.g. base/stacktrace_syscall_unittest.
+// Moreover, we are using only try_lock(), if the decorator list
+// is being modified (is busy), we skip all decorators, and possibly
+// loose some info. Sorry, that's the best we could do.
+ABSL_CONST_INIT absl::base_internal::SpinLock g_decorators_mu(
+    absl::base_internal::SCHEDULE_KERNEL_ONLY);
 
 const int kMaxFileMappingHints = 8;
 int g_num_file_mapping_hints;
@@ -172,23 +190,32 @@ static void SafeMemZero(void *p, size_t size) {
 }
 
 struct ObjFile {
-  char *filename = nullptr;
-  const void *start_addr = nullptr;
-  const void *end_addr = nullptr;
-  uint64_t offset = 0;
+  ObjFile()
+      : filename(nullptr),
+        start_addr(nullptr),
+        end_addr(nullptr),
+        offset(0),
+        fd(-1),
+        elf_type(-1) {
+    SafeMemZero(&elf_header, sizeof(elf_header));
+    SafeMemZero(&phdr[0], sizeof(phdr));
+  }
+
+  char *filename;
+  const void *start_addr;
+  const void *end_addr;
+  uint64_t offset;
 
   // The following fields are initialized on the first access to the
   // object file.
-  int fd = -1;
-  int elf_type = -1;
-  ElfW(Ehdr) elf_header = {};
+  int fd;
+  int elf_type;
+  ElfW(Ehdr) elf_header;
 
   // PT_LOAD program header describing executable code.
   // Normally we expect just one, but SWIFT binaries have two.
   // CUDA binaries have 3 (see cr/473913254 description).
-  std::array<ElfW(Phdr), 4> phdr = {};
-
-  SymbolDecoratorPtr decorator = {};
+  std::array<ElfW(Phdr), 4> phdr;
 };
 
 // Build 4-way associative cache for symbols. Within each cache line, symbols
@@ -239,8 +266,7 @@ ObjFile *AddrMap::Add() {
         static_cast<ObjFile *>(base_internal::LowLevelAlloc::AllocWithArena(
             new_allocated * sizeof(*new_obj_), base_internal::SigSafeArena()));
     if (obj_) {
-      std::uninitialized_move_n(obj_, size_, new_obj_);
-      std::destroy_n(obj_, size_);
+      memcpy(new_obj_, obj_, allocated_ * sizeof(*new_obj_));
       base_internal::LowLevelAlloc::Free(obj_);
     }
     obj_ = new_obj_;
@@ -283,8 +309,6 @@ class Symbolizer {
   ~Symbolizer();
   const char *GetSymbol(const void *const pc);
 
-  void UpdateDecoratorsIfNeeded(SymbolDecorator::Factory* decorator_factory);
-
  private:
   char *CopyString(const char *s) {
     size_t len = strlen(s);
@@ -321,7 +345,6 @@ class Symbolizer {
   };
 
   AddrMap addr_map_;
-  SymbolDecorator::Factory* decorator_factory_ = nullptr;
 
   bool ok_;
   bool addr_map_read_;
@@ -399,14 +422,11 @@ static Symbolizer *AllocateSymbolizer() {
   base_internal::InitSigSafeArena();
   Symbolizer *symbolizer =
       g_cached_symbolizer.exchange(nullptr, std::memory_order_acquire);
-  if (symbolizer == nullptr) {
-    void* ptr = base_internal::LowLevelAlloc::AllocWithArena(
-        SymbolizerSize(), base_internal::SigSafeArena());
-    symbolizer = new (ptr) Symbolizer();
+  if (symbolizer != nullptr) {
+    return symbolizer;
   }
-  symbolizer->UpdateDecoratorsIfNeeded(
-      g_decorator_factory.load(std::memory_order_acquire));
-  return symbolizer;
+  return new (base_internal::LowLevelAlloc::AllocWithArena(
+      SymbolizerSize(), base_internal::SigSafeArena())) Symbolizer();
 }
 
 // Set g_cached_symbolize_state to s if it is null, otherwise
@@ -423,7 +443,7 @@ static void FreeSymbolizer(Symbolizer *s) {
 
 Symbolizer::Symbolizer() : ok_(true), addr_map_read_(false) {
   for (SymbolCacheLine &symbol_cache_line : symbol_cache_) {
-    for (size_t j = 0; j < std::size(symbol_cache_line.name); ++j) {
+    for (size_t j = 0; j < ABSL_ARRAYSIZE(symbol_cache_line.name); ++j) {
       symbol_cache_line.pc[j] = nullptr;
       symbol_cache_line.name[j] = nullptr;
       symbol_cache_line.age[j] = 0;
@@ -438,26 +458,6 @@ Symbolizer::~Symbolizer() {
     }
   }
   ClearAddrMap();
-}
-
-void Symbolizer::UpdateDecoratorsIfNeeded(
-    SymbolDecorator::Factory* decorator_factory) {
-  if (decorator_factory_ == decorator_factory) return;
-
-  for (SymbolCacheLine& symbol_cache_line : symbol_cache_) {
-    for (size_t j = 0; j < std::size(symbol_cache_line.name); ++j) {
-      symbol_cache_line.pc[j] = nullptr;
-      base_internal::LowLevelAlloc::Free(symbol_cache_line.name[j]);
-      symbol_cache_line.name[j] = nullptr;
-      symbol_cache_line.age[j] = 0;
-    }
-  }
-
-  decorator_factory_ = decorator_factory;
-  for (size_t i = 0, end = addr_map_.Size(); i < end; ++i) {
-    ObjFile* obj = addr_map_.At(i);
-    obj->decorator.reset();
-  }
 }
 
 // We don't use assert() since it's not guaranteed to be
@@ -1387,8 +1387,7 @@ static void MaybeOpenFdFromSelfExe(ObjFile *obj) {
   obj->fd = fd;
 }
 
-static bool MaybeInitializeObjFile(
-    ObjFile* obj, SymbolDecorator::Factory* decorator_factory) {
+static bool MaybeInitializeObjFile(ObjFile *obj) {
   if (obj->fd < 0) {
     obj->fd = OpenReadOnlyWithHighFD(obj->filename);
 
@@ -1470,9 +1469,6 @@ static bool MaybeInitializeObjFile(
       return false;
     }
   }
-  if (decorator_factory != nullptr && obj->decorator == nullptr) {
-    obj->decorator = decorator_factory(obj->fd);
-  }
   return true;
 }
 
@@ -1486,8 +1482,9 @@ static bool MaybeInitializeObjFile(
 const char *Symbolizer::GetUncachedSymbol(const void *pc) {
   ObjFile *const obj = FindObjFile(pc, 1);
   ptrdiff_t relocation = 0;
+  int fd = -1;
   if (obj != nullptr) {
-    if (MaybeInitializeObjFile(obj, decorator_factory_)) {
+    if (MaybeInitializeObjFile(obj)) {
       const size_t start_addr = reinterpret_cast<size_t>(obj->start_addr);
       if (obj->elf_type == ET_DYN && start_addr >= obj->offset) {
         // This object was relocated.
@@ -1527,6 +1524,7 @@ const char *Symbolizer::GetUncachedSymbol(const void *pc) {
         }
       }
 
+      fd = obj->fd;
       if (GetSymbolFromObjectFile(*obj, pc, relocation, symbol_buf_,
                                   sizeof(symbol_buf_), tmp_buf_,
                                   sizeof(tmp_buf_)) == SYMBOL_FOUND) {
@@ -1551,9 +1549,17 @@ const char *Symbolizer::GetUncachedSymbol(const void *pc) {
 #endif
   }
 
-  if (obj != nullptr && obj->decorator != nullptr) {
-    obj->decorator->Decorate(pc, relocation, symbol_buf_, sizeof(symbol_buf_),
-                             tmp_buf_, sizeof(tmp_buf_));
+  if (g_decorators_mu.try_lock()) {
+    if (g_num_decorators > 0) {
+      SymbolDecoratorArgs decorator_args = {
+          pc,       relocation,       fd,     symbol_buf_, sizeof(symbol_buf_),
+          tmp_buf_, sizeof(tmp_buf_), nullptr};
+      for (int i = 0; i < g_num_decorators; ++i) {
+        decorator_args.arg = g_decorators[i].arg;
+        g_decorators[i].fn(&decorator_args);
+      }
+    }
+    g_decorators_mu.unlock();
   }
   if (symbol_buf_[0] == '\0') {
     return nullptr;
@@ -1598,9 +1604,51 @@ const char *Symbolizer::GetSymbol(const void *pc) {
 #endif
 }
 
-SymbolDecorator::Factory* SetSymbolDecoratorFactory(
-    SymbolDecorator::Factory* factory) {
-  return g_decorator_factory.exchange(factory, std::memory_order_acq_rel);
+bool RemoveAllSymbolDecorators(void) {
+  if (!g_decorators_mu.try_lock()) {
+    // Someone else is using decorators. Get out.
+    return false;
+  }
+  g_num_decorators = 0;
+  g_decorators_mu.unlock();
+  return true;
+}
+
+bool RemoveSymbolDecorator(int ticket) {
+  if (!g_decorators_mu.try_lock()) {
+    // Someone else is using decorators. Get out.
+    return false;
+  }
+  for (int i = 0; i < g_num_decorators; ++i) {
+    if (g_decorators[i].ticket == ticket) {
+      while (i < g_num_decorators - 1) {
+        g_decorators[i] = g_decorators[i + 1];
+        ++i;
+      }
+      g_num_decorators = i;
+      break;
+    }
+  }
+  g_decorators_mu.unlock();
+  return true;  // Decorator is known to be removed.
+}
+
+int InstallSymbolDecorator(SymbolDecorator decorator, void *arg) {
+  static int ticket = 0;
+
+  if (!g_decorators_mu.try_lock()) {
+    // Someone else is using decorators. Get out.
+    return -2;
+  }
+  int ret = ticket;
+  if (g_num_decorators >= kMaxDecorators) {
+    ret = -1;
+  } else {
+    g_decorators[g_num_decorators] = {decorator, arg, ticket++};
+    ++g_num_decorators;
+  }
+  g_decorators_mu.unlock();
+  return ret;
 }
 
 bool RegisterFileMappingHint(const void *start, const void *end,

@@ -41,7 +41,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     deps = [
         "//absl/base:config",
-        "//absl/base:core_headers",
         "//absl/meta:type_traits",
     ],
 )

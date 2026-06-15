@@ -42,7 +42,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
     deps = [
         "//absl/base:config",
@@ -68,7 +67,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     visibility = [
         "//absl:__subpackages__",
-        "//absl:friends",
     ],
     deps = [
         "//absl/base:config",

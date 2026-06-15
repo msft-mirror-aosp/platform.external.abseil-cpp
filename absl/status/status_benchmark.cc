@@ -13,9 +13,7 @@
 // limitations under the License.
 
 #include <utility>
-
 #include "absl/status/status.h"
-#include "absl/types/source_location.h"
 #include "benchmark/benchmark.h"
 
 namespace {
@@ -35,15 +33,5 @@ void BM_CreateBad(benchmark::State& state) {
   }
 }
 BENCHMARK(BM_CreateBad);
-
-void BM_AppendSourceLocation(benchmark::State& state) {
-  for (auto _ : state) {
-    absl::Status s(absl::StatusCode::kInvalidArgument, "message");
-    benchmark::DoNotOptimize(s);
-    absl::Status s2(std::move(s), absl::SourceLocation::current());
-    benchmark::DoNotOptimize(s2);
-  }
-}
-BENCHMARK(BM_AppendSourceLocation);
 
 }  // namespace
