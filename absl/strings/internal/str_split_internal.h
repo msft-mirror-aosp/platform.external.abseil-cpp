@@ -172,27 +172,28 @@ class SplitIterator {
 template <typename T, typename = void>
 struct HasMappedType : std::false_type {};
 template <typename T>
-struct HasMappedType<T, std::void_t<typename T::mapped_type>> : std::true_type {
-};
+struct HasMappedType<T, absl::void_t<typename T::mapped_type>>
+    : std::true_type {};
 
 // HasValueType<T>::value is true iff there exists a type T::value_type.
 template <typename T, typename = void>
 struct HasValueType : std::false_type {};
 template <typename T>
-struct HasValueType<T, std::void_t<typename T::value_type>> : std::true_type {};
+struct HasValueType<T, absl::void_t<typename T::value_type>> : std::true_type {
+};
 
 // HasConstIterator<T>::value is true iff there exists a type T::const_iterator.
 template <typename T, typename = void>
 struct HasConstIterator : std::false_type {};
 template <typename T>
-struct HasConstIterator<T, std::void_t<typename T::const_iterator>>
+struct HasConstIterator<T, absl::void_t<typename T::const_iterator>>
     : std::true_type {};
 
 // HasEmplace<T>::value is true iff there exists a method T::emplace().
 template <typename T, typename = void>
 struct HasEmplace : std::false_type {};
 template <typename T>
-struct HasEmplace<T, std::void_t<decltype(std::declval<T>().emplace())>>
+struct HasEmplace<T, absl::void_t<decltype(std::declval<T>().emplace())>>
     : std::true_type {};
 
 // IsInitializerList<T>::value is true iff T is an std::initializer_list. More
@@ -202,7 +203,7 @@ template <typename T>
 std::true_type IsInitializerListDispatch(std::initializer_list<T>*);
 template <typename T>
 struct IsInitializerList
-    : decltype(IsInitializerListDispatch(static_cast<T*>(nullptr))){};
+    : decltype(IsInitializerListDispatch(static_cast<T*>(nullptr))) {};
 
 // A SplitterIsConvertibleTo<C>::type alias exists iff the specified condition
 // is true for type 'C'.
@@ -223,7 +224,7 @@ struct SplitterIsConvertibleToImpl<C, true, false>
 
 template <typename C>
 struct SplitterIsConvertibleToImpl<C, true, true>
-    : std::conjunction<
+    : absl::conjunction<
           std::is_constructible<typename C::key_type, absl::string_view>,
           std::is_constructible<typename C::mapped_type, absl::string_view>> {};
 
@@ -493,7 +494,7 @@ class Splitter {
     // Inserts the key and an empty value into the map, returning an iterator to
     // the inserted item. We use emplace() if available, otherwise insert().
     template <typename M>
-    static std::enable_if_t<HasEmplace<M>::value, iterator> InsertOrEmplace(
+    static absl::enable_if_t<HasEmplace<M>::value, iterator> InsertOrEmplace(
         M* m, absl::string_view key) {
       // Use piecewise_construct to support old versions of gcc in which pair
       // constructor can't otherwise construct string from string_view.
@@ -501,7 +502,7 @@ class Splitter {
                                std::tuple<>()));
     }
     template <typename M>
-    static std::enable_if_t<!HasEmplace<M>::value, iterator> InsertOrEmplace(
+    static absl::enable_if_t<!HasEmplace<M>::value, iterator> InsertOrEmplace(
         M* m, absl::string_view key) {
       return ToIter(m->insert(std::make_pair(First(key), Second(""))));
     }

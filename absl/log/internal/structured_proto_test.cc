@@ -71,7 +71,7 @@ INSTANTIATE_TEST_SUITE_P(
             {
                 42,
                 StructuredProtoField::Value{
-                    std::in_place_type<StructuredProtoField::Varint>,
+                    absl::in_place_type<StructuredProtoField::Varint>,
                     int32_t{23},
                 },
             },
@@ -82,7 +82,7 @@ INSTANTIATE_TEST_SUITE_P(
             {
                 42,
                 StructuredProtoField::Value{
-                    std::in_place_type<StructuredProtoField::I64>,
+                    absl::in_place_type<StructuredProtoField::I64>,
                     int64_t{23},
                 },
             },
@@ -103,7 +103,7 @@ INSTANTIATE_TEST_SUITE_P(
             {
                 42,
                 StructuredProtoField::Value{
-                    std::in_place_type<StructuredProtoField::I32>,
+                    absl::in_place_type<StructuredProtoField::I32>,
                     int32_t{23},
                 },
             },

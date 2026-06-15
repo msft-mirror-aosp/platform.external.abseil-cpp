@@ -35,7 +35,6 @@ absl_cc_library(
     absl::container_memory
     absl::cord
     absl::core_headers
-    absl::hardening
     absl::layout
     absl::memory
     absl::raw_logging_internal
@@ -81,6 +80,7 @@ absl_cc_test(
     absl::core_headers
     absl::flags
     absl::hash_testing
+    absl::optional
     absl::random_random
     absl::raw_logging_internal
     absl::strings
@@ -110,8 +110,10 @@ absl_cc_test(
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
+    absl::any
     absl::compressed_tuple
     absl::memory
+    absl::optional
     absl::test_instance_tracker
     absl::utility
     GTest::gmock_main
@@ -130,7 +132,6 @@ absl_cc_library(
     absl::config
     absl::core_headers
     absl::dynamic_annotations
-    absl::hardening
     absl::iterator_traits_internal
     absl::throw_delegate
     absl::memory
@@ -183,7 +184,6 @@ absl_cc_library(
     absl::compressed_tuple
     absl::config
     absl::core_headers
-    absl::hardening
     absl::memory
     absl::span
     absl::type_traits
@@ -200,7 +200,6 @@ absl_cc_library(
   DEPS
     absl::algorithm
     absl::core_headers
-    absl::hardening
     absl::inlined_vector_internal
     absl::throw_delegate
     absl::memory
@@ -310,6 +309,7 @@ absl_cc_test(
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
+    absl::any
     absl::check
     absl::config
     absl::flat_hash_map
@@ -840,6 +840,7 @@ absl_cc_test(
     absl::log
     absl::memory
     absl::node_hash_set
+    absl::optional
     absl::prefetch
     absl::random_random
     absl::raw_hash_set
@@ -1118,7 +1119,6 @@ absl_cc_library(
     absl::config
     absl::test_instance_tracker
     GTest::gmock
-  TESTONLY
 )
 
 absl_cc_library(
@@ -1216,7 +1216,6 @@ absl_cc_library(
   DEPS
      absl::config
      absl::core_headers
-     absl::hardening
      absl::iterator_traits_internal
      absl::layout
 )

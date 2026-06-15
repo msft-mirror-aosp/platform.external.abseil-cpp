@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "absl/base/throw_delegate.h"
+#include "absl/base/internal/throw_delegate.h"
 
 #include <cstdlib>
 #include <functional>
@@ -24,6 +24,11 @@
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
+namespace base_internal {
+
+// NOTE: The exception types, like `std::logic_error`, do not exist on all
+// platforms. (For example, the Android NDK does not have them.)
+// Therefore, their use must be guarded by `#ifdef` or equivalent.
 
 void ThrowStdLogicError(const std::string& what_arg) {
 #ifdef ABSL_HAVE_EXCEPTIONS
@@ -193,13 +198,6 @@ void ThrowStdBadAlloc() {
 #endif
 }
 
-void ThrowStdBadArrayNewLength() {
-#ifdef ABSL_HAVE_EXCEPTIONS
-  throw std::bad_array_new_length();
-#else
-  std::abort();
-#endif
-}
-
+}  // namespace base_internal
 ABSL_NAMESPACE_END
 }  // namespace absl

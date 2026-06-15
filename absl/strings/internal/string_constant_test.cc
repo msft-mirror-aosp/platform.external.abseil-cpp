@@ -14,8 +14,7 @@
 
 #include "absl/strings/internal/string_constant.h"
 
-#include <type_traits>
-
+#include "absl/meta/type_traits.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
@@ -35,10 +34,10 @@ TEST(StringConstant, Traits) {
 
   EXPECT_TRUE(std::is_empty<T>::value);
   EXPECT_TRUE(std::is_trivial<T>::value);
-  EXPECT_TRUE(std::is_trivially_default_constructible<T>::value);
-  EXPECT_TRUE(std::is_trivially_copy_constructible<T>::value);
-  EXPECT_TRUE(std::is_trivially_move_constructible<T>::value);
-  EXPECT_TRUE(std::is_trivially_destructible<T>::value);
+  EXPECT_TRUE(absl::is_trivially_default_constructible<T>::value);
+  EXPECT_TRUE(absl::is_trivially_copy_constructible<T>::value);
+  EXPECT_TRUE(absl::is_trivially_move_constructible<T>::value);
+  EXPECT_TRUE(absl::is_trivially_destructible<T>::value);
 }
 
 TEST(StringConstant, MakeFromCallable) {

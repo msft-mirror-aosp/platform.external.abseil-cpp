@@ -805,23 +805,23 @@ struct set_slot_policy {
 
   template <typename Alloc, class... Args>
   static void construct(Alloc *alloc, slot_type *slot, Args &&...args) {
-    std::allocator_traits<Alloc>::construct(*alloc, slot,
-                                            std::forward<Args>(args)...);
+    absl::allocator_traits<Alloc>::construct(*alloc, slot,
+                                             std::forward<Args>(args)...);
   }
 
   template <typename Alloc>
   static void construct(Alloc *alloc, slot_type *slot, slot_type *other) {
-    std::allocator_traits<Alloc>::construct(*alloc, slot, std::move(*other));
+    absl::allocator_traits<Alloc>::construct(*alloc, slot, std::move(*other));
   }
 
   template <typename Alloc>
   static void construct(Alloc *alloc, slot_type *slot, const slot_type *other) {
-    std::allocator_traits<Alloc>::construct(*alloc, slot, *other);
+    absl::allocator_traits<Alloc>::construct(*alloc, slot, *other);
   }
 
   template <typename Alloc>
   static void destroy(Alloc *alloc, slot_type *slot) {
-    std::allocator_traits<Alloc>::destroy(*alloc, slot);
+    absl::allocator_traits<Alloc>::destroy(*alloc, slot);
   }
 };
 

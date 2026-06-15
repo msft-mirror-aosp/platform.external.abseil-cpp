@@ -107,7 +107,6 @@
 
 #include "absl/base/attributes.h"
 #include "absl/base/config.h"
-#include "absl/base/internal/hardening.h"
 #include "absl/base/internal/iterator_traits.h"
 #include "absl/base/macros.h"
 #include "absl/container/internal/chunked_queue.h"
@@ -429,22 +428,22 @@ class chunked_queue {
   // Returns a reference to the first element in the container.
   // REQUIRES: !empty()
   T& front() {
-    absl::base_internal::HardeningAssertNonEmpty(*this);
+    ABSL_HARDENING_ASSERT(!empty());
     return *head_;
   }
   const T& front() const {
-    absl::base_internal::HardeningAssertNonEmpty(*this);
+    ABSL_HARDENING_ASSERT(!empty());
     return *head_;
   }
 
   // Returns a reference to the last element in the container.
   // REQUIRES: !empty()
   T& back() {
-    absl::base_internal::HardeningAssertNonEmpty(*this);
+    ABSL_HARDENING_ASSERT(!empty());
     return *(&*tail_ - 1);
   }
   const T& back() const {
-    absl::base_internal::HardeningAssertNonEmpty(*this);
+    ABSL_HARDENING_ASSERT(!empty());
     return *(&*tail_ - 1);
   }
 
@@ -461,8 +460,7 @@ class chunked_queue {
       // (It is undefined behavior to swap between two containers with unequal
       // allocators if propagate_on_container_swap is false, so we don't have to
       // handle that here like we do in the move-assignment operator.)
-      absl::base_internal::HardeningAssert(get_allocator() ==
-                                           other.get_allocator());
+      ABSL_HARDENING_ASSERT(get_allocator() == other.get_allocator());
       swap(alloc_and_size_.size, other.alloc_and_size_.size);
     }
   }
@@ -711,7 +709,7 @@ inline void chunked_queue<T, BLo, BHi, Allocator>::DestroyAndDeallocateAll() {
 
 template <typename T, size_t BLo, size_t BHi, typename Allocator>
 inline void chunked_queue<T, BLo, BHi, Allocator>::pop_front() {
-  absl::base_internal::HardeningAssertNonEmpty(*this);
+  ABSL_HARDENING_ASSERT(!empty());
   ABSL_ASSERT(head_.block);
   AllocatorTraits::destroy(alloc_and_size_.allocator(), head_.ptr);
   ++head_.ptr;

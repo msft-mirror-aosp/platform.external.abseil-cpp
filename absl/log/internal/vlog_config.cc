@@ -20,7 +20,6 @@
 #include <atomic>
 #include <functional>
 #include <memory>
-#include <optional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -39,6 +38,7 @@
 #include "absl/strings/string_view.h"
 #include "absl/strings/strip.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/types/optional.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
@@ -189,7 +189,7 @@ int AppendVModuleLocked(absl::string_view module_pattern, int log_level)
 // Allocates memory.
 int PrependVModuleLocked(absl::string_view module_pattern, int log_level)
     ABSL_EXCLUSIVE_LOCKS_REQUIRED(mutex) {
-  std::optional<int> old_log_level;
+  absl::optional<int> old_log_level;
   for (const auto& info : get_vmodule_info()) {
     if (FNMatch(info.module_pattern, module_pattern)) {
       old_log_level = info.vlog_level;
