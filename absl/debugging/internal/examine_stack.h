@@ -31,8 +31,7 @@ typedef void OutputWriter(const char*, void*);
 // `hook` that is called each time DumpStackTrace() is called.
 // `hook` may be called from a signal handler.
 typedef void (*SymbolizeUrlEmitter)(void* const stack[], int depth,
-                                    const void* crash_pc, OutputWriter* writer,
-                                    void* writer_arg);
+                                    OutputWriter* writer, void* writer_arg);
 typedef void (*SymbolizeUrlEmitterLegacy)(void* const stack[], int depth,
                                           OutputWriter* writer,
                                           void* writer_arg);
@@ -42,6 +41,8 @@ typedef void (*SymbolizeUrlEmitterLegacy)(void* const stack[], int depth,
 void RegisterDebugStackTraceHook(SymbolizeUrlEmitter hook);
 SymbolizeUrlEmitter GetDebugStackTraceHook();
 
+// Currently exact copy of above. Needed for the 3-CL dance due to
+// TCMallocDebugStackTraceHook dependency on this API.
 SymbolizeUrlEmitterLegacy GetDebugStackTraceHookLegacy();
 
 // Returns the program counter from signal context, or nullptr if

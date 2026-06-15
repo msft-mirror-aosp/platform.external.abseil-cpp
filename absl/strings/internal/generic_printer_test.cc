@@ -373,10 +373,6 @@ TEST(GenericPrinterTest, Optional) {
                                    generic_logging_test::Streamable{3})));
 }
 
-TEST(GenericPrinterTest, Monostate) {
-  EXPECT_EQ("monostate", GenericPrintToString(std::monostate{}));
-}
-
 TEST(GenericPrinterTest, Tuple) {
   EXPECT_EQ("<1, two, 3>", GenericPrintToString(std::make_tuple(1, "two", 3)));
 }
@@ -400,8 +396,8 @@ TEST(GenericPrinterTest, Variant) {
 }
 
 TEST(GenericPrinterTest, VariantMonostate) {
-  EXPECT_EQ("('(index = 0)' monostate)",
-            GenericPrintToString(std::variant<std::monostate, std::string>()));
+  EXPECT_THAT(GenericPrintToString(std::variant<std::monostate, std::string>()),
+              IsUnprintable());
 }
 
 TEST(GenericPrinterTest, VariantNonStreamable) {

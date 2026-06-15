@@ -39,7 +39,6 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     deps = [
         "//absl/base:core_headers",
-        "//absl/base:hardening",
         "//absl/utility",
     ],
 )
@@ -55,7 +54,6 @@ cc_library(
         ":cleanup_internal",
         "//absl/base:config",
         "//absl/base:core_headers",
-        "//absl/base:hardening",
     ],
 )
 

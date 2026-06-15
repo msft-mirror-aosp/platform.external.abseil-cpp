@@ -26,7 +26,6 @@
 #include <string>
 #include <tuple>
 #include <type_traits>
-#include <utility>
 
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
@@ -1437,7 +1436,7 @@ class TupleMatcher {
                        testing::MatchResultListener* /* listener */) const {
     static_assert(std::tuple_size<Tuple>::value == sizeof...(M), "");
     return MatchAndExplainImpl(
-        p, std::make_index_sequence<std::tuple_size<Tuple>::value>{});
+        p, absl::make_index_sequence<std::tuple_size<Tuple>::value>{});
   }
 
   // For the matcher concept. Left empty as we don't really need the diagnostics
@@ -1447,7 +1446,7 @@ class TupleMatcher {
 
  private:
   template <typename Tuple, size_t... Is>
-  bool MatchAndExplainImpl(const Tuple& p, std::index_sequence<Is...>) const {
+  bool MatchAndExplainImpl(const Tuple& p, absl::index_sequence<Is...>) const {
     // Using std::min as a simple variadic "and".
     return std::min(
         {true, testing::SafeMatcherCast<
