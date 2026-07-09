@@ -42,13 +42,13 @@ absl_cc_library(
     ${ABSL_DEFAULT_COPTS}
   DEPS
     absl::crc_cpu_detect
+    absl::bits
     absl::config
     absl::core_headers
     absl::endian
+    absl::memory
     absl::prefetch
     absl::raw_logging_internal
-    absl::memory
-    absl::bits
 )
 
 absl_cc_library(
@@ -159,6 +159,7 @@ absl_cc_library(
     absl::crc32c
     absl::config
     absl::strings
+    absl::no_destructor
 )
 
 absl_cc_test(

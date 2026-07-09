@@ -1,18 +1,21 @@
-name: "extern/abseil-cpp"
-description:
-    "An open-source collection of C++ code designed to augment the C++ standard "
-    "library"
+# This project was upgraded with external_updater.
+# Usage: tools/external_updater/updater.sh update external/abseil-cpp
+# For more info, check https://cs.android.com/android/platform/superproject/main/+/main:tools/external_updater/README.md
 
+name: "extern/abseil-cpp"
+description: "An open-source collection of C++ code designed to augment the C++ standard library"
 third_party {
-  url {
-    type: HOMEPAGE
-    value: "https://abseil.io"
-  }
-  url {
-    type: GIT
-    value: "https://github.com/abseil/abseil-cpp"
-  }
-  version: "20240116.1"
-  last_upgrade_date { year: 2024 month: 2 day: 28 }
   license_type: NOTICE
+  last_upgrade_date {
+    year: 2026
+    month: 2
+    day: 18
+  }
+  homepage: "https://abseil.io"
+  identifier {
+    type: "Git"
+    value: "https://github.com/abseil/abseil-cpp"
+    version: "255c84dadd029fd8ad25c5efb5933e47beaa00c7"
+    closest_version: "20260107.1"
+  }
 }
