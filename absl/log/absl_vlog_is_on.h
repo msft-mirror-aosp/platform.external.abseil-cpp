@@ -40,18 +40,20 @@
 // last . and everything after it) is stripped from each filename prior to
 // matching, as is the special suffix "-inl".
 //
+// Example: --vmodule=module_a=1,module_b=2
+//
 // Files are matched against globs in `--vmodule` in order, and the first match
 // determines the verbosity level.
 //
 // Files which do not match any pattern in `--vmodule` use the value of `--v` as
 // their effective verbosity level.  The default is 0.
 //
-// SetVLOGLevel helper function is provided to do limited dynamic control over
+// SetVLogLevel helper function is provided to do limited dynamic control over
 // V-logging by appending to `--vmodule`. Because these go at the beginning of
 // the list, they take priority over any globs previously added.
 //
 // Resetting --vmodule will override all previous modifications to `--vmodule`,
-// including via SetVLOGLevel.
+// including via SetVLogLevel.
 
 #ifndef ABSL_LOG_ABSL_VLOG_IS_ON_H_
 #define ABSL_LOG_ABSL_VLOG_IS_ON_H_
@@ -60,8 +62,6 @@
 #include "absl/base/config.h"
 #include "absl/log/internal/vlog_config.h"  // IWYU pragma: export
 #include "absl/strings/string_view.h"
-
-// IWYU pragma: private, include "absl/log/log.h"
 
 // This is expanded at the callsite to allow the compiler to optimize
 // always-false cases out of the build.
@@ -77,7 +77,7 @@
 // Each ABSL_VLOG_IS_ON call site gets its own VLogSite that registers with the
 // global linked list of sites to asynchronously update its verbosity level on
 // changes to --v or --vmodule. The verbosity can also be set by manually
-// calling SetVLOGLevel.
+// calling SetVLogLevel.
 //
 // ABSL_VLOG_IS_ON is not async signal safe, but it is guaranteed not to
 // allocate new memory.

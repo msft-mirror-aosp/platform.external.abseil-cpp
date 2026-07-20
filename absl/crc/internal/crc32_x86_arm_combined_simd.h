@@ -15,6 +15,7 @@
 #ifndef ABSL_CRC_INTERNAL_CRC32_X86_ARM_COMBINED_SIMD_H_
 #define ABSL_CRC_INTERNAL_CRC32_X86_ARM_COMBINED_SIMD_H_
 
+#include <array>
 #include <cstdint>
 
 #include "absl/base/config.h"
@@ -33,14 +34,15 @@
 #include <x86intrin.h>
 #define ABSL_CRC_INTERNAL_HAVE_X86_SIMD
 
-#elif defined(_MSC_VER) && !defined(__clang__) && defined(__AVX__)
+#elif defined(_MSC_VER) && !defined(__clang__) && defined(__AVX__) && \
+    defined(_M_AMD64)
 
 // MSVC AVX (/arch:AVX) implies SSE 4.2 and PCLMULQDQ.
 #include <intrin.h>
 #define ABSL_CRC_INTERNAL_HAVE_X86_SIMD
 
-#elif defined(__aarch64__) && defined(__LITTLE_ENDIAN__) && \
-    defined(__ARM_FEATURE_CRC32) && defined(ABSL_INTERNAL_HAVE_ARM_NEON) &&  \
+#elif defined(__aarch64__) && defined(__LITTLE_ENDIAN__) &&                 \
+    defined(__ARM_FEATURE_CRC32) && defined(ABSL_INTERNAL_HAVE_ARM_NEON) && \
     defined(__ARM_FEATURE_CRYPTO)
 
 #include <arm_acle.h>
@@ -62,6 +64,13 @@ using V128 = uint64x2_t;
 // Note: Do not use __m128i_u, it is not portable.
 // Use V128_LoadU() perform an unaligned load from __m128i*.
 using V128 = __m128i;
+#endif
+
+#if defined(__AVX__)
+using V256 = __m256i;
+#else
+// Placeholder for V256 when AVX is not available.
+using V256 = std::array<uint64_t, 4>;
 #endif
 
 // Starting with the initial value in |crc|, accumulates a CRC32 value for
@@ -98,17 +107,11 @@ V128 V128_PMul10(const V128 l, const V128 r);
 // Produces a XOR operation of |l| and |r|.
 V128 V128_Xor(const V128 l, const V128 r);
 
-// Produces an AND operation of |l| and |r|.
-V128 V128_And(const V128 l, const V128 r);
-
-// Sets two 64 bit integers to one 128 bit vector. The order is reverse.
+// Sets the lower half of a 128 bit register to the given 64-bit value and
+// zeroes the upper half.
 // dst[63:0] := |r|
-// dst[127:64] := |l|
-V128 V128_From2x64(const uint64_t l, const uint64_t r);
-
-// Shift |l| right by |imm| bytes while shifting in zeros.
-template <int imm>
-V128 V128_ShiftRight(const V128 l);
+// dst[127:64] := |0|
+V128 V128_From64WithZeroFill(const uint64_t r);
 
 // Extracts a 32-bit integer from |l|, selected with |imm|.
 template <int imm>
@@ -121,8 +124,19 @@ uint64_t V128_Extract64(const V128 l);
 // Extracts the low 64 bits from V128.
 int64_t V128_Low64(const V128 l);
 
-// Left-shifts packed 64-bit integers in l by r.
-V128 V128_ShiftLeft64(const V128 l, const V128 r);
+// Add packed 64-bit integers in |l| and |r|.
+V128 V128_Add64(const V128 l, const V128 r);
+
+#if defined(__AVX__)
+inline V256 V256_LoadU(const V256* src);
+inline V256 V256_Broadcast128(const V128* src);
+#else
+template <typename T = V256>
+T V256_LoadU(const T* src);
+
+template <typename T = V256>
+T V256_Broadcast128(const V128* src);
+#endif
 
 #endif
 
@@ -168,15 +182,8 @@ inline V128 V128_PMul10(const V128 l, const V128 r) {
 
 inline V128 V128_Xor(const V128 l, const V128 r) { return _mm_xor_si128(l, r); }
 
-inline V128 V128_And(const V128 l, const V128 r) { return _mm_and_si128(l, r); }
-
-inline V128 V128_From2x64(const uint64_t l, const uint64_t r) {
-  return _mm_set_epi64x(static_cast<int64_t>(l), static_cast<int64_t>(r));
-}
-
-template <int imm>
-inline V128 V128_ShiftRight(const V128 l) {
-  return _mm_srli_si128(l, imm);
+inline V128 V128_From64WithZeroFill(const uint64_t r) {
+  return _mm_set_epi64x(static_cast<int64_t>(0), static_cast<int64_t>(r));
 }
 
 template <int imm>
@@ -191,8 +198,8 @@ inline uint64_t V128_Extract64(const V128 l) {
 
 inline int64_t V128_Low64(const V128 l) { return _mm_cvtsi128_si64(l); }
 
-inline V128 V128_ShiftLeft64(const V128 l, const V128 r) {
-  return _mm_sll_epi64(l, r);
+inline V128 V128_Add64(const V128 l, const V128 r) {
+  return _mm_add_epi64(l, r);
 }
 
 #elif defined(ABSL_CRC_INTERNAL_HAVE_ARM_SIMD)
@@ -259,17 +266,11 @@ inline V128 V128_PMul10(const V128 l, const V128 r) {
 
 inline V128 V128_Xor(const V128 l, const V128 r) { return veorq_u64(l, r); }
 
-inline V128 V128_And(const V128 l, const V128 r) { return vandq_u64(l, r); }
-
-inline V128 V128_From2x64(const uint64_t l, const uint64_t r) {
-  return vcombine_u64(vcreate_u64(r), vcreate_u64(l));
+inline V128 V128_From64WithZeroFill(const uint64_t r){
+  constexpr uint64x2_t kZero = {0, 0};
+  return vsetq_lane_u64(r, kZero, 0);
 }
 
-template <int imm>
-inline V128 V128_ShiftRight(const V128 l) {
-  return vreinterpretq_u64_s8(
-      vextq_s8(vreinterpretq_s8_u64(l), vdupq_n_s8(0), imm));
-}
 
 template <int imm>
 inline int V128_Extract32(const V128 l) {
@@ -285,10 +286,30 @@ inline int64_t V128_Low64(const V128 l) {
   return vgetq_lane_s64(vreinterpretq_s64_u64(l), 0);
 }
 
-inline V128 V128_ShiftLeft64(const V128 l, const V128 r) {
-  return vshlq_u64(l, vreinterpretq_s64_u64(r));
+inline V128 V128_Add64(const V128 l, const V128 r) { return vaddq_u64(l, r); }
+
+#endif
+
+#if defined(__AVX__) && defined(ABSL_CRC_INTERNAL_HAVE_X86_SIMD)
+inline V256 V256_LoadU(const V256* src) { return _mm256_loadu_si256(src); }
+
+inline V256 V256_Broadcast128(const V128* src) {
+  return _mm256_castps_si256(
+      _mm256_broadcast_ps(reinterpret_cast<const __m128*>(src)));
+}
+#elif defined(ABSL_CRC_INTERNAL_HAVE_X86_SIMD) || \
+    defined(ABSL_CRC_INTERNAL_HAVE_ARM_SIMD)
+template <typename T>
+inline T V256_LoadU(const T* src) {
+  (void)src;
+  return T{};
 }
 
+template <typename T>
+inline T V256_Broadcast128(const V128* src) {
+  (void)src;
+  return T{};
+}
 #endif
 
 }  // namespace crc_internal
