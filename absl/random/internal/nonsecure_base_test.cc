@@ -77,13 +77,13 @@ TEST(NonsecureURBGBase, StandardInterface) {
   static_assert(!std::is_copy_constructible<E>::value,
                 "NonsecureURBGBase should not be copy constructible");
 
-  static_assert(!absl::is_copy_assignable<E>::value,
+  static_assert(!std::is_copy_assignable<E>::value,
                 "NonsecureURBGBase should not be copy assignable");
 
   static_assert(std::is_move_constructible<E>::value,
                 "NonsecureURBGBase should be move constructible");
 
-  static_assert(absl::is_move_assignable<E>::value,
+  static_assert(std::is_move_assignable<E>::value,
                 "NonsecureURBGBase should be move assignable");
 
   static_assert(std::is_same<decltype(std::declval<E>()()), T>::value,
@@ -214,7 +214,7 @@ TEST(NonsecureURBGBase, DistinctSequencesPerThread) {
 
         std::vector<result_type> v(kValuesPerThread);
         std::generate(v.begin(), v.end(), [&]() { return gen(); });
-        absl::MutexLock l(&mu);
+        absl::MutexLock l(mu);
         data.push_back(std::move(v));
       });
     }
