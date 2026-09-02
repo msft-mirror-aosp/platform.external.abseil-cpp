@@ -28,6 +28,8 @@ root_libs = [
     '//absl/log:scoped_mock_log',
     '//absl/random:bit_gen_ref',
     '//absl/random:random',
+    '//absl/status:status_builder',
+    '//absl/status:status_macros',
     '//absl/status:statusor',
     '//absl/status:status_matchers',
     '//absl/strings:strings',
