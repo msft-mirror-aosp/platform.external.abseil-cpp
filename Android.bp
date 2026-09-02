@@ -6676,6 +6676,231 @@ cc_library_static {
 }
 
 genrule {
+    name: "absl_status_status_macros_hdrs",
+    srcs: [
+        "absl/status/status_macros.h",
+    ],
+    out: [
+        "my_include_dir/absl/status/status_macros.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_status_status_macros",
+    defaults: ["absl_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_status_status_macros_hdrs"],
+    export_generated_headers: ["absl_status_status_macros_hdrs"],
+
+    whole_static_libs: [
+        "absl_status",
+        "absl_status_status_builder",
+        "absl_status_statusor",
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_types_source_location",
+    ],
+    export_static_lib_headers: [
+        "absl_status",
+        "absl_status_status_builder",
+        "absl_status_statusor",
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_types_source_location",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_status_status_macros_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+
+    ],
+    generated_headers: ["absl_status_status_macros_hdrs"],
+    export_generated_headers: ["absl_status_status_macros_hdrs"],
+
+    whole_static_libs: [
+        "absl_status_notls",
+        "absl_status_status_builder_notls",
+        "absl_status_statusor_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_types_source_location_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_status_notls",
+        "absl_status_status_builder_notls",
+        "absl_status_statusor_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_types_source_location_notls",
+    ],
+
+}
+
+genrule {
+    name: "absl_status_status_builder_hdrs",
+    srcs: [
+        "absl/status/status_builder.h",
+    ],
+    out: [
+        "my_include_dir/absl/status/status_builder.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_status_status_builder",
+    defaults: ["absl_defaults"],
+    visibility: ["//visibility:public"],
+    srcs: [
+        "absl/status/status_builder.cc",
+    ],
+    generated_headers: ["absl_status_status_builder_hdrs"],
+    export_generated_headers: ["absl_status_status_builder_hdrs"],
+
+    whole_static_libs: [
+        "absl_status",
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_base_log_severity",
+        "absl_strings",
+        "absl_strings_cord",
+        "absl_strings_internal",
+        "absl_strings_stringify_stream",
+        "absl_time",
+        "absl_types_source_location",
+    ],
+    export_static_lib_headers: [
+        "absl_status",
+        "absl_base_config",
+        "absl_base_core_headers",
+        "absl_base_log_severity",
+        "absl_strings",
+        "absl_strings_cord",
+        "absl_strings_internal",
+        "absl_strings_stringify_stream",
+        "absl_time",
+        "absl_types_source_location",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_status_status_builder_notls",
+    defaults: ["absl_notls_defaults"],
+    visibility: ["//external/protobuf"],
+    srcs: [
+        "absl/status/status_builder.cc",
+    ],
+    generated_headers: ["absl_status_status_builder_hdrs"],
+    export_generated_headers: ["absl_status_status_builder_hdrs"],
+
+    whole_static_libs: [
+        "absl_status_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_strings_notls",
+        "absl_strings_cord_notls",
+        "absl_strings_internal_notls",
+        "absl_strings_stringify_stream_notls",
+        "absl_time_notls",
+        "absl_types_source_location_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_status_notls",
+        "absl_base_config_notls",
+        "absl_base_core_headers_notls",
+        "absl_base_log_severity_notls",
+        "absl_strings_notls",
+        "absl_strings_cord_notls",
+        "absl_strings_internal_notls",
+        "absl_strings_stringify_stream_notls",
+        "absl_time_notls",
+        "absl_types_source_location_notls",
+    ],
+
+}
+
+genrule {
+    name: "absl_strings_stringify_stream_hdrs",
+    srcs: [
+        "absl/strings/internal/stringify_stream.h",
+    ],
+    out: [
+        "my_include_dir/absl/strings/internal/stringify_stream.h",
+    ],
+    export_include_dirs: ["my_include_dir"],
+    cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+        "cp --parents $(in) $(genDir)/temp && " +
+        // delete empty folders automatically created by soong
+        "rm -rf $(genDir)/my_include_dir/* && " +
+        "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+        "rm -rf $(genDir)/temp",
+}
+
+cc_library_static {
+    name: "absl_strings_stringify_stream",
+    defaults: ["absl_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_strings_stringify_stream_hdrs"],
+    export_generated_headers: ["absl_strings_stringify_stream_hdrs"],
+
+    whole_static_libs: [
+        "absl_strings_string_view",
+        "absl_base_config",
+    ],
+    export_static_lib_headers: [
+        "absl_strings_string_view",
+        "absl_base_config",
+    ],
+
+}
+
+cc_library_static {
+    name: "absl_strings_stringify_stream_notls",
+    defaults: ["absl_notls_defaults"],
+
+    srcs: [
+
+    ],
+    generated_headers: ["absl_strings_stringify_stream_hdrs"],
+    export_generated_headers: ["absl_strings_stringify_stream_hdrs"],
+
+    whole_static_libs: [
+        "absl_strings_string_view_notls",
+        "absl_base_config_notls",
+    ],
+    export_static_lib_headers: [
+        "absl_strings_string_view_notls",
+        "absl_base_config_notls",
+    ],
+
+}
+
+genrule {
     name: "absl_random_hdrs",
     srcs: [
         "absl/random/random.h",
