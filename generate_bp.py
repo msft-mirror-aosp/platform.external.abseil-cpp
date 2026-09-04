@@ -194,9 +194,9 @@ def main():
         generated_hdrs_attr = ""
         if hdrs:
             header_files_for_bp = ['"' + h + '"' for h in hdrs]
-            # We add an extra my_include_dir/ to not get duplication location errors, as both in and
+            # We add an extra {bp_mod_name}_hdrs/ to not get duplication location errors, as both in and
             # out are exactly the same paths
-            header_files_for_out = ['"my_include_dir/' + h + '"' for h in hdrs]
+            header_files_for_out = [f'"{bp_mod_name}_hdrs/' + h + '"' for h in hdrs]
             bp += f'''
             genrule {{
                 name: "{bp_mod_name}_hdrs",
@@ -206,12 +206,12 @@ def main():
                 out: [
                   {',\n'.join(header_files_for_out)}
                 ],
-                export_include_dirs: ["my_include_dir"],
-                cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+                export_include_dirs: ["{bp_mod_name}_hdrs"],
+                cmd: "mkdir -p $(genDir)/{bp_mod_name}_hdrs $(genDir)/temp && " +
                   "cp --parents $(in) $(genDir)/temp && " +
                   // delete empty folders automatically created by soong
-                  "rm -rf $(genDir)/my_include_dir/* && " +
-                  "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+                  "rm -rf $(genDir)/{bp_mod_name}_hdrs/* && " +
+                  "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/{bp_mod_name}_hdrs/ && " +
                   "rm -rf $(genDir)/temp"
             }}
             '''
