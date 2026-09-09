@@ -7,15 +7,15 @@ description: "An open-source collection of C++ code designed to augment the C++ 
 third_party {
   license_type: NOTICE
   last_upgrade_date {
-    year: 2025
-    month: 7
-    day: 2
+    year: 2026
+    month: 2
+    day: 18
   }
   homepage: "https://abseil.io"
   identifier {
     type: "Git"
     value: "https://github.com/abseil/abseil-cpp"
-    version: "76bb24329e8bf5f39704eb10d21b9a80befa7c81"
-    closest_version: "20250512.1"
+    version: "255c84dadd029fd8ad25c5efb5933e47beaa00c7"
+    closest_version: "20260107.1"
   }
 }
