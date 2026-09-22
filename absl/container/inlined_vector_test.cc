@@ -51,6 +51,7 @@ using testing::AllOf;
 using testing::Each;
 using testing::ElementsAre;
 using testing::ElementsAreArray;
+using testing::IsEmpty;
 using testing::Eq;
 using testing::Gt;
 using testing::Pointee;
@@ -822,7 +823,7 @@ class NotTriviallyDestructible {
       : p_(new int(*other.p_)) {}
 
   NotTriviallyDestructible& operator=(const NotTriviallyDestructible& other) {
-    p_ = absl::make_unique<int>(*other.p_);
+    p_ = std::make_unique<int>(*other.p_);
     return *this;
   }
 
@@ -919,7 +920,9 @@ TEST(IntVec, Clear) {
     SCOPED_TRACE(len);
     IntVec v;
     Fill(&v, len);
+    size_t capacity_before_clear = v.capacity();
     v.clear();
+    EXPECT_EQ(v.capacity(), capacity_before_clear);
     EXPECT_EQ(0u, v.size());
     EXPECT_EQ(v.begin(), v.end());
   }
@@ -1992,7 +1995,7 @@ TEST(AllocatorSupportTest, SizeAllocConstructor) {
 TEST(InlinedVectorTest, MinimumAllocatorCompilesUsingTraits) {
   using T = int;
   using A = std::allocator<T>;
-  using ATraits = absl::allocator_traits<A>;
+  using ATraits = std::allocator_traits<A>;
 
   struct MinimumAllocator {
     using value_type = T;
@@ -2252,6 +2255,24 @@ TEST(StorageTest, InlinedCapacityAutoIncrease) {
   EXPECT_GT((absl::InlinedVector<int, 1>().capacity()), 1);
   EXPECT_EQ((absl::InlinedVector<int, 1>().capacity()),
             sizeof(MySpan<int>) / sizeof(int));
+}
+
+TEST(IntVec, EraseIf) {
+  IntVec v = {3, 1, 2, 0};
+  EXPECT_EQ(absl::erase_if(v, [](int i) { return i > 1; }), 2u);
+  EXPECT_THAT(v, ElementsAre(1, 0));
+}
+
+TEST(IntVec, EraseIfMatchesNone) {
+  IntVec v = {1, 2, 3};
+  EXPECT_EQ(absl::erase_if(v, [](int i) { return i > 10; }), 0u);;
+  EXPECT_THAT(v, ElementsAre(1, 2, 3));
+}
+
+TEST(IntVec, EraseIfMatchesAll) {
+  IntVec v = {1, 2, 3};
+  EXPECT_EQ(absl::erase_if(v, [](int i) { return i > 0; }), 3u);
+  EXPECT_THAT(v, IsEmpty());
 }
 
 }  // anonymous namespace

@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <memory>
 
+#include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/base/macros.h"
 #include "absl/strings/internal/cord_internal.h"
@@ -75,6 +76,9 @@ static_assert(AllocatedSizeToTagUnchecked(kMaxLargeFlatSize) == MAX_FLAT_TAG,
 
 // RoundUp logically performs `((n + m - 1) / m) * m` to round up to the nearest
 // multiple of `m`, optimized for the invariant that `m` is a power of 2.
+// Android local modification: disable unsigned integer overflow sanitizer here
+// to support enabling it in the clients.
+ABSL_ATTRIBUTE_NO_SANITIZE_UNSIGNED_OVERFLOW
 constexpr size_t RoundUp(size_t n, size_t m) {
   return (n + m - 1) & (0 - m);
 }
