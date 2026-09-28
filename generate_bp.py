@@ -17,16 +17,21 @@ root_libs = [
     '//absl/flags:flag',
     '//absl/flags:parse',
     '//absl/functional:bind_front',
+    '//absl/hash:hash_testing',
     '//absl/log:absl_check',
     '//absl/log:absl_log',
     '//absl/log:check',
     '//absl/log:die_if_null',
     '//absl/log:initialize',
     '//absl/log:log',
+    '//absl/log:log_streamer',
     '//absl/log:scoped_mock_log',
     '//absl/random:bit_gen_ref',
     '//absl/random:random',
+    '//absl/status:status_builder',
+    '//absl/status:status_macros',
     '//absl/status:statusor',
+    '//absl/status:status_matchers',
     '//absl/strings:strings',
     '//absl/synchronization:synchronization',
 ]
@@ -89,6 +94,20 @@ def main():
                 cflags: ["-Wno-unknown-pragmas"],
             },
         },
+    }
+
+    cc_defaults {
+        name: "absl_notls_defaults",
+        defaults_visibility: ["//external/protobuf:__subpackages__"],
+        host_supported: true,
+        ramdisk_available: true,
+        recovery_available: true,
+        vendor_ramdisk_available: true,
+        apex_available: [
+            "//apex_available:platform",
+            "com.android.runtime",
+        ],
+        cflags: ["-DANDROID_DISABLE_TLS_FOR_LINKER=1"],
     }
 
     cc_defaults {
@@ -175,9 +194,9 @@ def main():
         generated_hdrs_attr = ""
         if hdrs:
             header_files_for_bp = ['"' + h + '"' for h in hdrs]
-            # We add an extra my_include_dir/ to not get duplication location errors, as both in and
+            # We add an extra {bp_mod_name}_hdrs/ to not get duplication location errors, as both in and
             # out are exactly the same paths
-            header_files_for_out = ['"my_include_dir/' + h + '"' for h in hdrs]
+            header_files_for_out = [f'"{bp_mod_name}_hdrs/' + h + '"' for h in hdrs]
             bp += f'''
             genrule {{
                 name: "{bp_mod_name}_hdrs",
@@ -187,12 +206,12 @@ def main():
                 out: [
                   {',\n'.join(header_files_for_out)}
                 ],
-                export_include_dirs: ["my_include_dir"],
-                cmd: "mkdir -p $(genDir)/my_include_dir $(genDir)/temp && " +
+                export_include_dirs: ["{bp_mod_name}_hdrs"],
+                cmd: "mkdir -p $(genDir)/{bp_mod_name}_hdrs $(genDir)/temp && " +
                   "cp --parents $(in) $(genDir)/temp && " +
                   // delete empty folders automatically created by soong
-                  "rm -rf $(genDir)/my_include_dir/* && " +
-                  "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/my_include_dir/ && " +
+                  "rm -rf $(genDir)/{bp_mod_name}_hdrs/* && " +
+                  "mv $(genDir)/temp/external/abseil-cpp/absl $(genDir)/{bp_mod_name}_hdrs/ && " +
                   "rm -rf $(genDir)/temp"
             }}
             '''
@@ -201,6 +220,7 @@ def main():
 
         module_type = 'cc_library_static'
         defaults_module = 'absl_defaults'
+        notls_defaults_module = 'absl_notls_defaults'
         bp_deps = [bazel_name_to_bp_name(d) for d in deps if d not in ignored_deps]
         extra_attributes = ''
 
@@ -227,8 +247,10 @@ def main():
             '''
 
         visibility_prop = ''
+        visibility_prop_notls = ''
         if name in public_libs:
             visibility_prop = 'visibility: ["//visibility:public"],'
+            visibility_prop_notls = 'visibility: ["//external/protobuf"],'
 
         bp_deps_for_bp = ['"' + d + '"' for d in bp_deps]
         src_files_for_bp = ['"' + h + '"' for h in srcs]
@@ -250,6 +272,30 @@ def main():
             {extra_attributes}
         }}
         '''
+
+        if not testonly:
+            # We need to generate separate versions of the library with TLS disabled
+            # for use in the dynamic linker and its dependencies, which does not
+            # support ELF TLS segments when loading itself.
+            bp_notls_deps_for_bp = ['"' + d + '_notls"' for d in bp_deps]
+            bp += f'''
+            {module_type} {{
+                name: "{bp_mod_name}_notls",
+                defaults: ["{notls_defaults_module}"],
+                {visibility_prop_notls}
+                srcs: [
+                    {',\n'.join(src_files_for_bp)}
+                ],
+                {generated_hdrs_attr}
+                whole_static_libs: [
+                    {',\n'.join(bp_notls_deps_for_bp)}
+                ],
+                export_static_lib_headers: [
+                    {',\n'.join(bp_notls_deps_for_bp)}
+                ],
+                {extra_attributes}
+            }}
+            '''
 
         queue.extend(deps)
 

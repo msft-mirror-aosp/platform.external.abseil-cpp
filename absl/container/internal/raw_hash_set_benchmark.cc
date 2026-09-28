@@ -51,6 +51,10 @@ struct IntPolicy {
   using key_type = int64_t;
   using init_type = int64_t;
 
+  using DefaultHash = void;
+  using DefaultEq = void;
+  using DefaultAlloc = void;
+
   static void construct(void*, int64_t* slot, int64_t v) { *slot = v; }
   static void destroy(void*, int64_t*) {}
   static void transfer(void*, int64_t* new_slot, int64_t* old_slot) {
@@ -64,7 +68,7 @@ struct IntPolicy {
     return std::forward<F>(f)(x, x);
   }
 
-  template <class Hash>
+  template <class Hash, bool kIsDefault>
   static constexpr HashSlotFn get_hash_slot_fn() {
     return nullptr;
   }
@@ -97,6 +101,10 @@ class StringPolicy {
   using key_type = std::string;
   using init_type = std::pair<std::string, std::string>;
 
+  using DefaultHash = void;
+  using DefaultEq = void;
+  using DefaultAlloc = void;
+
   template <class allocator_type, class... Args>
   static void construct(allocator_type* alloc, slot_type* slot, Args... args) {
     std::allocator_traits<allocator_type>::construct(
@@ -127,7 +135,7 @@ class StringPolicy {
                       PairArgs(std::forward<Args>(args)...));
   }
 
-  template <class Hash>
+  template <class Hash, bool kIsDefault>
   static constexpr HashSlotFn get_hash_slot_fn() {
     return nullptr;
   }
@@ -204,8 +212,7 @@ void BM_CacheInSteadyState(benchmark::State& state) {
   state.SetLabel(absl::StrFormat("load_factor=%.2f", t.load_factor()));
 }
 
-template <typename Benchmark>
-void CacheInSteadyStateArgs(Benchmark* bm) {
+void CacheInSteadyStateArgs(::benchmark::Benchmark* bm) {
   // The default.
   const float max_load_factor = 0.875;
   // When the cache is at the steady state, the probe sequence will equal
@@ -236,6 +243,30 @@ void BM_EraseEmplace(benchmark::State& state) {
   }
 }
 BENCHMARK(BM_EraseEmplace)->Arg(1)->Arg(2)->Arg(4)->Arg(8)->Arg(16)->Arg(100);
+
+void BM_EraseEmplaceString(benchmark::State& state) {
+  StringTable t;
+  int64_t size = state.range(0);
+  for (int64_t i = 0; i < size; ++i) {
+    std::string s = std::to_string(i);
+    t.emplace(s, s);
+  }
+  while (state.KeepRunningBatch(size)) {
+    for (int64_t i = 0; i < size; ++i) {
+      benchmark::DoNotOptimize(t);
+      std::string s = std::to_string(i);
+      t.erase(s);
+      t.emplace(s, s);
+    }
+  }
+}
+BENCHMARK(BM_EraseEmplaceString)
+    ->Arg(1)
+    ->Arg(2)
+    ->Arg(4)
+    ->Arg(8)
+    ->Arg(16)
+    ->Arg(100);
 
 void BM_EndComparison(benchmark::State& state) {
   StringTable t = {{"a", "a"}, {"b", "b"}};
@@ -518,17 +549,6 @@ void BM_Group_MaskNonFull(benchmark::State& state) {
   }
 }
 BENCHMARK(BM_Group_MaskNonFull);
-
-void BM_Group_CountLeadingEmptyOrDeleted(benchmark::State& state) {
-  std::array<ctrl_t, Group::kWidth> group;
-  Iota(group.begin(), group.end(), -2);
-  Group g{group.data()};
-  for (auto _ : state) {
-    ::benchmark::DoNotOptimize(g);
-    ::benchmark::DoNotOptimize(g.CountLeadingEmptyOrDeleted());
-  }
-}
-BENCHMARK(BM_Group_CountLeadingEmptyOrDeleted);
 
 void BM_Group_MatchFirstEmptyOrDeleted(benchmark::State& state) {
   std::array<ctrl_t, Group::kWidth> group;
