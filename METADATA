@@ -8,14 +8,14 @@ third_party {
   license_type: NOTICE
   last_upgrade_date {
     year: 2026
-    month: 2
-    day: 18
+    month: 6
+    day: 15
   }
   homepage: "https://abseil.io"
   identifier {
     type: "Git"
     value: "https://github.com/abseil/abseil-cpp"
-    version: "255c84dadd029fd8ad25c5efb5933e47beaa00c7"
-    closest_version: "20260107.1"
+    version: "5650e9cf76d3be4318d5fa3af38ee483ddfd5e4a"
+    closest_version: "20260526.0"
   }
 }
