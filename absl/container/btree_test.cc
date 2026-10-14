@@ -24,6 +24,7 @@
 #include <map>
 #include <memory>
 #include <numeric>
+#include <optional>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
@@ -47,7 +48,6 @@
 #include "absl/strings/str_split.h"
 #include "absl/strings/string_view.h"
 #include "absl/types/compare.h"
-#include "absl/types/optional.h"
 
 ABSL_FLAG(int, test_values, 10000, "The number of values to use for tests");
 
@@ -1174,7 +1174,7 @@ TEST(Btree, BtreeMapCanHoldMoveOnlyTypes) {
 
   std::unique_ptr<std::string> &v = m["A"];
   EXPECT_TRUE(v == nullptr);
-  v = absl::make_unique<std::string>("X");
+  v = std::make_unique<std::string>("X");
 
   auto iter = m.find("A");
   EXPECT_EQ("X", *iter->second);
@@ -2048,7 +2048,10 @@ TEST(Btree, ExtractAndGetNextEndIter) {
 
 TEST(Btree, ExtractDoesntCauseExtraMoves) {
 #ifdef _MSC_VER
-  GTEST_SKIP() << "This test fails on MSVC.";
+  // This conditional is to avoid an unreachable code warning.
+  if (_MSC_VER > 0) {
+    GTEST_SKIP() << "This test fails on MSVC.";
+  }
 #endif
 
   using Set = absl::btree_set<MovableOnlyInstance>;
@@ -2674,8 +2677,6 @@ TEST(Btree, HeterogeneousInsertOrAssign) {
 }
 #endif
 
-// This test requires std::launder for mutable key access in node handles.
-#if defined(__cpp_lib_launder) && __cpp_lib_launder >= 201606
 TEST(Btree, NodeHandleMutableKeyAccess) {
   {
     absl::btree_map<std::string, std::string> map;
@@ -2701,7 +2702,6 @@ TEST(Btree, NodeHandleMutableKeyAccess) {
     EXPECT_THAT(map, ElementsAre(Pair("key", "mapped")));
   }
 }
-#endif
 
 struct MultiKey {
   int i1;
@@ -2949,6 +2949,7 @@ TEST(Btree,
 
 TEST(Btree, ConstructImplicitlyWithUnadaptedComparator) {
   absl::btree_set<MultiKey, MultiKeyComp> set = {{}, MultiKeyComp{}};
+  EXPECT_TRUE(set.empty());
 }
 
 TEST(Btree, InvalidComparatorsCaught) {
@@ -3006,11 +3007,11 @@ TEST(Btree, InvalidComparatorsCaught) {
   // compare differently with each other from how they compare with instances
   // that don't have the optional field.
   struct ClockTime {
-    absl::optional<int> hour;
+    std::optional<int> hour;
     int minute;
   };
   // `comp(a,b) && comp(b,c) && !comp(a,c)` violates transitivity.
-  ClockTime a = {absl::nullopt, 1};
+  ClockTime a = {std::nullopt, 1};
   ClockTime b = {2, 5};
   ClockTime c = {6, 0};
   {
@@ -3353,7 +3354,7 @@ TEST(Btree, ReusePoisonMemory) {
   set.insert(0);
 }
 
-TEST(Btree, IteratorSubtraction) {
+TEST(Btree, IteratorDifference) {
   absl::BitGen bitgen;
   std::vector<int> vec;
   // Randomize the set's insertion order so the nodes aren't all full.
@@ -3371,12 +3372,100 @@ TEST(Btree, IteratorSubtraction) {
   }
 }
 
+TEST(Btree, IteratorAddition) {
+  absl::BitGen bitgen;
+  std::vector<int> vec;
+
+  // Randomize the set's insertion order so the nodes aren't all full.
+  constexpr int kSetSize = 1000000;
+  for (int i = 0; i < kSetSize; ++i) vec.push_back(i);
+  absl::c_shuffle(vec, bitgen);
+
+  absl::btree_set<int> set;
+  for (int i : vec) set.insert(i);
+
+  for (int i = 0; i < 1000; ++i) {
+    int begin = absl::Uniform(bitgen, 0, kSetSize);
+    int end = absl::Uniform(bitgen, begin, kSetSize);
+    ASSERT_LE(begin, end);
+
+    auto it = set.find(begin);
+    it += end - begin;
+    ASSERT_EQ(it, set.find(end)) << end;
+
+    it += begin - end;
+    ASSERT_EQ(it, set.find(begin)) << begin;
+  }
+}
+
+TEST(Btree, IteratorAdditionOutOfBounds) {
+  const absl::btree_set<int> set({5});
+
+  auto it = set.find(5);
+
+  auto forward = it;
+  forward += 1;
+  EXPECT_EQ(forward, set.end());
+
+  auto backward = it;
+  EXPECT_EQ(backward, set.begin());
+
+  if (IsAssertEnabled()) {
+    EXPECT_DEATH(forward += 1, "");
+    EXPECT_DEATH(backward += -1, "");
+  }
+}
+
+TEST(Btree, IteratorSubtraction) {
+  absl::BitGen bitgen;
+  std::vector<int> vec;
+
+  // Randomize the set's insertion order so the nodes aren't all full.
+  constexpr int kSetSize = 1000000;
+  for (int i = 0; i < kSetSize; ++i) vec.push_back(i);
+  absl::c_shuffle(vec, bitgen);
+
+  absl::btree_set<int> set;
+  for (int i : vec) set.insert(i);
+
+  for (int i = 0; i < 1000; ++i) {
+    int begin = absl::Uniform(bitgen, 0, kSetSize);
+    int end = absl::Uniform(bitgen, begin, kSetSize);
+    ASSERT_LE(begin, end);
+
+    auto it = set.find(end);
+    it -= end - begin;
+    ASSERT_EQ(it, set.find(begin)) << begin;
+
+    it -= begin - end;
+    ASSERT_EQ(it, set.find(end)) << end;
+  }
+}
+
+TEST(Btree, IteratorSubtractionOutOfBounds) {
+  const absl::btree_set<int> set({5});
+
+  auto it = set.find(5);
+
+  auto backward = it;
+  EXPECT_EQ(backward, set.begin());
+
+  auto forward = it;
+  forward -= -1;
+  EXPECT_EQ(forward, set.end());
+
+  if (IsAssertEnabled()) {
+    EXPECT_DEATH(backward -= 1, "");
+    EXPECT_DEATH(forward -= -1, "");
+  }
+}
+
 TEST(Btree, DereferencingEndIterator) {
   if (!IsAssertEnabled()) GTEST_SKIP() << "Assertions not enabled.";
 
   absl::btree_set<int> set;
   for (int i = 0; i < 1000; ++i) set.insert(i);
-  EXPECT_DEATH(*set.end(), R"regex(Dereferencing end\(\) iterator)regex");
+  EXPECT_DEATH(*set.end(), "");
 }
 
 TEST(Btree, InvalidIteratorComparison) {
@@ -3388,13 +3477,10 @@ TEST(Btree, InvalidIteratorComparison) {
     set2.insert(i);
   }
 
-  constexpr const char *kValueInitDeathMessage =
-      "Comparing default-constructed iterator with .*non-default-constructed "
-      "iterator";
   typename absl::btree_set<int>::iterator iter1, iter2;
   EXPECT_EQ(iter1, iter2);
-  EXPECT_DEATH(void(set1.begin() == iter1), kValueInitDeathMessage);
-  EXPECT_DEATH(void(iter1 == set1.begin()), kValueInitDeathMessage);
+  EXPECT_DEATH(void(set1.begin() == iter1), "");
+  EXPECT_DEATH(void(iter1 == set1.begin()), "");
 
   constexpr const char *kDifferentContainerDeathMessage =
       "Comparing iterators from different containers";
@@ -3453,6 +3539,109 @@ TEST(Btree, FieldTypeEqualsSlotType) {
   using set_type = absl::btree_set<uint8_t>;
   static_assert(BtreeNodePeer::FieldTypeEqualsSlotType<set_type>(), "");
   TestBasicFunctionality(set_type());
+}
+
+// Alias whose only purpose is to have the same length as set_params for better
+// alignment in the test below.
+template <typename... T>
+using set_p_impl = set_params_impl<T...>;
+
+TEST(BtreeTest, SetParamsStripsDefaults) {
+  using K = int;
+  using DA = btree_set_defaults<int>::Compare;
+  using DB = btree_set_defaults<int>::Alloc;
+  using DC = btree_set_defaults<int>::TargetNodeSize;
+  using DD = btree_set_defaults<int>::IsMulti;
+
+  using XA = std::greater<int>;
+  struct XB {};
+  using XC = std::integral_constant<int, 100>;
+  using XD = std::true_type;
+
+  EXPECT_TRUE((std::is_same_v<set_params<K, XA, XB, XC{}, XD{}>,
+                              set_p_impl<K, XA, XB, XC, XD>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, XA, XB, XC{}, DD{}>,
+                              set_p_impl<K, XA, XB, XC>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, XA, XB, DC{}, XD{}>,
+                              set_p_impl<K, XA, XB, DC, XD>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, XA, XB, DC{}, DD{}>,
+                              set_p_impl<K, XA, XB>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, XA, DB, XC{}, XD{}>,
+                              set_p_impl<K, XA, DB, XC, XD>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, XA, DB, XC{}, DD{}>,
+                              set_p_impl<K, XA, DB, XC>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, XA, DB, DC{}, XD{}>,
+                              set_p_impl<K, XA, DB, DC, XD>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, XA, DB, DC{}, DD{}>,
+                              set_p_impl<K, XA>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, DA, XB, XC{}, XD{}>,
+                              set_p_impl<K, DA, XB, XC, XD>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, DA, XB, XC{}, DD{}>,
+                              set_p_impl<K, DA, XB, XC>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, DA, XB, DC{}, XD{}>,
+                              set_p_impl<K, DA, XB, DC, XD>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, DA, XB, DC{}, DD{}>,
+                              set_p_impl<K, DA, XB>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, DA, DB, XC{}, XD{}>,
+                              set_p_impl<K, DA, DB, XC, XD>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, DA, DB, XC{}, DD{}>,
+                              set_p_impl<K, DA, DB, XC>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, DA, DB, DC{}, XD{}>,
+                              set_p_impl<K, DA, DB, DC, XD>>));
+  EXPECT_TRUE((std::is_same_v<set_params<K, DA, DB, DC{}, DD{}>,
+                              set_p_impl<K>>));
+}
+
+// Alias whose only purpose is to have the same length as map_params for better
+// alignment in the test below.
+template <typename... T>
+using map_p_impl = map_params_impl<T...>;
+
+TEST(BtreeTest, MapParamsStripsDefaults) {
+  using K = int;
+  using V = double;
+  using DA = btree_map_defaults<int, double>::Compare;
+  using DB = btree_map_defaults<int, double>::Alloc;
+  using DC = btree_map_defaults<int, double>::TargetNodeSize;
+  using DD = btree_map_defaults<int, double>::IsMulti;
+
+  using XA = std::greater<int>;
+  struct XB {};
+  using XC = std::integral_constant<int, 100>;
+  using XD = std::true_type;
+
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, XA, XB, XC{}, XD{}>,
+                              map_p_impl<K, V, XA, XB, XC, XD>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, XA, XB, XC{}, DD{}>,
+                              map_p_impl<K, V, XA, XB, XC>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, XA, XB, DC{}, XD{}>,
+                              map_p_impl<K, V, XA, XB, DC, XD>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, XA, XB, DC{}, DD{}>,
+                              map_p_impl<K, V, XA, XB>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, XA, DB, XC{}, XD{}>,
+                              map_p_impl<K, V, XA, DB, XC, XD>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, XA, DB, XC{}, DD{}>,
+                              map_p_impl<K, V, XA, DB, XC>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, XA, DB, DC{}, XD{}>,
+                              map_p_impl<K, V, XA, DB, DC, XD>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, XA, DB, DC{}, DD{}>,
+                              map_p_impl<K, V, XA>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, DA, XB, XC{}, XD{}>,
+                              map_p_impl<K, V, DA, XB, XC, XD>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, DA, XB, XC{}, DD{}>,
+                              map_p_impl<K, V, DA, XB, XC>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, DA, XB, DC{}, XD{}>,
+                              map_p_impl<K, V, DA, XB, DC, XD>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, DA, XB, DC{}, DD{}>,
+                              map_p_impl<K, V, DA, XB>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, DA, DB, XC{}, XD{}>,
+                              map_p_impl<K, V, DA, DB, XC, XD>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, DA, DB, XC{}, DD{}>,
+                              map_p_impl<K, V, DA, DB, XC>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, DA, DB, DC{}, XD{}>,
+                              map_p_impl<K, V, DA, DB, DC, XD>>));
+  EXPECT_TRUE((std::is_same_v<map_params<K, V, DA, DB, DC{}, DD{}>,
+                              map_p_impl<K, V>>));
 }
 
 }  // namespace

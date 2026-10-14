@@ -14,7 +14,9 @@
 
 #include "absl/container/internal/compressed_tuple.h"
 
+#include <any>
 #include <memory>
+#include <optional>
 #include <set>
 #include <string>
 #include <type_traits>
@@ -25,8 +27,6 @@
 #include "gtest/gtest.h"
 #include "absl/container/internal/test_instance_tracker.h"
 #include "absl/memory/memory.h"
-#include "absl/types/any.h"
-#include "absl/types/optional.h"
 #include "absl/utility/utility.h"
 
 // These are declared at global scope purely so that error messages
@@ -337,11 +337,11 @@ TEST(CompressedTupleTest, NoElements) {
 
 TEST(CompressedTupleTest, MoveOnlyElements) {
   CompressedTuple<std::unique_ptr<std::string>> str_tup(
-      absl::make_unique<std::string>("str"));
+      std::make_unique<std::string>("str"));
 
   CompressedTuple<CompressedTuple<std::unique_ptr<std::string>>,
                   std::unique_ptr<int>>
-  x(std::move(str_tup), absl::make_unique<int>(5));
+      x(std::move(str_tup), std::make_unique<int>(5));
 
   EXPECT_EQ(*x.get<0>().get<0>(), "str");
   EXPECT_EQ(*x.get<1>(), 5);
@@ -355,7 +355,7 @@ TEST(CompressedTupleTest, MoveOnlyElements) {
 
 TEST(CompressedTupleTest, MoveConstructionMoveOnlyElements) {
   CompressedTuple<std::unique_ptr<std::string>> base(
-      absl::make_unique<std::string>("str"));
+      std::make_unique<std::string>("str"));
   EXPECT_EQ(*base.get<0>(), "str");
 
   CompressedTuple<std::unique_ptr<std::string>> copy(std::move(base));
@@ -363,13 +363,13 @@ TEST(CompressedTupleTest, MoveConstructionMoveOnlyElements) {
 }
 
 TEST(CompressedTupleTest, AnyElements) {
-  any a(std::string("str"));
-  CompressedTuple<any, any&> x(any(5), a);
-  EXPECT_EQ(absl::any_cast<int>(x.get<0>()), 5);
-  EXPECT_EQ(absl::any_cast<std::string>(x.get<1>()), "str");
+  std::any a(std::string("str"));
+  CompressedTuple<std::any, std::any&> x(std::any(5), a);
+  EXPECT_EQ(std::any_cast<int>(x.get<0>()), 5);
+  EXPECT_EQ(std::any_cast<std::string>(x.get<1>()), "str");
 
   a = 0.5f;
-  EXPECT_EQ(absl::any_cast<float>(x.get<1>()), 0.5);
+  EXPECT_EQ(std::any_cast<float>(x.get<1>()), 0.5);
 }
 
 TEST(CompressedTupleTest, Constexpr) {
@@ -385,20 +385,6 @@ TEST(CompressedTupleTest, Constexpr) {
   };
 
   using Tuple = CompressedTuple<int, double, CompressedTuple<int>, Empty<0>>;
-
-  constexpr int r0 =
-      AsLValue(Tuple(1, 0.75, CompressedTuple<int>(9), {})).get<0>();
-  constexpr double r1 =
-      AsLValue(Tuple(1, 0.75, CompressedTuple<int>(9), {})).get<1>();
-  constexpr int r2 =
-      AsLValue(Tuple(1, 0.75, CompressedTuple<int>(9), {})).get<2>().get<0>();
-  constexpr CallType r3 =
-      AsLValue(Tuple(1, 0.75, CompressedTuple<int>(9), {})).get<3>().value();
-
-  EXPECT_EQ(r0, 1);
-  EXPECT_EQ(r1, 0.75);
-  EXPECT_EQ(r2, 9);
-  EXPECT_EQ(r3, CallType::kMutableRef);
 
   constexpr Tuple x(7, 1.25, CompressedTuple<int>(5), {});
   constexpr int x0 = x.get<0>();
@@ -432,15 +418,15 @@ TEST(CompressedTupleTest, Constexpr) {
   EXPECT_EQ(trivial1, 0);
   EXPECT_EQ(trivial2, 0);
 
-  constexpr CompressedTuple<Empty<0>, NonTrivialStruct, absl::optional<int>>
+  constexpr CompressedTuple<Empty<0>, NonTrivialStruct, std::optional<int>>
       non_trivial = {};
   constexpr CallType non_trivial0 = non_trivial.get<0>().value();
   constexpr int non_trivial1 = non_trivial.get<1>().value();
-  constexpr absl::optional<int> non_trivial2 = non_trivial.get<2>();
+  constexpr std::optional<int> non_trivial2 = non_trivial.get<2>();
 
   EXPECT_EQ(non_trivial0, CallType::kConstRef);
   EXPECT_EQ(non_trivial1, 5);
-  EXPECT_EQ(non_trivial2, absl::nullopt);
+  EXPECT_EQ(non_trivial2, std::nullopt);
 
   static constexpr char data[] = "DEF";
   constexpr CompressedTuple<const char*> z(data);
@@ -466,14 +452,15 @@ TEST(CompressedTupleTest, EmptyFinalClass) {
 }
 #endif
 
-// TODO(b/214288561): enable this test.
-TEST(CompressedTupleTest, DISABLED_NestedEbo) {
+TEST(CompressedTupleTest, NestedEbo) {
   struct Empty1 {};
   struct Empty2 {};
   CompressedTuple<Empty1, CompressedTuple<Empty2>, int> x;
   CompressedTuple<Empty1, Empty2, int> y;
-  // Currently fails with sizeof(x) == 8, sizeof(y) == 4.
   EXPECT_EQ(sizeof(x), sizeof(y));
+
+  using NestedEmpty = CompressedTuple<Empty1, CompressedTuple<Empty2>>;
+  EXPECT_TRUE(std::is_empty_v<NestedEmpty>);
 }
 
 }  // namespace

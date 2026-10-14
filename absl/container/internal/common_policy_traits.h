@@ -28,6 +28,15 @@ namespace absl {
 ABSL_NAMESPACE_BEGIN
 namespace container_internal {
 
+template <class Policy, class = void>
+struct policy_trait_element_is_owner : std::false_type {};
+
+template <class Policy>
+struct policy_trait_element_is_owner<
+    Policy,
+    std::enable_if_t<!std::is_void<typename Policy::element_is_owner>::value>>
+    : Policy::element_is_owner {};
+
 // Defines how slots are initialized/destroyed/moved.
 template <class Policy, class = void>
 struct common_policy_traits {
@@ -72,7 +81,7 @@ struct common_policy_traits {
   // Note: we use remove_const_t so that the two overloads have different args
   // in the case of sets with explicitly const value_types.
   template <class P = Policy>
-  static auto element(absl::remove_const_t<slot_type>* slot)
+  static auto element(std::remove_const_t<slot_type>* slot)
       -> decltype(P::element(slot)) {
     return P::element(slot);
   }
@@ -110,7 +119,7 @@ struct common_policy_traits {
                                                            old_slot)) {
     return P::transfer(alloc, new_slot, old_slot);
   }
-#if defined(__cpp_lib_launder) && __cpp_lib_launder >= 201606
+
   // This overload returns true_type for the trait below.
   // The conditional_t is to make the enabler type dependent.
   template <class Alloc,
@@ -126,7 +135,6 @@ struct common_policy_traits {
         static_cast<const void*>(&element(old_slot)), sizeof(value_type));
     return {};
   }
-#endif
 
   template <class Alloc>
   static void transfer_impl(Alloc* alloc, slot_type* new_slot,

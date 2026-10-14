@@ -14,6 +14,9 @@
 # limitations under the License.
 #
 
+load("@rules_cc//cc:cc_binary.bzl", "cc_binary")
+load("@rules_cc//cc:cc_library.bzl", "cc_library")
+load("@rules_cc//cc:cc_test.bzl", "cc_test")
 load(
     "//absl:copts/configure_copts.bzl",
     "ABSL_DEFAULT_COPTS",
@@ -39,9 +42,9 @@ cc_library(
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
     deps = [
-        "//absl/base:base_internal",
         "//absl/base:config",
         "//absl/base:core_headers",
+        "//absl/base:nullability",
         "//absl/meta:type_traits",
         "//absl/utility",
     ],
@@ -57,13 +60,39 @@ cc_test(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     deps = [
         ":any_invocable",
-        "//absl/base:base_internal",
         "//absl/base:config",
         "//absl/base:core_headers",
+        "//absl/base:nullability",
         "//absl/meta:type_traits",
         "//absl/utility",
-        "@com_google_googletest//:gtest",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
+    ],
+)
+
+cc_library(
+    name = "bind_back",
+    srcs = ["internal/back_binder.h"],
+    hdrs = ["bind_back.h"],
+    copts = ABSL_DEFAULT_COPTS,
+    linkopts = ABSL_DEFAULT_LINKOPTS,
+    deps = [
+        "//absl/base:config",
+        "//absl/container:compressed_tuple",
+        "//absl/utility",
+    ],
+)
+
+cc_test(
+    name = "bind_back_test",
+    srcs = ["bind_back_test.cc"],
+    copts = ABSL_TEST_COPTS,
+    linkopts = ABSL_DEFAULT_LINKOPTS,
+    deps = [
+        ":bind_back",
+        "//absl/memory",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -74,7 +103,6 @@ cc_library(
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
     deps = [
-        "//absl/base:base_internal",
         "//absl/container:compressed_tuple",
         "//absl/meta:type_traits",
         "//absl/utility",
@@ -89,8 +117,8 @@ cc_test(
     deps = [
         ":bind_front",
         "//absl/memory",
-        "@com_google_googletest//:gtest",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -102,9 +130,10 @@ cc_library(
     linkopts = ABSL_DEFAULT_LINKOPTS,
     deps = [
         ":any_invocable",
-        "//absl/base:base_internal",
+        "//absl/base:config",
         "//absl/base:core_headers",
         "//absl/meta:type_traits",
+        "//absl/utility",
     ],
 )
 
@@ -116,10 +145,12 @@ cc_test(
     deps = [
         ":any_invocable",
         ":function_ref",
+        "//absl/base:config",
         "//absl/container:test_instance_tracker",
         "//absl/memory",
-        "@com_google_googletest//:gtest",
-        "@com_google_googletest//:gtest_main",
+        "//absl/utility",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
     ],
 )
 
@@ -144,14 +175,14 @@ cc_test(
         "//absl/base:config",
         "//absl/strings",
         "//absl/strings:string_view",
-        "//absl/types:variant",
-        "@com_google_googletest//:gtest",
-        "@com_google_googletest//:gtest_main",
+        "@googletest//:gtest",
+        "@googletest//:gtest_main",
     ],
 )
 
-cc_test(
+cc_binary(
     name = "function_type_benchmark",
+    testonly = True,
     srcs = [
         "function_type_benchmark.cc",
     ],
@@ -162,7 +193,6 @@ cc_test(
         ":any_invocable",
         ":function_ref",
         "//absl/base:core_headers",
-        "@com_github_google_benchmark//:benchmark_main",
-        "@com_google_googletest//:gtest",
+        "@google_benchmark//:benchmark_main",
     ],
 )
