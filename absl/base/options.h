@@ -107,8 +107,8 @@
 // implemented as aliases to the std:: ordering types, or as an independent
 // implementation.
 //
-// A value of 0 means to use Abseil's implementation.  This requires only C++11
-// support, and is expected to work on every toolchain we support.
+// A value of 0 means to use Abseil's implementation.  This is expected to
+// work on every toolchain we support.
 //
 // A value of 1 means to use aliases.  This requires that all code using Abseil
 // is built in C++20 mode or later.
@@ -152,9 +152,9 @@
 
 #define ABSL_OPTION_USE_INLINE_NAMESPACE 1
 #ifdef ANDROID_DISABLE_TLS_FOR_LINKER
-#define ABSL_OPTION_INLINE_NAMESPACE_NAME lts_20260526_notls
+#define ABSL_OPTION_INLINE_NAMESPACE_NAME aosp_20260817_notls
 #else
-#define ABSL_OPTION_INLINE_NAMESPACE_NAME lts_20260526
+#define ABSL_OPTION_INLINE_NAMESPACE_NAME aosp_20260817
 #endif
 
 // ABSL_OPTION_HARDENED
