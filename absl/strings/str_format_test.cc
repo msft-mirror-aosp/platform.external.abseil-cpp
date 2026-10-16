@@ -18,7 +18,6 @@
 #include <cstdarg>
 #include <cstdint>
 #include <cstdio>
-#include <iterator>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -301,7 +300,7 @@ TEST_F(FormatEntryPointTest, StreamWithV) {
   };
 
   std::string buf(4096, '\0');
-  for (auto i = 0; i < std::size(formats); ++i) {
+  for (auto i = 0; i < ABSL_ARRAYSIZE(formats); ++i) {
     const auto parsed =
         ParsedFormat<'v', 'u', 'c', 'v', 'f', 'v'>::NewAllowIgnored(formats[i]);
     std::ostringstream oss;

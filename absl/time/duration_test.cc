@@ -74,7 +74,7 @@ MATCHER_P(TimevalMatcher, tv, "") {
 }
 
 TEST(Duration, ConstExpr) {
-  static_assert(std::is_trivially_destructible_v<absl::Duration>,
+  static_assert(std::is_trivially_destructible<absl::Duration>::value,
                 "Duration is documented as being trivially destructible");
   constexpr absl::Duration d0 = absl::ZeroDuration();
   static_assert(d0 == absl::ZeroDuration(), "ZeroDuration()");

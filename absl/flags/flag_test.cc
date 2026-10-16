@@ -19,7 +19,6 @@
 #include <stdint.h>
 
 #include <atomic>
-#include <iterator>
 #include <optional>
 #include <string>
 #include <thread>  // NOLINT
@@ -691,10 +690,10 @@ TEST_F(FlagTest, ConcurrentSetAndGet) {
     });
   }
   absl::Time end_time = absl::Now() + absl::Seconds(1);
-  size_t i = 0;
+  int i = 0;
   while (absl::Now() < end_time) {
     absl::SetFlag(&FLAGS_test_flag_12,
-                  kValidDurations[i++ % std::size(kValidDurations)]);
+                  kValidDurations[i++ % ABSL_ARRAYSIZE(kValidDurations)]);
   }
   stop.store(true, std::memory_order_relaxed);
   for (auto& t : threads) t.join();

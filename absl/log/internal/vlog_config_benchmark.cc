@@ -27,6 +27,7 @@
 #include "absl/base/config.h"
 #include "absl/container/internal/layout.h"
 #include "absl/log/internal/vlog_config.h"
+#include "absl/memory/memory.h"
 #include "absl/random/distributions.h"
 #include "absl/strings/str_cat.h"
 #include "benchmark/benchmark.h"
@@ -115,7 +116,7 @@ class SyntheticBinary {
     sites[num_tus - 1]->next_.store(nullptr, std::memory_order_seq_cst);
   }
   ~SyntheticBinary() {
-    static_assert(std::is_trivially_destructible_v<VLogSite>, "");
+    static_assert(std::is_trivially_destructible<VLogSite>::value, "");
     absl::log_internal::SetVModuleListHeadForTestOnly(nullptr);
   }
 

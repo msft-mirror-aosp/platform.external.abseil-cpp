@@ -12,18 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// To prevent compiler memory exhaustion (OOM / Killed signal terminates
-// cc1plus) during parallel builds with GCC, the test suite instantiations have
-// been split into four separate compilation units: any_invocable_test_inst1.cc,
-// any_invocable_test_inst2.cc, any_invocable_test_inst3.cc, and
-// any_invocable_test_inst4.cc. The test definitions remain here in this
-// header.
-
-// SKIP_ABSL_INLINE_NAMESPACE_CHECK
-
-#ifndef ABSL_FUNCTIONAL_ANY_INVOCABLE_TEST_H_
-#define ABSL_FUNCTIONAL_ANY_INVOCABLE_TEST_H_
-
 #include "absl/functional/any_invocable.h"
 
 #include <cstddef>
@@ -45,21 +33,22 @@ static_assert(absl::internal_any_invocable::kStorageSize >= sizeof(void*),
               "These tests assume that the small object storage is at least "
               "the size of a pointer.");
 
-namespace absl_any_invocable_test {
+namespace {
 
 // A dummy type we use when passing qualifiers to metafunctions
 struct _ {};
 
 template <class T>
 struct Wrapper {
-  template <class U, class = std::enable_if_t<std::is_convertible_v<U, T>>>
+  template <class U,
+            class = std::enable_if_t<std::is_convertible<U, T>::value>>
   Wrapper(U&&);  // NOLINT
 };
 
 // This will cause a recursive trait instantiation if the SFINAE checks are
 // not ordered correctly for constructibility.
-static_assert(std::is_constructible_v<Wrapper<absl::AnyInvocable<void()>>,
-                                      Wrapper<absl::AnyInvocable<void()>>>,
+static_assert(std::is_constructible<Wrapper<absl::AnyInvocable<void()>>,
+                                    Wrapper<absl::AnyInvocable<void()>>>::value,
               "");
 
 // A metafunction that takes the cv and l-value reference qualifiers that were
@@ -67,9 +56,9 @@ static_assert(std::is_constructible_v<Wrapper<absl::AnyInvocable<void()>>,
 // type), and .
 template <class Qualifiers, class This>
 struct QualifiersForThisImpl {
-  static_assert(std::is_object_v<This>, "");
+  static_assert(std::is_object<This>::value, "");
   using type =
-      std::conditional_t<std::is_const_v<Qualifiers>, const This, This>&;
+      std::conditional_t<std::is_const<Qualifiers>::value, const This, This>&;
 };
 
 template <class Qualifiers, class This>
@@ -78,9 +67,9 @@ struct QualifiersForThisImpl<Qualifiers&, This>
 
 template <class Qualifiers, class This>
 struct QualifiersForThisImpl<Qualifiers&&, This> {
-  static_assert(std::is_object_v<This>, "");
+  static_assert(std::is_object<This>::value, "");
   using type =
-      std::conditional_t<std::is_const_v<Qualifiers>, const This, This>&&;
+      std::conditional_t<std::is_const<Qualifiers>::value, const This, This>&&;
 };
 
 template <class Qualifiers, class This>
@@ -94,37 +83,39 @@ struct GiveQualifiersToFunImpl;
 
 template <class T, class R, class... P>
 struct GiveQualifiersToFunImpl<T, R(P...)> {
-  using type = std::conditional_t<std::is_const_v<T>, R(P...) const, R(P...)>;
+  using type =
+      std::conditional_t<std::is_const<T>::value, R(P...) const, R(P...)>;
 };
 
 template <class T, class R, class... P>
 struct GiveQualifiersToFunImpl<T&, R(P...)> {
   using type =
-      std::conditional_t<std::is_const_v<T>, R(P...) const&, R(P...) &>;
+      std::conditional_t<std::is_const<T>::value, R(P...) const&, R(P...) &>;
 };
 
 template <class T, class R, class... P>
 struct GiveQualifiersToFunImpl<T&&, R(P...)> {
   using type =
-      std::conditional_t<std::is_const_v<T>, R(P...) const&&, R(P...) &&>;
+      std::conditional_t<std::is_const<T>::value, R(P...) const&&, R(P...) &&>;
 };
 
 template <class T, class R, class... P>
 struct GiveQualifiersToFunImpl<T, R(P...) noexcept> {
-  using type = std::conditional_t<std::is_const_v<T>, R(P...) const noexcept,
-                                  R(P...) noexcept>;
+  using type = std::conditional_t<std::is_const<T>::value,
+                                  R(P...) const noexcept, R(P...) noexcept>;
 };
 
 template <class T, class R, class... P>
 struct GiveQualifiersToFunImpl<T&, R(P...) noexcept> {
-  using type = std::conditional_t<std::is_const_v<T>, R(P...) const & noexcept,
-                                  R(P...) & noexcept>;
+  using type = std::conditional_t<std::is_const<T>::value,
+                                  R(P...) const & noexcept, R(P...) & noexcept>;
 };
 
 template <class T, class R, class... P>
 struct GiveQualifiersToFunImpl<T&&, R(P...) noexcept> {
-  using type = std::conditional_t<std::is_const_v<T>, R(P...) const && noexcept,
-                                  R(P...) && noexcept>;
+  using type =
+      std::conditional_t<std::is_const<T>::value, R(P...) const && noexcept,
+                         R(P...) && noexcept>;
 };
 
 template <class T, class Fun>
@@ -295,15 +286,11 @@ struct add<Movable::nothrow, Destructibility, Qual, CallExceptionSpec, Size,
 };
 
 // Actual non-member functions rather than function objects
-inline Int add_function(Int&& a, int b, int c) noexcept {
-  return a.value + b + c;
-}
+Int add_function(Int&& a, int b, int c) noexcept { return a.value + b + c; }
 
-inline Int mult_function(Int&& a, int b, int c) noexcept {
-  return a.value * b * c;
-}
+Int mult_function(Int&& a, int b, int c) noexcept { return a.value * b * c; }
 
-inline Int square_function(Int const&& a) noexcept { return a.value * a.value; }
+Int square_function(Int const&& a) noexcept { return a.value * a.value; }
 
 template <class Sig>
 using AnyInvocable = absl::AnyInvocable<Sig>;
@@ -318,7 +305,8 @@ struct TestParams {
   using Qualifiers = Qual;
   static constexpr NothrowCall kCallExceptionSpec = CallExceptionSpec;
   static constexpr bool kIsNoexcept = kCallExceptionSpec == NothrowCall::yes;
-  static constexpr bool kIsRvalueQualified = std::is_rvalue_reference_v<Qual>;
+  static constexpr bool kIsRvalueQualified =
+      std::is_rvalue_reference<Qual>::value;
   static constexpr ObjSize kSize = Size;
   static constexpr ObjAlign kAlignment = Alignment;
 
@@ -346,12 +334,13 @@ struct TestParams {
   using ResultType = Int;
   using AnyInvocableFunTypeNotNoexcept = Int(Int, const int&, int);
   using UnqualifiedFunType =
-      std::conditional_t<kIsNoexcept, Int(Int, const int&, int) noexcept,
-                         Int(Int, const int&, int)>;
+      typename std::conditional<kIsNoexcept, Int(Int, const int&, int) noexcept,
+                                Int(Int, const int&, int)>::type;
   using FunType = GiveQualifiersToFun<Qualifiers, UnqualifiedFunType>;
   using MemFunPtrType =
-      std::conditional_t<kIsNoexcept, Int (Int::*)(const int&, int) noexcept,
-                         Int (Int::*)(const int&, int)>;
+      typename std::conditional<kIsNoexcept,
+                                Int (Int::*)(const int&, int) noexcept,
+                                Int (Int::*)(const int&, int)>::type;
   using AnyInvType = AnyInvocable<FunType>;
   using AddType = add<kMovability, kDestructibility, Qualifiers,
                       kCallExceptionSpec, kSize, kAlignment>;
@@ -364,8 +353,9 @@ struct TestParams {
 
   // These typedefs are used when testing void return type covariance.
   using UnqualifiedVoidFunType =
-      std::conditional_t<kIsNoexcept, void(Int, const int&, int) noexcept,
-                         void(Int, const int&, int)>;
+      typename std::conditional<kIsNoexcept,
+                                void(Int, const int&, int) noexcept,
+                                void(Int, const int&, int)>::type;
   using VoidFunType = GiveQualifiersToFun<Qualifiers, UnqualifiedVoidFunType>;
   using VoidAnyInvType = AnyInvocable<VoidFunType>;
   using VoidThisParamType = QualifiersForThis<Qualifiers, VoidAnyInvType>;
@@ -376,14 +366,14 @@ struct TestParams {
   }
 
   using CompatibleAnyInvocableFunType =
-      std::conditional_t<std::is_rvalue_reference_v<Qual>,
+      std::conditional_t<std::is_rvalue_reference<Qual>::value,
                          GiveQualifiersToFun<const _&&, UnqualifiedFunType>,
                          GiveQualifiersToFun<const _&, UnqualifiedFunType>>;
 
   using CompatibleAnyInvType = AnyInvocable<CompatibleAnyInvocableFunType>;
 
   using IncompatibleInvocable =
-      std::conditional_t<std::is_rvalue_reference_v<Qual>,
+      std::conditional_t<std::is_rvalue_reference<Qual>::value,
                          GiveQualifiersToFun<_&, UnqualifiedFunType>(_::*),
                          GiveQualifiersToFun<_&&, UnqualifiedFunType>(_::*)>;
 };
@@ -421,7 +411,7 @@ using IsMemberSwappable = IsMemberSwappableImpl<T>;
 
 template <class T>
 using IsNothrowMemberSwappable =
-    std::bool_constant<IsMemberSwappableImpl<T>::kIsNothrow>;
+    std::integral_constant<bool, IsMemberSwappableImpl<T>::kIsNothrow>;
 
 template <class T>
 class AnyInvTestBasic : public ::testing::Test {};
@@ -435,7 +425,7 @@ TYPED_TEST_P(AnyInvTestBasic, DefaultConstruction) {
 
   EXPECT_FALSE(static_cast<bool>(fun));
 
-  EXPECT_TRUE(std::is_nothrow_default_constructible_v<AnyInvType>);
+  EXPECT_TRUE(std::is_nothrow_default_constructible<AnyInvType>::value);
 }
 
 TYPED_TEST_P(AnyInvTestBasic, ConstructionNullptr) {
@@ -445,7 +435,8 @@ TYPED_TEST_P(AnyInvTestBasic, ConstructionNullptr) {
 
   EXPECT_FALSE(static_cast<bool>(fun));
 
-  EXPECT_TRUE((std::is_nothrow_constructible_v<AnyInvType, std::nullptr_t>));
+  EXPECT_TRUE(
+      (std::is_nothrow_constructible<AnyInvType, std::nullptr_t>::value));
 }
 
 TYPED_TEST_P(AnyInvTestBasic, ConstructionNullFunctionPtr) {
@@ -544,8 +535,9 @@ TYPED_TEST_P(AnyInvTestBasic, ConversionToBool) {
     EXPECT_FALSE(fun ? true : false);  // NOLINT
 
     // Make sure that the conversion is not implicit.
-    EXPECT_TRUE((std::is_nothrow_constructible_v<bool, const AnyInvType&>));
-    EXPECT_FALSE((std::is_convertible_v<const AnyInvType&, bool>));
+    EXPECT_TRUE(
+        (std::is_nothrow_constructible<bool, const AnyInvType&>::value));
+    EXPECT_FALSE((std::is_convertible<const AnyInvType&, bool>::value));
   }
 
   {
@@ -564,7 +556,7 @@ TYPED_TEST_P(AnyInvTestBasic, Invocation) {
 
   // Make sure the function call operator of AnyInvocable always has the
   // type that was specified via the template argument.
-  EXPECT_TRUE((std::is_same_v<AnyInvCallType, FunType>));
+  EXPECT_TRUE((std::is_same<AnyInvCallType, FunType>::value));
 
   AnyInvType fun = &add_function;
 
@@ -668,7 +660,7 @@ TYPED_TEST_P(AnyInvTestBasic, MoveConstructionFromEmpty) {
 
   EXPECT_FALSE(static_cast<bool>(fun));
 
-  EXPECT_TRUE(std::is_nothrow_move_constructible_v<AnyInvType>);
+  EXPECT_TRUE(std::is_nothrow_move_constructible<AnyInvType>::value);
 }
 
 TYPED_TEST_P(AnyInvTestBasic, MoveConstructionFromNonEmpty) {
@@ -681,7 +673,7 @@ TYPED_TEST_P(AnyInvTestBasic, MoveConstructionFromNonEmpty) {
   EXPECT_TRUE(static_cast<bool>(fun));
   EXPECT_EQ(29, TypeParam::ToThisParam(fun)(7, 8, 9).value);
 
-  EXPECT_TRUE(std::is_nothrow_move_constructible_v<AnyInvType>);
+  EXPECT_TRUE(std::is_nothrow_move_constructible<AnyInvType>::value);
 }
 
 TYPED_TEST_P(AnyInvTestBasic, ComparisonWithNullptrEmpty) {
@@ -713,8 +705,8 @@ TYPED_TEST_P(AnyInvTestBasic, ResultType) {
   using AnyInvType = typename TypeParam::AnyInvType;
   using ExpectedResultType = typename TypeParam::ResultType;
 
-  EXPECT_TRUE(
-      (std::is_same_v<typename AnyInvType::result_type, ExpectedResultType>));
+  EXPECT_TRUE((std::is_same<typename AnyInvType::result_type,
+                            ExpectedResultType>::value));
 }
 
 template <class T>
@@ -1205,23 +1197,23 @@ TYPED_TEST_SUITE_P(AnyInvTestNoexceptFalse);
 TYPED_TEST_P(AnyInvTestNoexceptFalse, ConversionConstructionConstraints) {
   using AnyInvType = typename TypeParam::AnyInvType;
 
-  EXPECT_TRUE(
-      (std::is_constructible_v<
-          AnyInvType, typename TypeParam::AnyInvocableFunTypeNotNoexcept*>));
-  EXPECT_FALSE(
-      (std::is_constructible_v<AnyInvType,
-                               typename TypeParam::IncompatibleInvocable>));
+  EXPECT_TRUE((std::is_constructible<
+               AnyInvType,
+               typename TypeParam::AnyInvocableFunTypeNotNoexcept*>::value));
+  EXPECT_FALSE((
+      std::is_constructible<AnyInvType,
+                            typename TypeParam::IncompatibleInvocable>::value));
 }
 
 TYPED_TEST_P(AnyInvTestNoexceptFalse, ConversionAssignConstraints) {
   using AnyInvType = typename TypeParam::AnyInvType;
 
-  EXPECT_TRUE(
-      (std::is_assignable_v<
-          AnyInvType&, typename TypeParam::AnyInvocableFunTypeNotNoexcept*>));
+  EXPECT_TRUE((std::is_assignable<
+               AnyInvType&,
+               typename TypeParam::AnyInvocableFunTypeNotNoexcept*>::value));
   EXPECT_FALSE(
-      (std::is_assignable_v<AnyInvType&,
-                            typename TypeParam::IncompatibleInvocable>));
+      (std::is_assignable<AnyInvType&,
+                          typename TypeParam::IncompatibleInvocable>::value));
 }
 
 template <class T>
@@ -1232,23 +1224,23 @@ TYPED_TEST_SUITE_P(AnyInvTestNoexceptTrue);
 TYPED_TEST_P(AnyInvTestNoexceptTrue, ConversionConstructionConstraints) {
   using AnyInvType = typename TypeParam::AnyInvType;
 
-  EXPECT_FALSE(
-      (std::is_constructible_v<
-          AnyInvType, typename TypeParam::AnyInvocableFunTypeNotNoexcept*>));
-  EXPECT_FALSE(
-      (std::is_constructible_v<AnyInvType,
-                               typename TypeParam::IncompatibleInvocable>));
+  EXPECT_FALSE((std::is_constructible<
+                AnyInvType,
+                typename TypeParam::AnyInvocableFunTypeNotNoexcept*>::value));
+  EXPECT_FALSE((
+      std::is_constructible<AnyInvType,
+                            typename TypeParam::IncompatibleInvocable>::value));
 }
 
 TYPED_TEST_P(AnyInvTestNoexceptTrue, ConversionAssignConstraints) {
   using AnyInvType = typename TypeParam::AnyInvType;
 
+  EXPECT_FALSE((std::is_assignable<
+                AnyInvType&,
+                typename TypeParam::AnyInvocableFunTypeNotNoexcept*>::value));
   EXPECT_FALSE(
-      (std::is_assignable_v<
-          AnyInvType&, typename TypeParam::AnyInvocableFunTypeNotNoexcept*>));
-  EXPECT_FALSE(
-      (std::is_assignable_v<AnyInvType&,
-                            typename TypeParam::IncompatibleInvocable>));
+      (std::is_assignable<AnyInvType&,
+                          typename TypeParam::IncompatibleInvocable>::value));
 }
 
 template <class T>
@@ -1280,8 +1272,8 @@ TYPED_TEST_P(AnyInvTestNonRvalue, NonMoveableResultType) {
     Result(Result&&) = delete;
   };
 
-  static_assert(!std::is_move_constructible_v<Result>, "");
-  static_assert(!std::is_copy_constructible_v<Result>, "");
+  static_assert(!std::is_move_constructible<Result>::value, "");
+  static_assert(!std::is_copy_constructible<Result>::value, "");
 
   // Assumption check: it should nevertheless be possible to use functors that
   // return a Result struct according to the language rules.
@@ -1308,8 +1300,9 @@ TYPED_TEST_P(AnyInvTestNonRvalue, ConversionAssignReferenceWrapperEmptyLhs) {
   AnyInvType fun;
   fun = std::ref(add);
   add.state = 5;
-  EXPECT_TRUE((std::is_nothrow_assignable_v<AnyInvType&,
-                                            std::reference_wrapper<AddType>>));
+  EXPECT_TRUE(
+      (std::is_nothrow_assignable<AnyInvType&,
+                                  std::reference_wrapper<AddType>>::value));
 
   EXPECT_TRUE(static_cast<bool>(fun));
   EXPECT_EQ(29, TypeParam::ToThisParam(fun)(7, 8, 9).value);
@@ -1326,8 +1319,9 @@ TYPED_TEST_P(AnyInvTestNonRvalue, ConversionAssignReferenceWrapperNonemptyLhs) {
   AnyInvType fun = &mult_function;
   fun = std::ref(add);
   add.state = 5;
-  EXPECT_TRUE((std::is_nothrow_assignable_v<AnyInvType&,
-                                            std::reference_wrapper<AddType>>));
+  EXPECT_TRUE(
+      (std::is_nothrow_assignable<AnyInvType&,
+                                  std::reference_wrapper<AddType>>::value));
 
   EXPECT_TRUE(static_cast<bool>(fun));
   EXPECT_EQ(29, TypeParam::ToThisParam(fun)(7, 8, 9).value);
@@ -1345,8 +1339,8 @@ TYPED_TEST_P(AnyInvTestRvalue, ConversionConstructionReferenceWrapper) {
   using AnyInvType = typename TypeParam::AnyInvType;
   using AddType = typename TypeParam::AddType;
 
-  EXPECT_FALSE(
-      (std::is_convertible_v<std::reference_wrapper<AddType>, AnyInvType>));
+  EXPECT_FALSE((
+      std::is_convertible<std::reference_wrapper<AddType>, AnyInvType>::value));
 }
 
 TYPED_TEST_P(AnyInvTestRvalue, NonMoveableResultType) {
@@ -1358,8 +1352,8 @@ TYPED_TEST_P(AnyInvTestRvalue, NonMoveableResultType) {
     Result(Result&&) = delete;
   };
 
-  static_assert(!std::is_move_constructible_v<Result>, "");
-  static_assert(!std::is_copy_constructible_v<Result>, "");
+  static_assert(!std::is_move_constructible<Result>::value, "");
+  static_assert(!std::is_copy_constructible<Result>::value, "");
 
   // Assumption check: it should nevertheless be possible to use functors that
   // return a Result struct according to the language rules.
@@ -1381,8 +1375,8 @@ TYPED_TEST_P(AnyInvTestRvalue, ConversionAssignReferenceWrapper) {
   using AnyInvType = typename TypeParam::AnyInvType;
   using AddType = typename TypeParam::AddType;
 
-  EXPECT_FALSE(
-      (std::is_assignable_v<AnyInvType&, std::reference_wrapper<AddType>>));
+  EXPECT_FALSE((
+      std::is_assignable<AnyInvType&, std::reference_wrapper<AddType>>::value));
 }
 
 TYPED_TEST_P(AnyInvTestRvalue, NonConstCrashesOnSecondCall) {
@@ -1541,6 +1535,24 @@ REGISTER_TYPED_TEST_SUITE_P(
     MoveConstructionFromNonEmpty, ComparisonWithNullptrEmpty,
     ComparisonWithNullptrNonempty, ResultType);
 
+INSTANTIATE_TYPED_TEST_SUITE_P(
+    NonRvalueCallMayThrow, AnyInvTestBasic,
+    TestParameterListNonRvalueQualifiersCallMayThrow);
+INSTANTIATE_TYPED_TEST_SUITE_P(RvalueCallMayThrow, AnyInvTestBasic,
+                               TestParameterListRvalueQualifiersCallMayThrow);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(RemoteMovable, AnyInvTestBasic,
+                               TestParameterListRemoteMovable);
+INSTANTIATE_TYPED_TEST_SUITE_P(RemoteNonMovable, AnyInvTestBasic,
+                               TestParameterListRemoteNonMovable);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(Local, AnyInvTestBasic, TestParameterListLocal);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(NonRvalueCallNothrow, AnyInvTestBasic,
+                               TestParameterListNonRvalueQualifiersNothrowCall);
+INSTANTIATE_TYPED_TEST_SUITE_P(CallNothrowRvalue, AnyInvTestBasic,
+                               TestParameterListRvalueQualifiersNothrowCall);
+
 // Tests for functions that take two operands.
 REGISTER_TYPED_TEST_SUITE_P(
     AnyInvTestCombinatoric, MoveAssignEmptyEmptyLhsRhs,
@@ -1560,6 +1572,25 @@ REGISTER_TYPED_TEST_SUITE_P(
     SwapEmptyLhsNonemptyRhs, SwapNonemptyLhsEmptyRhs,
     SwapNonemptyLhsNonemptyRhs);
 
+INSTANTIATE_TYPED_TEST_SUITE_P(
+    NonRvalueCallMayThrow, AnyInvTestCombinatoric,
+    TestParameterListNonRvalueQualifiersCallMayThrow);
+INSTANTIATE_TYPED_TEST_SUITE_P(RvalueCallMayThrow, AnyInvTestCombinatoric,
+                               TestParameterListRvalueQualifiersCallMayThrow);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(RemoteMovable, AnyInvTestCombinatoric,
+                               TestParameterListRemoteMovable);
+INSTANTIATE_TYPED_TEST_SUITE_P(RemoteNonMovable, AnyInvTestCombinatoric,
+                               TestParameterListRemoteNonMovable);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(Local, AnyInvTestCombinatoric,
+                               TestParameterListLocal);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(NonRvalueCallNothrow, AnyInvTestCombinatoric,
+                               TestParameterListNonRvalueQualifiersNothrowCall);
+INSTANTIATE_TYPED_TEST_SUITE_P(RvalueCallNothrow, AnyInvTestCombinatoric,
+                               TestParameterListRvalueQualifiersNothrowCall);
+
 REGISTER_TYPED_TEST_SUITE_P(AnyInvTestMovable,
                             ConversionConstructionUserDefinedType,
                             ConversionConstructionVoidCovariance,
@@ -1567,19 +1598,70 @@ REGISTER_TYPED_TEST_SUITE_P(AnyInvTestMovable,
                             ConversionAssignUserDefinedTypeNonemptyLhs,
                             ConversionAssignVoidCovariance);
 
+INSTANTIATE_TYPED_TEST_SUITE_P(
+    NonRvalueCallMayThrow, AnyInvTestMovable,
+    TestParameterListNonRvalueQualifiersCallMayThrow);
+INSTANTIATE_TYPED_TEST_SUITE_P(RvalueCallMayThrow, AnyInvTestMovable,
+                               TestParameterListRvalueQualifiersCallMayThrow);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(RemoteMovable, AnyInvTestMovable,
+                               TestParameterListRemoteMovable);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(Local, AnyInvTestMovable,
+                               TestParameterListLocal);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(NonRvalueCallNothrow, AnyInvTestMovable,
+                               TestParameterListNonRvalueQualifiersNothrowCall);
+INSTANTIATE_TYPED_TEST_SUITE_P(RvalueCallNothrow, AnyInvTestMovable,
+                               TestParameterListRvalueQualifiersNothrowCall);
+
 REGISTER_TYPED_TEST_SUITE_P(AnyInvTestNoexceptFalse,
                             ConversionConstructionConstraints,
                             ConversionAssignConstraints);
 
+INSTANTIATE_TYPED_TEST_SUITE_P(
+    NonRvalueCallMayThrow, AnyInvTestNoexceptFalse,
+    TestParameterListNonRvalueQualifiersCallMayThrow);
+INSTANTIATE_TYPED_TEST_SUITE_P(RvalueCallMayThrow, AnyInvTestNoexceptFalse,
+                               TestParameterListRvalueQualifiersCallMayThrow);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(RemoteMovable, AnyInvTestNoexceptFalse,
+                               TestParameterListRemoteMovable);
+INSTANTIATE_TYPED_TEST_SUITE_P(RemoteNonMovable, AnyInvTestNoexceptFalse,
+                               TestParameterListRemoteNonMovable);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(Local, AnyInvTestNoexceptFalse,
+                               TestParameterListLocal);
+
 REGISTER_TYPED_TEST_SUITE_P(AnyInvTestNoexceptTrue,
                             ConversionConstructionConstraints,
                             ConversionAssignConstraints);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(NonRvalueCallNothrow, AnyInvTestNoexceptTrue,
+                               TestParameterListNonRvalueQualifiersNothrowCall);
+INSTANTIATE_TYPED_TEST_SUITE_P(RvalueCallNothrow, AnyInvTestNoexceptTrue,
+                               TestParameterListRvalueQualifiersNothrowCall);
 
 REGISTER_TYPED_TEST_SUITE_P(AnyInvTestNonRvalue,
                             ConversionConstructionReferenceWrapper,
                             NonMoveableResultType,
                             ConversionAssignReferenceWrapperEmptyLhs,
                             ConversionAssignReferenceWrapperNonemptyLhs);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(
+    NonRvalueCallMayThrow, AnyInvTestNonRvalue,
+    TestParameterListNonRvalueQualifiersCallMayThrow);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(RemoteMovable, AnyInvTestNonRvalue,
+                               TestParameterListRemoteMovable);
+INSTANTIATE_TYPED_TEST_SUITE_P(RemoteNonMovable, AnyInvTestNonRvalue,
+                               TestParameterListRemoteNonMovable);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(Local, AnyInvTestNonRvalue,
+                               TestParameterListLocal);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(NonRvalueCallNothrow, AnyInvTestNonRvalue,
+                               TestParameterListNonRvalueQualifiersNothrowCall);
 
 REGISTER_TYPED_TEST_SUITE_P(AnyInvTestRvalue,
                             ConversionConstructionReferenceWrapper,
@@ -1588,12 +1670,17 @@ REGISTER_TYPED_TEST_SUITE_P(AnyInvTestRvalue,
                             NonConstCrashesOnSecondCall,
                             QualifierIndependentObjectLifetime);
 
+INSTANTIATE_TYPED_TEST_SUITE_P(RvalueCallMayThrow, AnyInvTestRvalue,
+                               TestParameterListRvalueQualifiersCallMayThrow);
+
+INSTANTIATE_TYPED_TEST_SUITE_P(CallNothrowRvalue, AnyInvTestRvalue,
+                               TestParameterListRvalueQualifiersNothrowCall);
+
 // Minimal SFINAE testing for platforms where we can't run the tests, but we can
 // build binaries for.
-static_assert(std::is_convertible_v<void (*)(), absl::AnyInvocable<void() &&>>,
+static_assert(
+    std::is_convertible<void (*)(), absl::AnyInvocable<void() &&>>::value, "");
+static_assert(!std::is_convertible<void*, absl::AnyInvocable<void() &&>>::value,
               "");
-static_assert(!std::is_convertible_v<void*, absl::AnyInvocable<void() &&>>, "");
 
-}  // namespace absl_any_invocable_test
-
-#endif  // ABSL_FUNCTIONAL_ANY_INVOCABLE_TEST_H_
+}  // namespace

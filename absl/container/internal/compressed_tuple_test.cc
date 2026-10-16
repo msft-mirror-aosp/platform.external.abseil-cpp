@@ -302,14 +302,14 @@ TEST(CompressedTupleTest, Nested) {
   EXPECT_EQ(4 * sizeof(char),
             sizeof(CompressedTuple<CompressedTuple<char, char>,
                                    CompressedTuple<char, char>>));
-  EXPECT_TRUE((std::is_empty_v<CompressedTuple<Empty<0>, Empty<1>>>));
+  EXPECT_TRUE((std::is_empty<CompressedTuple<Empty<0>, Empty<1>>>::value));
 
   // Make sure everything still works when things are nested.
   struct CT_Empty : CompressedTuple<Empty<0>> {};
   CompressedTuple<Empty<0>, CT_Empty> nested_empty;
   auto contained = nested_empty.get<0>();
   auto nested = nested_empty.get<1>().get<0>();
-  EXPECT_TRUE((std::is_same_v<decltype(contained), decltype(nested)>));
+  EXPECT_TRUE((std::is_same<decltype(contained), decltype(nested)>::value));
 }
 
 TEST(CompressedTupleTest, Reference) {
@@ -332,7 +332,7 @@ TEST(CompressedTupleTest, Reference) {
 TEST(CompressedTupleTest, NoElements) {
   CompressedTuple<> x;
   static_cast<void>(x);  // Silence -Wunused-variable.
-  EXPECT_TRUE(std::is_empty_v<CompressedTuple<>>);
+  EXPECT_TRUE(std::is_empty<CompressedTuple<>>::value);
 }
 
 TEST(CompressedTupleTest, MoveOnlyElements) {

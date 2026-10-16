@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include <string>
 #include <utility>
 
 #include "absl/status/status.h"
@@ -46,15 +45,5 @@ void BM_AppendSourceLocation(benchmark::State& state) {
   }
 }
 BENCHMARK(BM_AppendSourceLocation);
-
-void BM_LongMessageRValue(benchmark::State& state) {
-  for (auto _ : state) {
-    std::string msg(100, 'X');
-    benchmark::DoNotOptimize(msg);
-    absl::Status s(absl::StatusCode::kInvalidArgument, std::move(msg));
-    benchmark::DoNotOptimize(s);
-  }
-}
-BENCHMARK(BM_LongMessageRValue);
 
 }  // namespace

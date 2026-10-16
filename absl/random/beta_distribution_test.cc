@@ -61,10 +61,9 @@ constexpr bool ShouldExerciseLongDoubleTests() {
 #endif
 }
 
-using RealTypes =
-    std::conditional_t<ShouldExerciseLongDoubleTests(),
-                       ::testing::Types<float, double, long double>,
-                       ::testing::Types<float, double>>;
+using RealTypes = std::conditional<ShouldExerciseLongDoubleTests(),
+                                   ::testing::Types<float, double, long double>,
+                                   ::testing::Types<float, double>>::type;
 TYPED_TEST_SUITE(BetaDistributionInterfaceTest, RealTypes);
 
 TYPED_TEST(BetaDistributionInterfaceTest, SerializeTest) {

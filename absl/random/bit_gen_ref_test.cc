@@ -125,7 +125,7 @@ struct MinStdRand {
 
 TEST(BitGenRefTest, IsConvertibleTest) {
   // Verify that MinStdRandBitGen is convertible to absl::BitGenRef.
-  EXPECT_TRUE((std::is_convertible_v<MinStdRand, absl::BitGenRef>));
+  EXPECT_TRUE((std::is_convertible<MinStdRand, absl::BitGenRef>::value));
 
   // Explicit construction should trigger the conversion.
   {

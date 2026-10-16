@@ -196,24 +196,28 @@ struct Hex {
   char fill;
 
   template <typename Int>
-  explicit Hex(Int v, PadSpec spec = absl::kNoPad,
-               std::enable_if_t<sizeof(Int) == 1 && !std::is_pointer_v<Int>,
-                                bool> = true)
+  explicit Hex(
+      Int v, PadSpec spec = absl::kNoPad,
+      std::enable_if_t<sizeof(Int) == 1 && !std::is_pointer<Int>::value, bool> =
+          true)
       : Hex(spec, static_cast<uint8_t>(v)) {}
   template <typename Int>
-  explicit Hex(Int v, PadSpec spec = absl::kNoPad,
-               std::enable_if_t<sizeof(Int) == 2 && !std::is_pointer_v<Int>,
-                                bool> = true)
+  explicit Hex(
+      Int v, PadSpec spec = absl::kNoPad,
+      std::enable_if_t<sizeof(Int) == 2 && !std::is_pointer<Int>::value, bool> =
+          true)
       : Hex(spec, static_cast<uint16_t>(v)) {}
   template <typename Int>
-  explicit Hex(Int v, PadSpec spec = absl::kNoPad,
-               std::enable_if_t<sizeof(Int) == 4 && !std::is_pointer_v<Int>,
-                                bool> = true)
+  explicit Hex(
+      Int v, PadSpec spec = absl::kNoPad,
+      std::enable_if_t<sizeof(Int) == 4 && !std::is_pointer<Int>::value, bool> =
+          true)
       : Hex(spec, static_cast<uint32_t>(v)) {}
   template <typename Int>
-  explicit Hex(Int v, PadSpec spec = absl::kNoPad,
-               std::enable_if_t<sizeof(Int) == 8 && !std::is_pointer_v<Int>,
-                                bool> = true)
+  explicit Hex(
+      Int v, PadSpec spec = absl::kNoPad,
+      std::enable_if_t<sizeof(Int) == 8 && !std::is_pointer<Int>::value, bool> =
+          true)
       : Hex(spec, static_cast<uint64_t>(v)) {}
   template <typename Pointee>
   explicit Hex(Pointee* absl_nullable v, PadSpec spec = absl::kNoPad)
@@ -404,7 +408,8 @@ class AlphaNum {
       : piece_(pc.data(), pc.size()) {}
 #endif  // !ABSL_USES_STD_STRING_VIEW
 
-  template <typename T, typename = std::enable_if_t<HasAbslStringify<T>::value>>
+  template <typename T, typename = typename std::enable_if<
+                            HasAbslStringify<T>::value>::type>
   AlphaNum(  // NOLINT(runtime/explicit)
       const T& v ABSL_ATTRIBUTE_LIFETIME_BOUND,
       strings_internal::StringifySink&& sink ABSL_ATTRIBUTE_LIFETIME_BOUND = {})
@@ -429,29 +434,31 @@ class AlphaNum {
   // Match unscoped enums.  Use integral promotion so that a `char`-backed
   // enum becomes a wider integral type AlphaNum will accept.
   template <typename T,
-            typename = std::enable_if_t<std::is_enum<T>{} &&
-                                        std::is_convertible<T, int>{} &&
-                                        !HasAbslStringify<T>::value>>
+            typename = typename std::enable_if<
+                std::is_enum<T>{} && std::is_convertible<T, int>{} &&
+                !HasAbslStringify<T>::value>::type>
   AlphaNum(T e)  // NOLINT(runtime/explicit)
       : AlphaNum(+e) {}
 
   // This overload matches scoped enums.  We must explicitly cast to the
   // underlying type, but use integral promotion for the same reason as above.
-  template <typename T, std::enable_if_t<std::is_enum<T>{} &&
-                                             !std::is_convertible<T, int>{} &&
-                                             !HasAbslStringify<T>::value,
-                                         char*> = nullptr>
+  template <typename T,
+            typename std::enable_if<std::is_enum<T>{} &&
+                                        !std::is_convertible<T, int>{} &&
+                                        !HasAbslStringify<T>::value,
+                                    char*>::type = nullptr>
   AlphaNum(T e)  // NOLINT(runtime/explicit)
-      : AlphaNum(+static_cast<std::underlying_type_t<T>>(e)) {}
+      : AlphaNum(+static_cast<typename std::underlying_type<T>::type>(e)) {}
 
   // vector<bool>::reference and const_reference require special help to
   // convert to `AlphaNum` because it requires two user defined conversions.
   template <
       typename T,
-      std::enable_if_t<
-          std::is_class_v<T> &&
-          (std::is_same_v<T, std::vector<bool>::reference> ||
-           std::is_same_v<T, std::vector<bool>::const_reference>)>* = nullptr>
+      typename std::enable_if<
+          std::is_class<T>::value &&
+          (std::is_same<T, std::vector<bool>::reference>::value ||
+           std::is_same<T, std::vector<bool>::const_reference>::value)>::type* =
+          nullptr>
   AlphaNum(T e) : AlphaNum(static_cast<bool>(e)) {}  // NOLINT(runtime/explicit)
 
  private:

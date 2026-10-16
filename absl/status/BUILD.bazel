@@ -28,7 +28,7 @@ load(
 )
 
 package(
-    default_visibility = ["//visibility:private"],
+    default_visibility = ["//visibility:public"],
     features = [
         "header_modules",
         "layering_check",
@@ -52,7 +52,6 @@ cc_library(
     ],
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    visibility = ["//visibility:public"],
     deps = [
         "//absl/base:atomic_hook",
         "//absl/base:config",
@@ -117,7 +116,6 @@ cc_library(
     ],
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    visibility = ["//visibility:public"],
     deps = [
         ":status",
         "//absl/base",
@@ -164,7 +162,6 @@ cc_binary(
     deps = [
         ":status",
         ":statusor",
-        "//absl/base:core_headers",
         "@google_benchmark//:benchmark_main",
     ],
 )
@@ -175,7 +172,6 @@ cc_library(
     hdrs = ["status_builder.h"],
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    visibility = ["//visibility:public"],
     deps = [
         ":status",
         "//absl/base:config",
@@ -215,7 +211,6 @@ cc_test(
 cc_library(
     name = "status_macros",
     hdrs = ["status_macros.h"],
-    visibility = ["//visibility:public"],
     deps = [
         ":status",
         ":status_builder",
@@ -235,6 +230,7 @@ cc_test(
         ":status_builder",
         ":status_macros",
         ":statusor",
+        "//absl/base:core_headers",
         "//absl/strings:string_view",
         "//absl/types:source_location",
         "@googletest//:gtest",
@@ -252,7 +248,6 @@ cc_library(
     hdrs = ["status_matchers.h"],
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    visibility = ["//visibility:public"],
     deps = [
         ":status",
         ":statusor",

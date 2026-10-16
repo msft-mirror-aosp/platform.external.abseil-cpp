@@ -22,7 +22,6 @@
 #include <random>
 #include <string>
 #include <tuple>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -77,8 +76,8 @@ struct IntPolicy {
 
 class StringPolicy {
   template <class F, class K, class V,
-            class = std::enable_if_t<
-                std::is_convertible_v<const K&, absl::string_view>>>
+            class = typename std::enable_if<
+                std::is_convertible<const K&, absl::string_view>::value>::type>
   decltype(std::declval<F>()(
       std::declval<const absl::string_view&>(), std::piecewise_construct,
       std::declval<std::tuple<K>>(),
