@@ -27,7 +27,7 @@ load(
 )
 
 package(
-    default_visibility = ["//visibility:private"],
+    default_visibility = ["//visibility:public"],
     features = [
         "header_modules",
         "layering_check",
@@ -42,7 +42,6 @@ cc_library(
     hdrs = ["random.h"],
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    visibility = ["//visibility:public"],
     deps = [
         ":distributions",
         ":seed_sequences",
@@ -74,7 +73,6 @@ cc_library(
     ],
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    visibility = ["//visibility:public"],
     deps = [
         "//absl/base:base_internal",
         "//absl/base:config",
@@ -98,7 +96,6 @@ cc_library(
     hdrs = ["seed_gen_exception.h"],
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    visibility = ["//visibility:public"],
     deps = [
         "//absl/base:config",
         "//absl/base:raw_logging_internal",
@@ -113,7 +110,6 @@ cc_library(
     ],
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    visibility = ["//visibility:public"],
     deps = [
         ":seed_gen_exception",
         "//absl/base:config",
@@ -131,7 +127,6 @@ cc_library(
     hdrs = ["bit_gen_ref.h"],
     copts = ABSL_DEFAULT_COPTS,
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    visibility = ["//visibility:public"],
     deps = [
         ":mocking_access",
         ":random",
@@ -149,7 +144,6 @@ cc_library(
     testonly = True,
     hdrs = ["mock_distributions.h"],
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    visibility = ["//visibility:public"],
     deps = [
         ":distributions",
         ":mocking_bit_gen",
@@ -166,7 +160,6 @@ cc_library(
         "mocking_bit_gen.h",
     ],
     linkopts = ABSL_DEFAULT_LINKOPTS,
-    visibility = ["//visibility:public"],
     deps = [
         ":mocking_access",
         ":random",
@@ -183,7 +176,6 @@ cc_library(
 cc_library(
     name = "mocking_access",
     hdrs = ["mocking_access.h"],
-    visibility = ["//visibility:public"],
     deps = [
         "//absl/base:config",
         "//absl/base:fast_type_id",

@@ -27,7 +27,6 @@
 #include "absl/base/attributes.h"
 #include "absl/base/config.h"
 #include "absl/base/internal/exception_testing.h"
-#include "absl/base/internal/hardening.h"
 #include "absl/base/options.h"
 #include "absl/container/fixed_array.h"
 #include "absl/container/inlined_vector.h"
@@ -95,11 +94,13 @@ TEST(IntSpan, ArrayCtor) {
   absl::Span<int> s(a);
   EXPECT_THAT(s, SpanIs(a, 3));
 
-  EXPECT_TRUE((std::is_constructible_v<absl::Span<const int>, int[3]>));
-  EXPECT_TRUE((std::is_constructible_v<absl::Span<const int>, const int[3]>));
-  EXPECT_FALSE((std::is_constructible_v<absl::Span<int>, const int[3]>));
-  EXPECT_TRUE((std::is_convertible_v<int[3], absl::Span<const int>>));
-  EXPECT_TRUE((std::is_convertible_v<const int[3], absl::Span<const int>>));
+  EXPECT_TRUE((std::is_constructible<absl::Span<const int>, int[3]>::value));
+  EXPECT_TRUE(
+      (std::is_constructible<absl::Span<const int>, const int[3]>::value));
+  EXPECT_FALSE((std::is_constructible<absl::Span<int>, const int[3]>::value));
+  EXPECT_TRUE((std::is_convertible<int[3], absl::Span<const int>>::value));
+  EXPECT_TRUE(
+      (std::is_convertible<const int[3], absl::Span<const int>>::value));
 }
 
 template <typename T>
@@ -124,8 +125,9 @@ TEST(IntSpan, ContainerCtor) {
   EXPECT_THAT(const_from_span, SpanIs(s_filled));
 
   EXPECT_TRUE(
-      (std::is_convertible_v<std::vector<int>&, absl::Span<const int>>));
-  EXPECT_TRUE((std::is_convertible_v<absl::Span<int>&, absl::Span<const int>>));
+      (std::is_convertible<std::vector<int>&, absl::Span<const int>>::value));
+  EXPECT_TRUE(
+      (std::is_convertible<absl::Span<int>&, absl::Span<const int>>::value));
 
   TakesGenericSpan(absl::Span<int>(filled));
 }
@@ -157,20 +159,22 @@ TEST(CharSpan, StringCtor) {
   absl::Span<const char> s_const_abc = abc;
   EXPECT_THAT(s_const_abc, SpanIs(abc));
 
-  EXPECT_FALSE((std::is_constructible_v<absl::Span<int>, std::string>));
-  EXPECT_FALSE((std::is_constructible_v<absl::Span<const int>, std::string>));
-  EXPECT_TRUE((std::is_convertible_v<std::string, absl::Span<const char>>));
+  EXPECT_FALSE((std::is_constructible<absl::Span<int>, std::string>::value));
+  EXPECT_FALSE(
+      (std::is_constructible<absl::Span<const int>, std::string>::value));
+  EXPECT_TRUE(
+      (std::is_convertible<std::string, absl::Span<const char>>::value));
 }
 
 TEST(IntSpan, FromConstPointer) {
-  EXPECT_TRUE((std::is_constructible_v<absl::Span<const int* const>,
-                                       std::vector<int*>>));
-  EXPECT_TRUE((std::is_constructible_v<absl::Span<const int* const>,
-                                       std::vector<const int*>>));
-  EXPECT_FALSE(
-      (std::is_constructible_v<absl::Span<const int*>, std::vector<int*>>));
-  EXPECT_FALSE(
-      (std::is_constructible_v<absl::Span<int*>, std::vector<const int*>>));
+  EXPECT_TRUE((std::is_constructible<absl::Span<const int* const>,
+                                     std::vector<int*>>::value));
+  EXPECT_TRUE((std::is_constructible<absl::Span<const int* const>,
+                                     std::vector<const int*>>::value));
+  EXPECT_FALSE((
+      std::is_constructible<absl::Span<const int*>, std::vector<int*>>::value));
+  EXPECT_FALSE((
+      std::is_constructible<absl::Span<int*>, std::vector<const int*>>::value));
 }
 
 struct TypeWithMisleadingData {
@@ -187,9 +191,9 @@ struct TypeWithMisleadingSize {
 
 TEST(IntSpan, EvilTypes) {
   EXPECT_FALSE(
-      (std::is_constructible_v<absl::Span<int>, TypeWithMisleadingData&>));
+      (std::is_constructible<absl::Span<int>, TypeWithMisleadingData&>::value));
   EXPECT_FALSE(
-      (std::is_constructible_v<absl::Span<int>, TypeWithMisleadingSize&>));
+      (std::is_constructible<absl::Span<int>, TypeWithMisleadingSize&>::value));
 }
 
 struct Base {
@@ -200,10 +204,10 @@ struct Base {
 struct Derived : Base {};
 
 TEST(IntSpan, SpanOfDerived) {
-  EXPECT_TRUE((std::is_constructible_v<absl::Span<int>, Base&>));
-  EXPECT_TRUE((std::is_constructible_v<absl::Span<int>, Derived&>));
+  EXPECT_TRUE((std::is_constructible<absl::Span<int>, Base&>::value));
+  EXPECT_TRUE((std::is_constructible<absl::Span<int>, Derived&>::value));
   EXPECT_FALSE(
-      (std::is_constructible_v<absl::Span<Base>, std::vector<Derived>>));
+      (std::is_constructible<absl::Span<Base>, std::vector<Derived>>::value));
 }
 
 void TestInitializerList(absl::Span<const int> s, const std::vector<int>& v) {
@@ -215,10 +219,10 @@ TEST(ConstIntSpan, InitializerListConversion) {
   TestInitializerList({1}, {1});
   TestInitializerList({1, 2, 3}, {1, 2, 3});
 
-  EXPECT_FALSE(
-      (std::is_constructible_v<absl::Span<int>, std::initializer_list<int>>));
-  EXPECT_FALSE(
-      (std::is_convertible_v<absl::Span<int>, std::initializer_list<int>>));
+  EXPECT_FALSE((std::is_constructible<absl::Span<int>,
+                                      std::initializer_list<int>>::value));
+  EXPECT_FALSE((
+      std::is_convertible<absl::Span<int>, std::initializer_list<int>>::value));
 }
 
 TEST(IntSpan, Data) {
@@ -251,7 +255,6 @@ TEST(IntSpan, ElementAccess) {
   EXPECT_EQ(s.back(), s[9]);
 
 #if !defined(NDEBUG) || ABSL_OPTION_HARDENED
-  absl::base_internal::ScopedSetAbslHardeningForTesting hardener(true);
   EXPECT_DEATH_IF_SUPPORTED(s[-1], "");
   EXPECT_DEATH_IF_SUPPORTED(s[10], "");
 #endif
@@ -293,7 +296,6 @@ TEST(IntSpan, RemovePrefixAndSuffix) {
   EXPECT_EQ(v, MakeRamp(20, 1));
 
 #if !defined(NDEBUG) || ABSL_OPTION_HARDENED
-  absl::base_internal::ScopedSetAbslHardeningForTesting hardener(true);
   absl::Span<int> prefix_death(v);
   EXPECT_DEATH_IF_SUPPORTED(prefix_death.remove_prefix(21), "");
   absl::Span<int> suffix_death(v);
@@ -666,15 +668,16 @@ TEST_F(IntSpanOrderComparisonTest, EmptySpans) {
 TEST(IntSpan, ExposesContainerTypesAndConsts) {
   absl::Span<int> slice;
   CheckType<absl::Span<int>::iterator>(slice.begin());
-  EXPECT_TRUE((std::is_convertible_v<decltype(slice.begin()),
-                                     absl::Span<int>::const_iterator>));
+  EXPECT_TRUE((std::is_convertible<decltype(slice.begin()),
+                                   absl::Span<int>::const_iterator>::value));
   CheckType<absl::Span<int>::const_iterator>(slice.cbegin());
-  EXPECT_TRUE((std::is_convertible_v<decltype(slice.end()),
-                                     absl::Span<int>::const_iterator>));
+  EXPECT_TRUE((std::is_convertible<decltype(slice.end()),
+                                   absl::Span<int>::const_iterator>::value));
   CheckType<absl::Span<int>::const_iterator>(slice.cend());
   CheckType<absl::Span<int>::reverse_iterator>(slice.rend());
-  EXPECT_TRUE((std::is_convertible_v<decltype(slice.rend()),
-                                     absl::Span<int>::const_reverse_iterator>));
+  EXPECT_TRUE(
+      (std::is_convertible<decltype(slice.rend()),
+                           absl::Span<int>::const_reverse_iterator>::value));
   CheckType<absl::Span<int>::const_reverse_iterator>(slice.crend());
   testing::StaticAssertTypeEq<int, absl::Span<int>::value_type>();
   testing::StaticAssertTypeEq<int, absl::Span<const int>::value_type>();

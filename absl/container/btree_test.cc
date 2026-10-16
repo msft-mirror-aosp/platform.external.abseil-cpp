@@ -766,12 +766,15 @@ struct NonTransparentCompare {
   }
 };
 
-template <class T, class = void>
-struct CanEraseWithEmptyBrace : std::false_type {};
+template <typename T>
+bool CanEraseWithEmptyBrace(T t, decltype(t.erase({})) *) {
+  return true;
+}
 
-template <class T>
-struct CanEraseWithEmptyBrace<
-    T, std::void_t<decltype(std::declval<T>().erase({}))*>> : std::true_type {};
+template <typename T>
+bool CanEraseWithEmptyBrace(T, ...) {
+  return false;
+}
 
 template <typename T>
 void TestHeterogeneous(T table) {
@@ -816,7 +819,7 @@ void TestHeterogeneous(T table) {
   EXPECT_EQ(table.size() - 1, copy.size());
   copy.erase({"5"});
   EXPECT_EQ(table.size() - 2, copy.size());
-  EXPECT_FALSE(CanEraseWithEmptyBrace<T>::value);
+  EXPECT_FALSE(CanEraseWithEmptyBrace(table, nullptr));
 
   // Also run it with const T&.
   if (std::is_class<T>()) TestHeterogeneous<const T &>(table);
@@ -1094,9 +1097,9 @@ class BtreeNodePeer {
 
   template <typename Btree>
   constexpr static bool FieldTypeEqualsSlotType() {
-    return std::is_same_v<
+    return std::is_same<
         typename btree_node<typename Btree::params_type>::field_type,
-        typename btree_node<typename Btree::params_type>::slot_type>;
+        typename btree_node<typename Btree::params_type>::slot_type>::value;
   }
 };
 
@@ -1107,7 +1110,7 @@ class BtreeMapTest : public ::testing::Test {
   struct Key {};
   struct Cmp {
     template <typename T>
-    [[maybe_unused]] bool operator()(T, T) const {
+    bool operator()(T, T) const {
       return false;
     }
   };
@@ -1234,16 +1237,16 @@ template <typename Compare, typename Key>
 void AssertKeyCompareStringAdapted() {
   using Adapted = typename key_compare_adapter<Compare, Key>::type;
   static_assert(
-      std::is_same_v<Adapted, StringBtreeDefaultLess> ||
-          std::is_same_v<Adapted, StringBtreeDefaultGreater>,
+      std::is_same<Adapted, StringBtreeDefaultLess>::value ||
+          std::is_same<Adapted, StringBtreeDefaultGreater>::value,
       "key_compare_adapter should have string-adapted this comparator.");
 }
 template <typename Compare, typename Key>
 void AssertKeyCompareNotStringAdapted() {
   using Adapted = typename key_compare_adapter<Compare, Key>::type;
   static_assert(
-      !std::is_same_v<Adapted, StringBtreeDefaultLess> &&
-          !std::is_same_v<Adapted, StringBtreeDefaultGreater>,
+      !std::is_same<Adapted, StringBtreeDefaultLess>::value &&
+          !std::is_same<Adapted, StringBtreeDefaultGreater>::value,
       "key_compare_adapter shouldn't have string-adapted this comparator.");
 }
 
@@ -2801,12 +2804,16 @@ TYPED_TEST(BtreeMultiKeyTest, Count) {
 
 TEST(Btree, SetIteratorsAreConst) {
   using Set = absl::btree_set<int>;
-  EXPECT_TRUE((std::is_same_v<typename Set::iterator::reference, const int&>));
-  EXPECT_TRUE((std::is_same_v<typename Set::iterator::pointer, const int*>));
+  EXPECT_TRUE(
+      (std::is_same<typename Set::iterator::reference, const int &>::value));
+  EXPECT_TRUE(
+      (std::is_same<typename Set::iterator::pointer, const int *>::value));
 
   using MSet = absl::btree_multiset<int>;
-  EXPECT_TRUE((std::is_same_v<typename MSet::iterator::reference, const int&>));
-  EXPECT_TRUE((std::is_same_v<typename MSet::iterator::pointer, const int*>));
+  EXPECT_TRUE(
+      (std::is_same<typename MSet::iterator::reference, const int &>::value));
+  EXPECT_TRUE(
+      (std::is_same<typename MSet::iterator::pointer, const int *>::value));
 }
 
 TEST(Btree, AllocConstructor) {

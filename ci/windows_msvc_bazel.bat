@@ -46,7 +46,7 @@ IF NOT "%ALTERNATE_OPTIONS%"=="" copy %ALTERNATE_OPTIONS% absl\base\options.h
   test ... ^
   --compilation_mode=%COMPILATION_MODE% ^
   --copt=/WX ^
-  --cxxopt=/std:%STD% ^
+  --copt=/std:%STD% ^
   --define=absl=1 ^
   --enable_bzlmod=true ^
   --keep_going ^
