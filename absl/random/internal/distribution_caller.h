@@ -36,7 +36,7 @@ namespace random_internal {
 // to intercept such calls.
 template <typename URBG>
 struct DistributionCaller {
-  static_assert(!std::is_pointer_v<URBG>,
+  static_assert(!std::is_pointer<URBG>::value,
                 "You must pass a reference, not a pointer.");
 
   using RandomMockingAccess = ::absl::RandomMockingAccess;

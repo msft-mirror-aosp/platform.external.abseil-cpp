@@ -53,7 +53,7 @@ void CheckWideningConvertsToSelf() {
 //
 template <typename T>
 void CheckNotWideningConvertibleWithSigned() {
-  using signed_t = std::make_signed_t<T>;
+  using signed_t = typename std::make_signed<T>::type;
 
   static_assert(!is_widening_convertible<T, signed_t>::value,
                 "Unsigned type is convertible to same-sized signed-type!");
@@ -76,9 +76,9 @@ void CheckNotWideningConvertibleWithSigned() {
 // - Signed(Ti) IS widening-convertible to Ti+1
 template <typename T, typename Higher>
 void CheckWideningConvertsToLargerTypes() {
-  using signed_t = std::make_signed_t<T>;
+  using signed_t = typename std::make_signed<T>::type;
   using higher_t = Higher;
-  using signed_higher_t = std::make_signed_t<Higher>;
+  using signed_higher_t = typename std::make_signed<Higher>::type;
 
   static_assert(is_widening_convertible<T, higher_t>::value,
                 "Type not embeddable into larger type!");

@@ -20,7 +20,6 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <iterator>
 #include <memory>
 #include <optional>
 #include <string>
@@ -33,8 +32,8 @@
 #include "absl/debugging/leak_check.h"
 #include "absl/debugging/stacktrace.h"
 #include "absl/debugging/symbolize.h"
-#include "absl/functional/function_ref.h"
 #include "absl/hash/hash.h"
+#include "absl/memory/memory.h"
 #include "absl/status/status.h"
 #include "absl/status/status_payload_printer.h"
 #include "absl/strings/cord.h"

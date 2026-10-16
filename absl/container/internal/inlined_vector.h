@@ -78,9 +78,10 @@ using IsMoveAssignOk = std::is_move_assignable<ValueType<A>>;
 template <typename A>
 using IsSwapOk = absl::type_traits_internal::IsSwappable<ValueType<A>>;
 
-template <typename A, bool IsTriviallyDestructible =
-                          std::is_trivially_destructible_v<ValueType<A>> &&
-                          std::is_same_v<A, std::allocator<ValueType<A>>>>
+template <typename A,
+          bool IsTriviallyDestructible =
+              std::is_trivially_destructible<ValueType<A>>::value &&
+              std::is_same<A, std::allocator<ValueType<A>>>::value>
 struct DestroyAdapter;
 
 template <typename A>
@@ -294,9 +295,9 @@ class Storage {
       // it's safe for us to simply adopt the contents of the storage for
       // `other` and remove its own reference to them. It's as if we had
       // individually move-assigned each value and then destroyed the original.
-      std::conjunction_v<std::is_trivially_move_assignable<ValueType<A>>,
-                         std::is_trivially_destructible<ValueType<A>>,
-                         std::is_same<A, std::allocator<ValueType<A>>>>,
+      std::conjunction<std::is_trivially_move_assignable<ValueType<A>>,
+                        std::is_trivially_destructible<ValueType<A>>,
+                        std::is_same<A, std::allocator<ValueType<A>>>>::value,
       MemcpyPolicy,
       // Otherwise we use move assignment if possible. If not, we simulate
       // move assignment using move construction.
@@ -305,7 +306,7 @@ class Storage {
       // which are themselves not move-assignable when their contained type is
       // not.
       std::conditional_t<IsMoveAssignOk<A>::value, ElementwiseAssignPolicy,
-                         ElementwiseConstructPolicy>>;
+                          ElementwiseConstructPolicy>>;
 
   // The policy to be used specifically when swapping inlined elements.
   using SwapInlinedElementsPolicy = std::conditional_t<
@@ -315,11 +316,11 @@ class Storage {
       // relocated the first vector's elements into temporary storage,
       // relocated the second's elements into the (now-empty) first's,
       // and then relocated from temporary storage into the second.
-      std::conjunction_v<absl::is_trivially_relocatable<ValueType<A>>,
-                         std::is_same<A, std::allocator<ValueType<A>>>>,
+      std::conjunction<absl::is_trivially_relocatable<ValueType<A>>,
+                        std::is_same<A, std::allocator<ValueType<A>>>>::value,
       MemcpyPolicy,
       std::conditional_t<IsSwapOk<A>::value, ElementwiseSwapPolicy,
-                         ElementwiseConstructPolicy>>;
+                          ElementwiseConstructPolicy>>;
 
   static SizeType<A> NextCapacity(SizeType<A> current_capacity) {
     return current_capacity * 2;
@@ -348,8 +349,8 @@ class Storage {
     // Fast path: if no destructors need to be run and we know the allocator
     // doesn't do anything fancy, then all we need to do is deallocate (and
     // maybe not even that).
-    if (std::is_trivially_destructible_v<ValueType<A>> &&
-        std::is_same_v<A, std::allocator<ValueType<A>>>) {
+    if (std::is_trivially_destructible<ValueType<A>>::value &&
+        std::is_same<A, std::allocator<ValueType<A>>>::value) {
       DeallocateIfAllocated();
       return;
     }
@@ -501,16 +502,16 @@ class Storage {
     {
       using V = ValueType<A>;
       ABSL_ASSERT(other_storage.GetIsAllocated() ||
-                  (std::is_same_v<A, std::allocator<V>> &&
+                  (std::is_same<A, std::allocator<V>>::value &&
                    (
                        // First case above
                        absl::is_trivially_relocatable<V>::value ||
                        // Second case above
-                       (std::is_trivially_move_assignable_v<V> &&
-                        std::is_trivially_destructible_v<V>) ||
+                       (std::is_trivially_move_assignable<V>::value &&
+                        std::is_trivially_destructible<V>::value) ||
                        // Third case above
-                       (std::is_trivially_copy_constructible_v<V> ||
-                        std::is_trivially_copy_assignable_v<V>))));
+                       (std::is_trivially_copy_constructible<V>::value ||
+                        std::is_trivially_copy_assignable<V>::value))));
     }
 
     GetSizeAndIsAllocated() = other_storage.GetSizeAndIsAllocated();
@@ -595,8 +596,8 @@ void Storage<T, N, A>::InitFrom(const Storage& other) {
   // Fast path: if the value type is trivially copy constructible and we know
   // the allocator doesn't do anything fancy, then we know it is legal for us to
   // simply memcpy the other vector's elements.
-  if (std::is_trivially_copy_constructible_v<ValueType<A>> &&
-      std::is_same_v<A, std::allocator<ValueType<A>>>) {
+  if (std::is_trivially_copy_constructible<ValueType<A>>::value &&
+      std::is_same<A, std::allocator<ValueType<A>>>::value) {
     std::memcpy(reinterpret_cast<char*>(dst),
                 reinterpret_cast<const char*>(src), n * sizeof(ValueType<A>));
   } else {
@@ -877,8 +878,8 @@ auto Storage<T, N, A>::Erase(ConstIterator<A> from,
   // simply destroy the elements in the "erasure window" (which cannot throw)
   // and then memcpy downward to close the window.
   if (absl::is_trivially_relocatable<ValueType<A>>::value &&
-      std::is_nothrow_destructible_v<ValueType<A>> &&
-      std::is_same_v<A, std::allocator<ValueType<A>>>) {
+      std::is_nothrow_destructible<ValueType<A>>::value &&
+      std::is_same<A, std::allocator<ValueType<A>>>::value) {
     DestroyAdapter<A>::DestroyElements(
         GetAllocator(), storage_view.data + erase_index, erase_size);
     std::memmove(
@@ -1038,22 +1039,10 @@ void Storage<T, N, A>::SwapN(ElementwiseConstructPolicy, Storage* other,
     ValueType<A> tmp(std::move(*a));
 
     AllocatorTraits<A>::destroy(allocator_a, a);
-    ABSL_INTERNAL_TRY {
-      AllocatorTraits<A>::construct(allocator_b, a, std::move(*b));
-    }
-    ABSL_INTERNAL_CATCH_ANY {
-      AllocatorTraits<A>::construct(allocator_a, a, std::move(tmp));
-      ABSL_INTERNAL_RETHROW;
-    }
+    AllocatorTraits<A>::construct(allocator_b, a, std::move(*b));
 
     AllocatorTraits<A>::destroy(allocator_b, b);
-    ABSL_INTERNAL_TRY {
-      AllocatorTraits<A>::construct(allocator_a, b, std::move(tmp));
-    }
-    ABSL_INTERNAL_CATCH_ANY {
-      AllocatorTraits<A>::construct(allocator_b, b, std::move(*a));
-      ABSL_INTERNAL_RETHROW;
-    }
+    AllocatorTraits<A>::construct(allocator_a, b, std::move(tmp));
   }
 }
 

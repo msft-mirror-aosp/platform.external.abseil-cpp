@@ -73,7 +73,6 @@
 #define ABSL_STRINGS_SUBSTITUTE_H_
 
 #include <cstring>
-#include <iterator>
 #include <string>
 #include <type_traits>
 #include <vector>
@@ -177,7 +176,8 @@ class Arg {
   Arg(bool value)  // NOLINT(google-explicit-constructor)
       : piece_(value ? "true" : "false") {}
 
-  template <typename T, typename = std::enable_if_t<HasAbslStringify<T>::value>>
+  template <typename T, typename = typename std::enable_if<
+                            HasAbslStringify<T>::value>::type>
   Arg(  // NOLINT(google-explicit-constructor)
       const T& v, strings_internal::StringifySink&& sink = {})
       : piece_(strings_internal::ExtractStringification(sink, v)) {}
@@ -187,12 +187,13 @@ class Arg {
 
   // vector<bool>::reference and const_reference require special help to convert
   // to `Arg` because it requires two user defined conversions.
-  template <typename T,
-            std::enable_if_t<
-                std::is_class_v<T> &&
-                    (std::is_same_v<T, std::vector<bool>::reference> ||
-                     std::is_same_v<T, std::vector<bool>::const_reference>),
-                bool> = true>
+  template <
+      typename T,
+      std::enable_if_t<
+          std::is_class<T>::value &&
+              (std::is_same<T, std::vector<bool>::reference>::value ||
+               std::is_same<T, std::vector<bool>::const_reference>::value),
+          bool> = true>
   Arg(T value)  // NOLINT(google-explicit-constructor)
       : Arg(static_cast<bool>(value)) {}
 
@@ -204,11 +205,11 @@ class Arg {
   // Normal enums are already handled by the integer formatters.
   // This overload matches only scoped enums.
   template <typename T,
-            typename = std::enable_if_t<std::is_enum<T>{} &&
-                                        !std::is_convertible<T, int>{} &&
-                                        !HasAbslStringify<T>::value>>
+            typename = typename std::enable_if<
+                std::is_enum<T>{} && !std::is_convertible<T, int>{} &&
+                !HasAbslStringify<T>::value>::type>
   Arg(T value)  // NOLINT(google-explicit-constructor)
-      : Arg(static_cast<std::underlying_type_t<T>>(value)) {}
+      : Arg(static_cast<typename std::underlying_type<T>::type>(value)) {}
 
   Arg(const Arg&) = delete;
   Arg& operator=(const Arg&) = delete;
@@ -284,7 +285,7 @@ inline void SubstituteAndAppend(std::string* absl_nonnull output,
                                 const substitute_internal::Arg& a0) {
   const absl::string_view args[] = {a0.piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                std::size(args));
+                                                ABSL_ARRAYSIZE(args));
 }
 
 inline void SubstituteAndAppend(std::string* absl_nonnull output,
@@ -293,7 +294,7 @@ inline void SubstituteAndAppend(std::string* absl_nonnull output,
                                 const substitute_internal::Arg& a1) {
   const absl::string_view args[] = {a0.piece(), a1.piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                std::size(args));
+                                                ABSL_ARRAYSIZE(args));
 }
 
 inline void SubstituteAndAppend(std::string* absl_nonnull output,
@@ -303,7 +304,7 @@ inline void SubstituteAndAppend(std::string* absl_nonnull output,
                                 const substitute_internal::Arg& a2) {
   const absl::string_view args[] = {a0.piece(), a1.piece(), a2.piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                std::size(args));
+                                                ABSL_ARRAYSIZE(args));
 }
 
 inline void SubstituteAndAppend(std::string* absl_nonnull output,
@@ -315,7 +316,7 @@ inline void SubstituteAndAppend(std::string* absl_nonnull output,
   const absl::string_view args[] = {a0.piece(), a1.piece(), a2.piece(),
                                     a3.piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                std::size(args));
+                                                ABSL_ARRAYSIZE(args));
 }
 
 inline void SubstituteAndAppend(std::string* absl_nonnull output,
@@ -328,7 +329,7 @@ inline void SubstituteAndAppend(std::string* absl_nonnull output,
   const absl::string_view args[] = {a0.piece(), a1.piece(), a2.piece(),
                                     a3.piece(), a4.piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                std::size(args));
+                                                ABSL_ARRAYSIZE(args));
 }
 
 inline void SubstituteAndAppend(
@@ -339,7 +340,7 @@ inline void SubstituteAndAppend(
   const absl::string_view args[] = {a0.piece(), a1.piece(), a2.piece(),
                                     a3.piece(), a4.piece(), a5.piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                std::size(args));
+                                                ABSL_ARRAYSIZE(args));
 }
 
 inline void SubstituteAndAppend(
@@ -352,7 +353,7 @@ inline void SubstituteAndAppend(
                                     a3.piece(), a4.piece(), a5.piece(),
                                     a6.piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                std::size(args));
+                                                ABSL_ARRAYSIZE(args));
 }
 
 inline void SubstituteAndAppend(
@@ -365,7 +366,7 @@ inline void SubstituteAndAppend(
                                     a3.piece(), a4.piece(), a5.piece(),
                                     a6.piece(), a7.piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                std::size(args));
+                                                ABSL_ARRAYSIZE(args));
 }
 
 inline void SubstituteAndAppend(
@@ -379,7 +380,7 @@ inline void SubstituteAndAppend(
                                     a3.piece(), a4.piece(), a5.piece(),
                                     a6.piece(), a7.piece(), a8.piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                std::size(args));
+                                                ABSL_ARRAYSIZE(args));
 }
 
 inline void SubstituteAndAppend(
@@ -393,7 +394,7 @@ inline void SubstituteAndAppend(
       a0.piece(), a1.piece(), a2.piece(), a3.piece(), a4.piece(),
       a5.piece(), a6.piece(), a7.piece(), a8.piece(), a9.piece()};
   substitute_internal::SubstituteAndAppendArray(output, format, args,
-                                                std::size(args));
+                                                ABSL_ARRAYSIZE(args));
 }
 
 #if defined(ABSL_BAD_CALL_IF)
