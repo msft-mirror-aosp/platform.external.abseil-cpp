@@ -29,7 +29,6 @@
 #include <atomic>
 #include <cstdint>
 #include <functional>
-#include <iterator>
 #include <type_traits>
 #include <utility>
 
@@ -39,6 +38,7 @@
 #include "absl/base/internal/raw_logging.h"
 #include "absl/base/internal/scheduling_mode.h"
 #include "absl/base/internal/spinlock_wait.h"
+#include "absl/base/macros.h"
 #include "absl/base/nullability.h"
 #include "absl/base/optimization.h"
 #include "absl/base/port.h"
@@ -180,7 +180,7 @@ template <typename Callable, typename... Args>
   uint32_t old_control = kOnceInit;
   if (control->compare_exchange_strong(old_control, kOnceRunning,
                                        std::memory_order_relaxed) ||
-      base_internal::SpinLockWait(control, std::size(trans), trans,
+      base_internal::SpinLockWait(control, ABSL_ARRAYSIZE(trans), trans,
                                   scheduling_mode) == kOnceInit) {
     std::invoke(std::forward<Callable>(fn), std::forward<Args>(args)...);
     old_control =

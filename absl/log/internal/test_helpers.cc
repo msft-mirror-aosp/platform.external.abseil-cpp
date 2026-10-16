@@ -14,14 +14,8 @@
 //
 #include "absl/log/internal/test_helpers.h"
 
-#include <csignal>
-
 #ifdef __Fuchsia__
 #include <zircon/syscalls.h>
-#endif
-
-#if defined(ABSL_HAVE_ALARM)
-#include <signal.h>
 #endif
 
 #include "gtest/gtest.h"

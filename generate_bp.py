@@ -37,8 +37,7 @@ root_libs = [
     '//absl/synchronization:synchronization',
 ]
 ignored_deps = set([
-    '@googletest//:gtest',
-    '@do_not_use_for_gloop_visibility_only//gloop/base:fprint',
+    '@googletest//:gtest'
 ])
 
 # Convert names like //foo/bar:baz to foo_bar_baz.
