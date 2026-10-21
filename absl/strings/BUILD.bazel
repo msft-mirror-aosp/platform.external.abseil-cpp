@@ -714,7 +714,8 @@ cc_library(
         "//absl/types:compare",
         "//absl/types:optional",
         "//absl/types:span",
-        "@do_not_use_for_gloop_visibility_only//gloop/base:fprint",
+        # TODO(b/575845266): Remove once cl/973879122 is imported.
+        # "@do_not_use_for_gloop_visibility_only//gloop/base:fprint",
     ],
 )
 
