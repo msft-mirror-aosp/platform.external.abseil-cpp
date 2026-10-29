@@ -33,9 +33,12 @@ using ::testing::StaticAssertTypeEq;
 
 template <typename T>
 using IsOwnerAndNotView =
-    absl::conjunction<absl::type_traits_internal::IsOwner<T>,
-                      absl::negation<absl::type_traits_internal::IsView<T>>>;
+    std::conjunction<absl::type_traits_internal::IsOwner<T>,
+                      std::negation<absl::type_traits_internal::IsView<T>>>;
 
+static_assert(
+    IsOwnerAndNotView<std::pair<std::vector<int>, std::string>>::value,
+    "pair of owners is an owner, not a view");
 static_assert(IsOwnerAndNotView<std::vector<int>>::value,
               "vector is an owner, not a view");
 static_assert(IsOwnerAndNotView<std::string>::value,
@@ -67,13 +70,13 @@ struct StructC {};
 
 struct TypeWithBarFunction {
   template <class T,
-            absl::enable_if_t<std::is_same<T&&, StructA&>::value, int> = 0>
+            std::enable_if_t<std::is_same<T&&, StructA&>::value, int> = 0>
   ReturnType bar(T&&, const StructB&, StructC&&) &&;  // NOLINT
 };
 
 struct TypeWithBarFunctionAndConvertibleReturnType {
   template <class T,
-            absl::enable_if_t<std::is_same<T&&, StructA&>::value, int> = 0>
+            std::enable_if_t<std::is_same<T&&, StructA&>::value, int> = 0>
   ConvertibleToReturnType bar(T&&, const StructB&, StructC&&) &&;  // NOLINT
 };
 
@@ -134,6 +137,17 @@ TEST(TypeTraitsTest, TestRemoveCVRef) {
                             int[2]>::value));
 }
 
+TEST(TypeTraitsTest, TestTypeIdentity) {
+  EXPECT_TRUE((std::is_same_v<typename absl::type_identity<int>::type, int>));
+  EXPECT_TRUE((std::is_same_v<absl::type_identity_t<int>, int>));
+  EXPECT_TRUE((std::is_same_v<typename absl::type_identity<int&>::type, int&>));
+  EXPECT_TRUE((std::is_same_v<absl::type_identity_t<int&>, int&>));
+
+  EXPECT_FALSE(
+      (std::is_same_v<typename absl::type_identity<int64_t>::type, int32_t>));
+  EXPECT_FALSE((std::is_same_v<absl::type_identity_t<int64_t>, int32_t>));
+}
+
 struct TypeA {};
 struct TypeB {};
 struct TypeC {};
@@ -146,19 +160,19 @@ enum class TypeEnum { A, B, C, D };
 
 struct GetTypeT {
   template <typename T,
-            absl::enable_if_t<std::is_same<T, TypeA>::value, int> = 0>
+            std::enable_if_t<std::is_same<T, TypeA>::value, int> = 0>
   TypeEnum operator()(Wrap<T>) const {
     return TypeEnum::A;
   }
 
   template <typename T,
-            absl::enable_if_t<std::is_same<T, TypeB>::value, int> = 0>
+            std::enable_if_t<std::is_same<T, TypeB>::value, int> = 0>
   TypeEnum operator()(Wrap<T>) const {
     return TypeEnum::B;
   }
 
   template <typename T,
-            absl::enable_if_t<std::is_same<T, TypeC>::value, int> = 0>
+            std::enable_if_t<std::is_same<T, TypeC>::value, int> = 0>
   TypeEnum operator()(Wrap<T>) const {
     return TypeEnum::C;
   }

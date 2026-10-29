@@ -42,11 +42,14 @@
 #define ABSL_STACKTRACE_INL_HEADER \
   "absl/debugging/internal/stacktrace_emscripten-inl.inc"
 
+// Android local modification: ignore __ANDROID_API__, use a weak symbol
+// instead. This code must compile with API lower than 33, but we want to
+// provide backtracing if supported by the OS at runtime.
 #elif defined(__ANDROID__)
-#if defined(ABSL_HAVE_THREAD_LOCAL)
+#ifdef ABSL_HAVE_THREAD_LOCAL
 #define ABSL_STACKTRACE_INL_HEADER \
   "absl/debugging/internal/stacktrace_generic-inl.inc"
-#endif
+#endif  // defined(ABSL_HAVE_THREAD_LOCAL)
 
 #elif defined(__linux__) && !defined(__ANDROID__)
 
