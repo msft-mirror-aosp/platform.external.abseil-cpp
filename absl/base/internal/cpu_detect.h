@@ -12,14 +12,14 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef ABSL_CRC_INTERNAL_CPU_DETECT_H_
-#define ABSL_CRC_INTERNAL_CPU_DETECT_H_
+#ifndef ABSL_BASE_INTERNAL_CPU_DETECT_H_
+#define ABSL_BASE_INTERNAL_CPU_DETECT_H_
 
 #include "absl/base/config.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
-namespace crc_internal {
+namespace base_internal {
 
 // Enumeration of architectures that we have special-case tuning parameters for.
 // This set may change over time.
@@ -30,10 +30,15 @@ enum class CpuType {
   kAmdNaples,
   kAmdMilan,
   kAmdGenoa,
+  kAmdTurin,
   kAmdRyzenV3000,
   kIntelCascadelakeXeon,
   kIntelSkylakeXeon,
   kIntelBroadwell,
+  kIntelIcelake,
+  kIntelSapphirerapids,
+  kIntelEmeraldrapids,
+  kIntelGraniterapids,
   kIntelSkylake,
   kIntelIvybridge,
   kIntelSandybridge,
@@ -42,7 +47,9 @@ enum class CpuType {
   kArmNeoverseV1,
   kAmpereSiryn,
   kArmNeoverseN2,
-  kArmNeoverseV2
+  kArmNeoverseV2,
+  kArmNeoverseN3,
+  kNvidiaGrace,
 };
 
 // Returns the type of host CPU this code is running on.  Returns kUnknown if
@@ -56,8 +63,18 @@ CpuType GetCpuType();
 // tuning.
 bool SupportsArmCRC32PMULL();
 
-}  // namespace crc_internal
+// Returns whether the host CPU supports BMI2 instructions.
+bool SupportsBmi2();
+
+// Returns whether the host CPU supports simultaneous multithreading (SMT) and
+// if it is enabled.
+bool IsSMTEnabled();
+
+// Returns how many hardware contexts per CPU exist.
+int NumContextsPerCPU();
+
+}  // namespace base_internal
 ABSL_NAMESPACE_END
 }  // namespace absl
 
-#endif  // ABSL_CRC_INTERNAL_CPU_DETECT_H_
+#endif  // ABSL_BASE_INTERNAL_CPU_DETECT_H_

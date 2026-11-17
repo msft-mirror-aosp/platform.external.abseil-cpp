@@ -1,4 +1,4 @@
-// Copyright 2017 The Abseil Authors.
+// Copyright 2026 The Abseil Authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -11,29 +11,33 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
 
-#ifndef ABSL_BASE_INTERNAL_IDENTITY_H_
-#define ABSL_BASE_INTERNAL_IDENTITY_H_
+#include "absl/base/internal/cpu_detect.h"
 
+#include "gtest/gtest.h"
 #include "absl/base/config.h"
 
 namespace absl {
 ABSL_NAMESPACE_BEGIN
-namespace internal {
+namespace base_internal {
+namespace {
 
-// This is a back-fill of C++20's `std::type_identity`.
-template <typename T>
-struct type_identity {
-  typedef T type;
-};
+TEST(CpuDetectTest, SupportsBmi2) {
+#if defined(__x86_64__) || defined(_M_X64)
+#if ABSL_HAVE_BUILTIN(__builtin_cpu_supports) && defined(__linux__)
+  EXPECT_EQ(SupportsBmi2(), __builtin_cpu_supports("bmi2") != 0);
+#else
+  // If __builtin_cpu_supports is not available, we just verify it doesn't
+  // crash.
+  (void)SupportsBmi2();
+#endif
+#else
+  // On non-x86, SupportsBmi2() must return false.
+  EXPECT_FALSE(SupportsBmi2());
+#endif
+}
 
-// This is a back-fill of C++20's `std::type_identity_t`.
-template <typename T>
-using type_identity_t = typename type_identity<T>::type;
-
-}  // namespace internal
+}  // namespace
+}  // namespace base_internal
 ABSL_NAMESPACE_END
 }  // namespace absl
-
-#endif  // ABSL_BASE_INTERNAL_IDENTITY_H_

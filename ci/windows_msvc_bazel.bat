@@ -42,14 +42,15 @@ IF NOT "%ALTERNATE_OPTIONS%"=="" copy %ALTERNATE_OPTIONS% absl\base\options.h
 :: To upgrade Bazel, first download a new binary from
 :: https://github.com/bazelbuild/bazel/releases and copy it to
 :: /google/data/rw/teams/absl/kokoro/windows.
-"%KOKORO_GFILE_DIR%\bazel-8.2.1-windows-x86_64.exe" ^
+"%KOKORO_GFILE_DIR%\bazel-9.1.0-windows-x86_64.exe" ^
   test ... ^
   --compilation_mode=%COMPILATION_MODE% ^
   --copt=/WX ^
-  --copt=/std:%STD% ^
+  --cxxopt=/std:%STD% ^
   --define=absl=1 ^
   --enable_bzlmod=true ^
   --keep_going ^
+  --per_file_copt=external/.*@/w ^
   --test_env="GTEST_INSTALL_FAILURE_SIGNAL_HANDLER=1" ^
   --test_env=TZDIR="%CD%\absl\time\internal\cctz\testdata\zoneinfo" ^
   --test_output=errors ^

@@ -15,20 +15,27 @@
 #include <chrono>
 #include <cstddef>
 #include <cstdlib>
+#include <cstring>
 #include <future>
 #include <limits>
+#include <memory>
 #include <string>
 #include <thread>
+#include <utility>
 #include <vector>
 
 #include "absl/base/config.h"
 #include "absl/time/internal/cctz/include/cctz/time_zone.h"
+
 #if defined(__linux__)
 #include <features.h>
 #endif
 
 #include "gtest/gtest.h"
 #include "absl/time/internal/cctz/include/cctz/civil_time.h"
+#include "absl/time/internal/cctz/include/cctz/zone_info_source.h"
+#include "absl/time/internal/cctz/src/test_time_zone_names.h"
+#include "absl/time/internal/cctz/src/tzfile.h"
 
 namespace chrono = std::chrono;
 
@@ -38,494 +45,6 @@ namespace time_internal {
 namespace cctz {
 
 namespace {
-
-// A list of known time-zone names.
-const char* const kTimeZoneNames[] = {"Africa/Abidjan",
-                                      "Africa/Accra",
-                                      "Africa/Addis_Ababa",
-                                      "Africa/Algiers",
-                                      "Africa/Asmara",
-                                      "Africa/Bamako",
-                                      "Africa/Bangui",
-                                      "Africa/Banjul",
-                                      "Africa/Bissau",
-                                      "Africa/Blantyre",
-                                      "Africa/Brazzaville",
-                                      "Africa/Bujumbura",
-                                      "Africa/Cairo",
-                                      "Africa/Casablanca",
-                                      "Africa/Ceuta",
-                                      "Africa/Conakry",
-                                      "Africa/Dakar",
-                                      "Africa/Dar_es_Salaam",
-                                      "Africa/Djibouti",
-                                      "Africa/Douala",
-                                      "Africa/El_Aaiun",
-                                      "Africa/Freetown",
-                                      "Africa/Gaborone",
-                                      "Africa/Harare",
-                                      "Africa/Johannesburg",
-                                      "Africa/Juba",
-                                      "Africa/Kampala",
-                                      "Africa/Khartoum",
-                                      "Africa/Kigali",
-                                      "Africa/Kinshasa",
-                                      "Africa/Lagos",
-                                      "Africa/Libreville",
-                                      "Africa/Lome",
-                                      "Africa/Luanda",
-                                      "Africa/Lubumbashi",
-                                      "Africa/Lusaka",
-                                      "Africa/Malabo",
-                                      "Africa/Maputo",
-                                      "Africa/Maseru",
-                                      "Africa/Mbabane",
-                                      "Africa/Mogadishu",
-                                      "Africa/Monrovia",
-                                      "Africa/Nairobi",
-                                      "Africa/Ndjamena",
-                                      "Africa/Niamey",
-                                      "Africa/Nouakchott",
-                                      "Africa/Ouagadougou",
-                                      "Africa/Porto-Novo",
-                                      "Africa/Sao_Tome",
-                                      "Africa/Timbuktu",
-                                      "Africa/Tripoli",
-                                      "Africa/Tunis",
-                                      "Africa/Windhoek",
-                                      "America/Adak",
-                                      "America/Anchorage",
-                                      "America/Anguilla",
-                                      "America/Antigua",
-                                      "America/Araguaina",
-                                      "America/Argentina/Buenos_Aires",
-                                      "America/Argentina/Catamarca",
-                                      "America/Argentina/Cordoba",
-                                      "America/Argentina/Jujuy",
-                                      "America/Argentina/La_Rioja",
-                                      "America/Argentina/Mendoza",
-                                      "America/Argentina/Rio_Gallegos",
-                                      "America/Argentina/Salta",
-                                      "America/Argentina/San_Juan",
-                                      "America/Argentina/San_Luis",
-                                      "America/Argentina/Tucuman",
-                                      "America/Argentina/Ushuaia",
-                                      "America/Aruba",
-                                      "America/Asuncion",
-                                      "America/Atikokan",
-                                      "America/Atka",
-                                      "America/Bahia",
-                                      "America/Bahia_Banderas",
-                                      "America/Barbados",
-                                      "America/Belem",
-                                      "America/Belize",
-                                      "America/Blanc-Sablon",
-                                      "America/Boa_Vista",
-                                      "America/Bogota",
-                                      "America/Boise",
-                                      "America/Cambridge_Bay",
-                                      "America/Campo_Grande",
-                                      "America/Cancun",
-                                      "America/Caracas",
-                                      "America/Cayenne",
-                                      "America/Cayman",
-                                      "America/Chicago",
-                                      "America/Chihuahua",
-                                      "America/Ciudad_Juarez",
-                                      "America/Coral_Harbour",
-                                      "America/Costa_Rica",
-                                      "America/Coyhaique",
-                                      "America/Creston",
-                                      "America/Cuiaba",
-                                      "America/Curacao",
-                                      "America/Danmarkshavn",
-                                      "America/Dawson",
-                                      "America/Dawson_Creek",
-                                      "America/Denver",
-                                      "America/Detroit",
-                                      "America/Dominica",
-                                      "America/Edmonton",
-                                      "America/Eirunepe",
-                                      "America/El_Salvador",
-                                      "America/Ensenada",
-                                      "America/Fort_Nelson",
-                                      "America/Fortaleza",
-                                      "America/Glace_Bay",
-                                      "America/Goose_Bay",
-                                      "America/Grand_Turk",
-                                      "America/Grenada",
-                                      "America/Guadeloupe",
-                                      "America/Guatemala",
-                                      "America/Guayaquil",
-                                      "America/Guyana",
-                                      "America/Halifax",
-                                      "America/Havana",
-                                      "America/Hermosillo",
-                                      "America/Indiana/Indianapolis",
-                                      "America/Indiana/Knox",
-                                      "America/Indiana/Marengo",
-                                      "America/Indiana/Petersburg",
-                                      "America/Indiana/Tell_City",
-                                      "America/Indiana/Vevay",
-                                      "America/Indiana/Vincennes",
-                                      "America/Indiana/Winamac",
-                                      "America/Inuvik",
-                                      "America/Iqaluit",
-                                      "America/Jamaica",
-                                      "America/Juneau",
-                                      "America/Kentucky/Louisville",
-                                      "America/Kentucky/Monticello",
-                                      "America/Kralendijk",
-                                      "America/La_Paz",
-                                      "America/Lima",
-                                      "America/Los_Angeles",
-                                      "America/Lower_Princes",
-                                      "America/Maceio",
-                                      "America/Managua",
-                                      "America/Manaus",
-                                      "America/Marigot",
-                                      "America/Martinique",
-                                      "America/Matamoros",
-                                      "America/Mazatlan",
-                                      "America/Menominee",
-                                      "America/Merida",
-                                      "America/Metlakatla",
-                                      "America/Mexico_City",
-                                      "America/Miquelon",
-                                      "America/Moncton",
-                                      "America/Monterrey",
-                                      "America/Montevideo",
-                                      "America/Montreal",
-                                      "America/Montserrat",
-                                      "America/Nassau",
-                                      "America/New_York",
-                                      "America/Nipigon",
-                                      "America/Nome",
-                                      "America/Noronha",
-                                      "America/North_Dakota/Beulah",
-                                      "America/North_Dakota/Center",
-                                      "America/North_Dakota/New_Salem",
-                                      "America/Nuuk",
-                                      "America/Ojinaga",
-                                      "America/Panama",
-                                      "America/Pangnirtung",
-                                      "America/Paramaribo",
-                                      "America/Phoenix",
-                                      "America/Port-au-Prince",
-                                      "America/Port_of_Spain",
-                                      "America/Porto_Acre",
-                                      "America/Porto_Velho",
-                                      "America/Puerto_Rico",
-                                      "America/Punta_Arenas",
-                                      "America/Rainy_River",
-                                      "America/Rankin_Inlet",
-                                      "America/Recife",
-                                      "America/Regina",
-                                      "America/Resolute",
-                                      "America/Rio_Branco",
-                                      "America/Santa_Isabel",
-                                      "America/Santarem",
-                                      "America/Santiago",
-                                      "America/Santo_Domingo",
-                                      "America/Sao_Paulo",
-                                      "America/Scoresbysund",
-                                      "America/Shiprock",
-                                      "America/Sitka",
-                                      "America/St_Barthelemy",
-                                      "America/St_Johns",
-                                      "America/St_Kitts",
-                                      "America/St_Lucia",
-                                      "America/St_Thomas",
-                                      "America/St_Vincent",
-                                      "America/Swift_Current",
-                                      "America/Tegucigalpa",
-                                      "America/Thule",
-                                      "America/Thunder_Bay",
-                                      "America/Tijuana",
-                                      "America/Toronto",
-                                      "America/Tortola",
-                                      "America/Vancouver",
-                                      "America/Virgin",
-                                      "America/Whitehorse",
-                                      "America/Winnipeg",
-                                      "America/Yakutat",
-                                      "America/Yellowknife",
-                                      "Antarctica/Casey",
-                                      "Antarctica/Davis",
-                                      "Antarctica/DumontDUrville",
-                                      "Antarctica/Macquarie",
-                                      "Antarctica/Mawson",
-                                      "Antarctica/McMurdo",
-                                      "Antarctica/Palmer",
-                                      "Antarctica/Rothera",
-                                      "Antarctica/Syowa",
-                                      "Antarctica/Troll",
-                                      "Antarctica/Vostok",
-                                      "Arctic/Longyearbyen",
-                                      "Asia/Aden",
-                                      "Asia/Almaty",
-                                      "Asia/Amman",
-                                      "Asia/Anadyr",
-                                      "Asia/Aqtau",
-                                      "Asia/Aqtobe",
-                                      "Asia/Ashgabat",
-                                      "Asia/Atyrau",
-                                      "Asia/Baghdad",
-                                      "Asia/Bahrain",
-                                      "Asia/Baku",
-                                      "Asia/Bangkok",
-                                      "Asia/Barnaul",
-                                      "Asia/Beirut",
-                                      "Asia/Bishkek",
-                                      "Asia/Brunei",
-                                      "Asia/Chita",
-                                      "Asia/Choibalsan",
-                                      "Asia/Chongqing",
-                                      "Asia/Colombo",
-                                      "Asia/Damascus",
-                                      "Asia/Dhaka",
-                                      "Asia/Dili",
-                                      "Asia/Dubai",
-                                      "Asia/Dushanbe",
-                                      "Asia/Famagusta",
-                                      "Asia/Gaza",
-                                      "Asia/Harbin",
-                                      "Asia/Hebron",
-                                      "Asia/Ho_Chi_Minh",
-                                      "Asia/Hong_Kong",
-                                      "Asia/Hovd",
-                                      "Asia/Irkutsk",
-                                      "Asia/Istanbul",
-                                      "Asia/Jakarta",
-                                      "Asia/Jayapura",
-                                      "Asia/Jerusalem",
-                                      "Asia/Kabul",
-                                      "Asia/Kamchatka",
-                                      "Asia/Karachi",
-                                      "Asia/Kashgar",
-                                      "Asia/Kathmandu",
-                                      "Asia/Khandyga",
-                                      "Asia/Kolkata",
-                                      "Asia/Krasnoyarsk",
-                                      "Asia/Kuala_Lumpur",
-                                      "Asia/Kuching",
-                                      "Asia/Kuwait",
-                                      "Asia/Macau",
-                                      "Asia/Magadan",
-                                      "Asia/Makassar",
-                                      "Asia/Manila",
-                                      "Asia/Muscat",
-                                      "Asia/Nicosia",
-                                      "Asia/Novokuznetsk",
-                                      "Asia/Novosibirsk",
-                                      "Asia/Omsk",
-                                      "Asia/Oral",
-                                      "Asia/Phnom_Penh",
-                                      "Asia/Pontianak",
-                                      "Asia/Pyongyang",
-                                      "Asia/Qatar",
-                                      "Asia/Qostanay",
-                                      "Asia/Qyzylorda",
-                                      "Asia/Riyadh",
-                                      "Asia/Sakhalin",
-                                      "Asia/Samarkand",
-                                      "Asia/Seoul",
-                                      "Asia/Shanghai",
-                                      "Asia/Singapore",
-                                      "Asia/Srednekolymsk",
-                                      "Asia/Taipei",
-                                      "Asia/Tashkent",
-                                      "Asia/Tbilisi",
-                                      "Asia/Tehran",
-                                      "Asia/Tel_Aviv",
-                                      "Asia/Thimphu",
-                                      "Asia/Tokyo",
-                                      "Asia/Tomsk",
-                                      "Asia/Ulaanbaatar",
-                                      "Asia/Urumqi",
-                                      "Asia/Ust-Nera",
-                                      "Asia/Vientiane",
-                                      "Asia/Vladivostok",
-                                      "Asia/Yakutsk",
-                                      "Asia/Yangon",
-                                      "Asia/Yekaterinburg",
-                                      "Asia/Yerevan",
-                                      "Atlantic/Azores",
-                                      "Atlantic/Bermuda",
-                                      "Atlantic/Canary",
-                                      "Atlantic/Cape_Verde",
-                                      "Atlantic/Faroe",
-                                      "Atlantic/Jan_Mayen",
-                                      "Atlantic/Madeira",
-                                      "Atlantic/Reykjavik",
-                                      "Atlantic/South_Georgia",
-                                      "Atlantic/St_Helena",
-                                      "Atlantic/Stanley",
-                                      "Australia/Adelaide",
-                                      "Australia/Brisbane",
-                                      "Australia/Broken_Hill",
-                                      "Australia/Canberra",
-                                      "Australia/Currie",
-                                      "Australia/Darwin",
-                                      "Australia/Eucla",
-                                      "Australia/Hobart",
-                                      "Australia/Lindeman",
-                                      "Australia/Lord_Howe",
-                                      "Australia/Melbourne",
-                                      "Australia/Perth",
-                                      "Australia/Sydney",
-                                      "Australia/Yancowinna",
-                                      "Etc/GMT",
-                                      "Etc/GMT+0",
-                                      "Etc/GMT+1",
-                                      "Etc/GMT+10",
-                                      "Etc/GMT+11",
-                                      "Etc/GMT+12",
-                                      "Etc/GMT+2",
-                                      "Etc/GMT+3",
-                                      "Etc/GMT+4",
-                                      "Etc/GMT+5",
-                                      "Etc/GMT+6",
-                                      "Etc/GMT+7",
-                                      "Etc/GMT+8",
-                                      "Etc/GMT+9",
-                                      "Etc/GMT-0",
-                                      "Etc/GMT-1",
-                                      "Etc/GMT-10",
-                                      "Etc/GMT-11",
-                                      "Etc/GMT-12",
-                                      "Etc/GMT-13",
-                                      "Etc/GMT-14",
-                                      "Etc/GMT-2",
-                                      "Etc/GMT-3",
-                                      "Etc/GMT-4",
-                                      "Etc/GMT-5",
-                                      "Etc/GMT-6",
-                                      "Etc/GMT-7",
-                                      "Etc/GMT-8",
-                                      "Etc/GMT-9",
-                                      "Etc/GMT0",
-                                      "Etc/Greenwich",
-                                      "Etc/UCT",
-                                      "Etc/UTC",
-                                      "Etc/Universal",
-                                      "Etc/Zulu",
-                                      "Europe/Amsterdam",
-                                      "Europe/Andorra",
-                                      "Europe/Astrakhan",
-                                      "Europe/Athens",
-                                      "Europe/Belfast",
-                                      "Europe/Belgrade",
-                                      "Europe/Berlin",
-                                      "Europe/Bratislava",
-                                      "Europe/Brussels",
-                                      "Europe/Bucharest",
-                                      "Europe/Budapest",
-                                      "Europe/Busingen",
-                                      "Europe/Chisinau",
-                                      "Europe/Copenhagen",
-                                      "Europe/Dublin",
-                                      "Europe/Gibraltar",
-                                      "Europe/Guernsey",
-                                      "Europe/Helsinki",
-                                      "Europe/Isle_of_Man",
-                                      "Europe/Istanbul",
-                                      "Europe/Jersey",
-                                      "Europe/Kaliningrad",
-                                      "Europe/Kirov",
-                                      "Europe/Kyiv",
-                                      "Europe/Lisbon",
-                                      "Europe/Ljubljana",
-                                      "Europe/London",
-                                      "Europe/Luxembourg",
-                                      "Europe/Madrid",
-                                      "Europe/Malta",
-                                      "Europe/Mariehamn",
-                                      "Europe/Minsk",
-                                      "Europe/Monaco",
-                                      "Europe/Moscow",
-                                      "Europe/Nicosia",
-                                      "Europe/Oslo",
-                                      "Europe/Paris",
-                                      "Europe/Podgorica",
-                                      "Europe/Prague",
-                                      "Europe/Riga",
-                                      "Europe/Rome",
-                                      "Europe/Samara",
-                                      "Europe/San_Marino",
-                                      "Europe/Sarajevo",
-                                      "Europe/Saratov",
-                                      "Europe/Simferopol",
-                                      "Europe/Skopje",
-                                      "Europe/Sofia",
-                                      "Europe/Stockholm",
-                                      "Europe/Tallinn",
-                                      "Europe/Tirane",
-                                      "Europe/Tiraspol",
-                                      "Europe/Ulyanovsk",
-                                      "Europe/Vaduz",
-                                      "Europe/Vatican",
-                                      "Europe/Vienna",
-                                      "Europe/Vilnius",
-                                      "Europe/Volgograd",
-                                      "Europe/Warsaw",
-                                      "Europe/Zagreb",
-                                      "Europe/Zurich",
-                                      "Factory",
-                                      "Indian/Antananarivo",
-                                      "Indian/Chagos",
-                                      "Indian/Christmas",
-                                      "Indian/Cocos",
-                                      "Indian/Comoro",
-                                      "Indian/Kerguelen",
-                                      "Indian/Mahe",
-                                      "Indian/Maldives",
-                                      "Indian/Mauritius",
-                                      "Indian/Mayotte",
-                                      "Indian/Reunion",
-                                      "Pacific/Apia",
-                                      "Pacific/Auckland",
-                                      "Pacific/Bougainville",
-                                      "Pacific/Chatham",
-                                      "Pacific/Chuuk",
-                                      "Pacific/Easter",
-                                      "Pacific/Efate",
-                                      "Pacific/Fakaofo",
-                                      "Pacific/Fiji",
-                                      "Pacific/Funafuti",
-                                      "Pacific/Galapagos",
-                                      "Pacific/Gambier",
-                                      "Pacific/Guadalcanal",
-                                      "Pacific/Guam",
-                                      "Pacific/Honolulu",
-                                      "Pacific/Johnston",
-                                      "Pacific/Kanton",
-                                      "Pacific/Kiritimati",
-                                      "Pacific/Kosrae",
-                                      "Pacific/Kwajalein",
-                                      "Pacific/Majuro",
-                                      "Pacific/Marquesas",
-                                      "Pacific/Midway",
-                                      "Pacific/Nauru",
-                                      "Pacific/Niue",
-                                      "Pacific/Norfolk",
-                                      "Pacific/Noumea",
-                                      "Pacific/Pago_Pago",
-                                      "Pacific/Palau",
-                                      "Pacific/Pitcairn",
-                                      "Pacific/Pohnpei",
-                                      "Pacific/Port_Moresby",
-                                      "Pacific/Rarotonga",
-                                      "Pacific/Saipan",
-                                      "Pacific/Samoa",
-                                      "Pacific/Tahiti",
-                                      "Pacific/Tarawa",
-                                      "Pacific/Tongatapu",
-                                      "Pacific/Wake",
-                                      "Pacific/Wallis",
-                                      "Pacific/Yap",
-                                      "UTC",
-                                      nullptr};
 
 // Helper to return a loaded time zone by value (UTC on error).
 time_zone LoadZone(const std::string& name) {
@@ -667,6 +186,36 @@ TEST(TimeZone, Failures) {
   EXPECT_FALSE(load_time_zone("", &tz));
   EXPECT_EQ(chrono::system_clock::from_time_t(0),
             convert(civil_second(1970, 1, 1, 0, 0, 0), tz));  // UTC
+
+  // Reject a fixed-offset name with a NUL where a digit belongs.
+  for (const int i : {10, 11, 13, 14, 16, 17}) {
+    std::string name = "Fixed/UTC+00:00:00";
+    name[static_cast<std::size_t>(i)] = '\0';
+    EXPECT_FALSE(load_time_zone(name, &tz)) << "NUL at offset " << i;
+  }
+
+  // Reject path-traversal components.
+  EXPECT_FALSE(load_time_zone("file:../etc/passwd", &tz));
+  EXPECT_FALSE(load_time_zone("file:../../etc/passwd", &tz));
+  EXPECT_FALSE(load_time_zone("file:/../etc/passwd", &tz));
+  EXPECT_FALSE(load_time_zone("file:America/../America/Los_Angeles", &tz));
+
+#if defined(_WIN32)
+  // Windows accepts '\' as a path separator, so these escape as well.
+  // If they were admitted, the second would resolve back into the zoneinfo
+  // directory and load, failing the test. Elsewhere '\' is an ordinary
+  // filename character, so these would only fail as nonexistent names.
+  EXPECT_FALSE(load_time_zone("file:..\\etc\\passwd", &tz));
+  EXPECT_FALSE(load_time_zone("file:America\\..\\America/Los_Angeles", &tz));
+#endif
+
+#if !defined(_MSC_VER)
+  // Reject non-regular files and directories. The check lives in the
+  // non-MSVC FOpen(), so only expect it there.
+  EXPECT_FALSE(load_time_zone("file:/dev/null", &tz));
+  EXPECT_FALSE(load_time_zone("file:/dev/stdin", &tz));
+  EXPECT_FALSE(load_time_zone("file:/tmp", &tz));
+#endif
 }
 
 TEST(TimeZone, Equality) {
@@ -1397,6 +946,204 @@ TEST(TimeZoneEdgeCase, UTC5DigitYear) {
   ExpectTime(tp, tz, 9999, 12, 31, 23, 59, 59, 0 * 3600, false, "UTC");
   tp += absl::time_internal::cctz::seconds(1);
   ExpectTime(tp, tz, 10000, 1, 1, 0, 0, 0, 0 * 3600, false, "UTC");
+}
+
+// A ZoneInfoSource implementation backed by an in-memory string buffer.
+class StringZoneInfoSource : public ZoneInfoSource {
+ public:
+  explicit StringZoneInfoSource(std::string data)
+      : data_(std::move(data)), offset_(0) {}
+
+  std::size_t Read(void* ptr, std::size_t size) override {
+    std::size_t n = (std::min)(size, data_.size() - offset_);
+    std::memcpy(ptr, data_.data() + offset_, n);
+    offset_ += n;
+    return n;
+  }
+
+  int Skip(std::size_t offset) override {
+    if (offset > data_.size() - offset_) return -1;
+    offset_ += offset;
+    return 0;
+  }
+
+ private:
+  std::string data_;
+  std::size_t offset_;
+};
+
+// Constructs a minimal TZif2 string with a single 64-bit transition
+// at the given transition time and a future POSIX rule. The abbreviation
+// area holds abbr verbatim, so a valid file's abbr must include the
+// trailing '\0' (e.g., std::string{"EST", 4}).
+std::string MakeExtendedTzif(std::int_fast64_t unix_time,
+                             std::int_fast32_t utc_offset,
+                             const std::string& abbr,
+                             const std::string& future_spec) {
+  std::string s;
+  auto append32 = [&s](std::int_fast32_t v) {
+    const std::int_fast32_t s32max = 0x7fffffff;
+    const auto s32maxU = static_cast<std::uint_fast32_t>(s32max);
+    std::uint_fast32_t uv;
+    if (v >= 0) {
+      uv = static_cast<std::uint_fast32_t>(v);
+    } else {
+      uv = static_cast<std::uint_fast32_t>(v + s32max + 1) + s32maxU + 1;
+    }
+    for (int i = 3; i >= 0; --i) {
+      s.push_back(static_cast<char>((uv >> (i * 8)) & 0xff));
+    }
+  };
+  auto append64 = [&s](std::int_fast64_t v) {
+    const std::int_fast64_t s64max = 0x7fffffffffffffff;
+    const auto s64maxU = static_cast<std::uint_fast64_t>(s64max);
+    std::uint_fast64_t uv;
+    if (v >= 0) {
+      uv = static_cast<std::uint_fast64_t>(v);
+    } else {
+      uv = static_cast<std::uint_fast64_t>(v + s64max + 1) + s64maxU + 1;
+    }
+    for (int i = 7; i >= 0; --i) {
+      s.push_back(static_cast<char>((uv >> (i * 8)) & 0xff));
+    }
+  };
+
+  const std::size_t charcnt = abbr.size();
+
+  // 32-bit header
+  s.append(TZ_MAGIC, 4);
+  s.push_back('2');    // tzh_version
+  s.append(15, '\0');  // tzh_reserved
+  append32(0);         // tzh_ttisutcnt
+  append32(0);         // tzh_ttisstdcnt
+  append32(0);         // tzh_leapcnt
+  append32(0);         // tzh_timecnt (0 32-bit transitions)
+  append32(1);         // tzh_typecnt (1 ttinfo record)
+  append32(static_cast<std::int_fast32_t>(charcnt));  // tzh_charcnt
+
+  // 32-bit data block
+  append32(utc_offset);  // tt_utoff
+  s.push_back(0);        // tt_isdst (standard time)
+  s.push_back(0);        // tt_desigidx
+  s.append(abbr);        // abbreviation table
+
+  // 64-bit header
+  s.append(TZ_MAGIC, 4);
+  s.push_back('2');    // tzh_version
+  s.append(15, '\0');  // tzh_reserved
+  append32(0);         // tzh_ttisutcnt
+  append32(0);         // tzh_ttisstdcnt
+  append32(0);         // tzh_leapcnt
+  append32(1);         // tzh_timecnt (1 64-bit transition)
+  append32(1);         // tzh_typecnt (1 ttinfo record)
+  append32(static_cast<std::int_fast32_t>(charcnt));  // tzh_charcnt
+
+  // 64-bit data block
+  append64(unix_time);   // transition time
+  s.push_back(0);        // type index for transition
+  append32(utc_offset);  // tt_utoff
+  s.push_back(0);        // tt_isdst (standard time)
+  s.push_back(0);        // tt_desigidx
+  s.append(abbr);        // abbreviation table
+
+  // POSIX footer
+  s.push_back('\n');
+  s.append(future_spec);
+  s.push_back('\n');
+  return s;
+}
+
+std::unique_ptr<ZoneInfoSource> ExtendedTestFactory(
+    const std::string& name,
+    const std::function<std::unique_ptr<ZoneInfoSource>(const std::string&)>&
+        fallback) {
+  if (name == "test:ExtendedBeforeEpoch") {
+    // -1 (1969-12-31T23:59:59Z) is the latest final transition before the
+    // epoch, so the zone is rejected despite the future specification.
+    return std::unique_ptr<ZoneInfoSource>(
+        new StringZoneInfoSource(MakeExtendedTzif(
+            -1, -5 * 3600, std::string{"EST", 4}, "EST5EDT,M3.2.0,M11.1.0")));
+  }
+  if (name == "test:ExtendedFarFuture") {
+    // 0 (1970-01-01T00:00:00Z) is the earliest final transition an extended
+    // zone may have, which maximizes the 400-year shift that BreakTime()
+    // needs for a lookup at the maximum time.
+    return std::unique_ptr<ZoneInfoSource>(
+        new StringZoneInfoSource(MakeExtendedTzif(
+            0, -5 * 3600, std::string{"EST", 4}, "EST5EDT,M3.2.0,M11.1.0")));
+  }
+  if (name == "test:ExtendedOverlappingRules") {
+    // The daylight time of one year starts more than four days after its
+    // nominal date, while the next year's ends more than five days before
+    // its own, so the two years' generated transitions overlap.
+    return std::unique_ptr<ZoneInfoSource>(
+        new StringZoneInfoSource(MakeExtendedTzif(
+            0, -5 * 3600, std::string{"STD", 4},
+            "STD-12:00:00DST12:00:00,358/100:00:00,1/-139:00:00")));
+  }
+  if (name == "test:UnterminatedAbbreviation") {
+    // The abbreviation area is missing its final NUL, so the abbreviation
+    // would run into whatever ExtendTransitions() appends behind it.
+    return std::unique_ptr<ZoneInfoSource>(new StringZoneInfoSource(
+        MakeExtendedTzif(0, -5 * 3600, "EST", "EST5EDT,M3.2.0,M11.1.0")));
+  }
+  return fallback(name);
+}
+
+// Tests that a TZif file whose abbreviation area is not NUL-terminated
+// is rejected.
+TEST(TimeZoneEdgeCase, UnterminatedAbbreviation) {
+  auto prev_factory = cctz_extension::zone_info_source_factory;
+  cctz_extension::zone_info_source_factory = ExtendedTestFactory;
+
+  time_zone tz;
+  EXPECT_FALSE(load_time_zone("test:UnterminatedAbbreviation", &tz));
+
+  cctz_extension::zone_info_source_factory = prev_factory;
+}
+
+// Tests that a TZif file whose explicit transitions end before epoch
+// is rejected when it has a POSIX DST footer string.
+TEST(TimeZoneEdgeCase, ExtendedBeforeEpoch) {
+  auto prev_factory = cctz_extension::zone_info_source_factory;
+  cctz_extension::zone_info_source_factory = ExtendedTestFactory;
+
+  // Extended zones must end with a non-negative explicit transition.
+  time_zone tz;
+  EXPECT_FALSE(load_time_zone("test:ExtendedBeforeEpoch", &tz));
+
+  cctz_extension::zone_info_source_factory = prev_factory;
+}
+
+// A transition time may include a day offset of up to +/-167 hours, so the
+// rules for consecutive years can overlap, producing transitions that go
+// backward in unix time. BreakTime() binary searches the transitions by
+// unix time, so such a zone must be rejected.
+TEST(TimeZoneEdgeCase, ExtendedOverlappingRules) {
+  auto prev_factory = cctz_extension::zone_info_source_factory;
+  cctz_extension::zone_info_source_factory = ExtendedTestFactory;
+
+  time_zone tz;
+  EXPECT_FALSE(load_time_zone("test:ExtendedOverlappingRules", &tz));
+
+  cctz_extension::zone_info_source_factory = prev_factory;
+}
+
+// Looking up the maximum time in an extended zone must fold back through the
+// 400-year cycle without overflowing when BreakTime() computes the shift.
+TEST(TimeZoneEdgeCase, ExtendedFarFuture) {
+  auto prev_factory = cctz_extension::zone_info_source_factory;
+  cctz_extension::zone_info_source_factory = ExtendedTestFactory;
+
+  time_zone tz;
+  ASSERT_TRUE(load_time_zone("test:ExtendedFarFuture", &tz));
+
+  auto tp_max = time_point<absl::time_internal::cctz::seconds>::max();
+  ExpectTime(tp_max, tz, 292277026596, 12, 4, 10, 30, 7, -5 * 3600, false,
+             "EST");
+  EXPECT_STREQ("EST", tz.lookup(tp_max).abbr);
+
+  cctz_extension::zone_info_source_factory = prev_factory;
 }
 
 }  // namespace cctz

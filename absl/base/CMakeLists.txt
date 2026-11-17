@@ -32,11 +32,40 @@ absl_cc_library(
 # Internal-only target, do not depend on directly.
 absl_cc_library(
   NAME
+    base_cpu_detect
+  HDRS
+    "internal/cpu_detect.h"
+  SRCS
+    "internal/cpu_detect.cc"
+  DEPS
+    absl::base
+    absl::config
+  COPTS
+    ${ABSL_DEFAULT_COPTS}
+)
+
+# Internal-only target, do not depend on directly.
+absl_cc_library(
+  NAME
     errno_saver
   HDRS
     "internal/errno_saver.h"
   DEPS
     absl::config
+  COPTS
+    ${ABSL_DEFAULT_COPTS}
+)
+
+absl_cc_library(
+  NAME
+    hardening
+  HDRS
+    "internal/hardening.h"
+  SRCS
+    "internal/hardening.cc"
+  DEPS
+    absl::config
+    absl::core_headers
   COPTS
     ${ABSL_DEFAULT_COPTS}
 )
@@ -72,11 +101,8 @@ absl_cc_library(
     nullability
   HDRS
     "nullability.h"
-  SRCS
-    "internal/nullability_deprecated.h"
   DEPS
     absl::config
-    absl::core_headers
   COPTS
     ${ABSL_DEFAULT_COPTS}
 )
@@ -89,7 +115,6 @@ absl_cc_test(
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
-    absl::core_headers
     absl::nullability
     GTest::gtest_main
 )
@@ -103,6 +128,34 @@ absl_cc_test(
     ${ABSL_TEST_COPTS}
   DEPS
     absl::nullability
+    GTest::gtest_main
+)
+
+# Internal-only target, do not depend on directly.
+absl_cc_library(
+  NAME
+    nullability_traits_internal
+  HDRS
+    "internal/nullability_traits.h"
+  COPTS
+    ${ABSL_DEFAULT_COPTS}
+  DEPS
+    absl::config
+    absl::nullability
+  PUBLIC
+)
+
+absl_cc_test(
+  NAME
+    nullability_traits_test
+  SRCS
+    "internal/nullability_traits_test.cc"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  DEPS
+    absl::config
+    absl::nullability
+    absl::nullability_traits_internal
     GTest::gtest_main
 )
 
@@ -214,7 +267,6 @@ absl_cc_library(
     base_internal
   HDRS
     "internal/hide_ptr.h"
-    "internal/identity.h"
     "internal/scheduling_mode.h"
   COPTS
     ${ABSL_DEFAULT_COPTS}
@@ -240,6 +292,7 @@ absl_cc_library(
     "internal/unscaledcycleclock.h"
     "internal/unscaledcycleclock_config.h"
   SRCS
+    "casts.cc"
     "internal/cycleclock.cc"
     "internal/spinlock.cc"
     "internal/sysinfo.cc"
@@ -266,14 +319,13 @@ absl_cc_library(
   PUBLIC
 )
 
-# Internal-only target, do not depend on directly.
 absl_cc_library(
   NAME
     throw_delegate
   HDRS
-    "internal/throw_delegate.h"
+    "throw_delegate.h"
   SRCS
-    "internal/throw_delegate.cc"
+    "throw_delegate.cc"
   COPTS
     ${ABSL_DEFAULT_COPTS}
   DEPS
@@ -383,9 +435,36 @@ absl_cc_test(
 
 absl_cc_test(
   NAME
+    hardening_test
+  SRCS
+    "internal/hardening_test.cc"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  DEPS
+    absl::config
+    absl::core_headers
+    absl::hardening
+    GTest::gtest_main
+)
+
+absl_cc_test(
+  NAME
     bit_cast_test
   SRCS
     "bit_cast_test.cc"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  DEPS
+    absl::base
+    absl::core_headers
+    GTest::gtest_main
+)
+
+absl_cc_test(
+  NAME
+    casts_test
+  SRCS
+    "casts_test.cc"
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
@@ -553,6 +632,19 @@ absl_cc_test(
   DEPS
     absl::base
     absl::synchronization
+    GTest::gtest_main
+)
+
+absl_cc_test(
+  NAME
+    cpu_detect_test
+  SRCS
+    "internal/cpu_detect_test.cc"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  DEPS
+    absl::base_cpu_detect
+    absl::config
     GTest::gtest_main
 )
 
@@ -729,7 +821,6 @@ absl_cc_test(
     ${ABSL_TEST_COPTS}
   DEPS
     absl::core_headers
-    absl::optional
     GTest::gtest_main
 )
 

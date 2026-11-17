@@ -23,6 +23,7 @@
 #include "absl/base/config.h"
 #include "absl/base/internal/tracing.h"
 #include "absl/synchronization/mutex.h"
+#include "absl/time/clock.h"
 #include "absl/time/time.h"
 
 namespace absl {
@@ -34,17 +35,17 @@ class ThreadSafeCounter {
   ThreadSafeCounter() : count_(0) {}
 
   void Increment() {
-    MutexLock lock(&mutex_);
+    MutexLock lock(mutex_);
     ++count_;
   }
 
   int Get() const {
-    MutexLock lock(&mutex_);
+    MutexLock lock(mutex_);
     return count_;
   }
 
   void WaitUntilGreaterOrEqual(int n) {
-    MutexLock lock(&mutex_);
+    MutexLock lock(mutex_);
     auto cond = [this, n]() { return count_ >= n; };
     mutex_.Await(Condition(&cond));
   }

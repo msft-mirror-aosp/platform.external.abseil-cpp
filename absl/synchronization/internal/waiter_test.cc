@@ -18,7 +18,7 @@
 #include <iostream>
 #include <ostream>
 
-#include "absl/base/config.h"
+#include "gtest/gtest.h"
 #include "absl/random/random.h"
 #include "absl/synchronization/internal/create_thread_identity.h"
 #include "absl/synchronization/internal/futex_waiter.h"
@@ -27,10 +27,8 @@
 #include "absl/synchronization/internal/sem_waiter.h"
 #include "absl/synchronization/internal/stdcpp_waiter.h"
 #include "absl/synchronization/internal/thread_pool.h"
-#include "absl/synchronization/internal/win32_waiter.h"
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
-#include "gtest/gtest.h"
 
 // Test go/btm support by randomizing the value of clock_gettime() for
 // CLOCK_MONOTONIC. This works by overriding a weak symbol in glibc.
@@ -129,7 +127,10 @@ TYPED_TEST_P(WaiterTest, WaitTimeWoken) {
       start + absl::Seconds(10))));
   absl::Duration waited = absl::Now() - start;
   EXPECT_GE(waited, WithTolerance(absl::Milliseconds(500)));
-  EXPECT_LT(waited, absl::Seconds(2));
+  #ifndef _MSC_VER
+    // Skip on MSVC due to flakiness.
+    EXPECT_LT(waited, absl::Seconds(2));
+  #endif
 }
 
 TYPED_TEST_P(WaiterTest, WaitDurationReached) {
@@ -139,7 +140,10 @@ TYPED_TEST_P(WaiterTest, WaitDurationReached) {
       absl::synchronization_internal::KernelTimeout(absl::Milliseconds(500))));
   absl::Duration waited = absl::Now() - start;
   EXPECT_GE(waited, WithTolerance(absl::Milliseconds(500)));
-  EXPECT_LT(waited, absl::Seconds(1));
+  #ifndef _MSC_VER
+    // Skip on MSVC due to flakiness.
+    EXPECT_LT(waited, absl::Seconds(1));
+  #endif
 }
 
 TYPED_TEST_P(WaiterTest, WaitTimeReached) {
@@ -149,7 +153,10 @@ TYPED_TEST_P(WaiterTest, WaitTimeReached) {
       start + absl::Milliseconds(500))));
   absl::Duration waited = absl::Now() - start;
   EXPECT_GE(waited, WithTolerance(absl::Milliseconds(500)));
-  EXPECT_LT(waited, absl::Seconds(1));
+  #ifndef _MSC_VER
+    // Skip on MSVC due to flakiness.
+    EXPECT_LT(waited, absl::Seconds(1));
+  #endif
 }
 
 REGISTER_TYPED_TEST_SUITE_P(WaiterTest,

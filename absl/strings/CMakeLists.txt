@@ -19,16 +19,12 @@ absl_cc_library(
     string_view
   HDRS
     "string_view.h"
-  SRCS
-    "string_view.cc"
   COPTS
     ${ABSL_DEFAULT_COPTS}
   DEPS
-    absl::base
     absl::config
     absl::core_headers
     absl::nullability
-    absl::throw_delegate
   PUBLIC
 )
 
@@ -63,7 +59,6 @@ absl_cc_library(
     "internal/memutil.h"
     "internal/stringify_sink.h"
     "internal/stringify_sink.cc"
-    "internal/stl_type_traits.h"
     "internal/str_join_internal.h"
     "internal/str_split_internal.h"
     "match.cc"
@@ -76,18 +71,22 @@ absl_cc_library(
     ${ABSL_DEFAULT_COPTS}
   DEPS
     absl::string_view
+    absl::strings_append_and_overwrite
     absl::strings_internal
+    absl::strings_resize_and_overwrite
     absl::base
     absl::bits
     absl::charset
     absl::config
     absl::core_headers
     absl::endian
+    absl::hardening
     absl::int128
     absl::iterator_traits_internal
     absl::memory
     absl::nullability
     absl::raw_logging_internal
+    absl::source_location
     absl::throw_delegate
     absl::type_traits
   PUBLIC
@@ -118,6 +117,32 @@ absl_cc_library(
   PUBLIC
 )
 
+absl_cc_library(
+  NAME
+    stringify_stream
+  HDRS
+    "internal/stringify_stream.h"
+  COPTS
+    ${ABSL_DEFAULT_COPTS}
+  DEPS
+    absl::string_view
+    absl::config
+)
+
+absl_cc_test(
+  NAME
+    stringify_stream_test
+  SRCS
+    "internal/stringify_stream_test.cc"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  DEPS
+    absl::string_view
+    absl::stringify_stream
+    absl::str_format
+    GTest::gmock_main
+)
+
 # Internal-only target, do not depend on directly.
 absl_cc_library(
   NAME
@@ -138,7 +163,65 @@ absl_cc_library(
     absl::core_headers
     absl::endian
     absl::raw_logging_internal
+    absl::strings_resize_and_overwrite
     absl::type_traits
+)
+
+absl_cc_library(
+  NAME
+    strings_resize_and_overwrite
+  HDRS
+    "resize_and_overwrite.h"
+  COPTS
+    ${ABSL_DEFAULT_COPTS}
+  DEPS
+    absl::config
+    absl::core_headers
+    absl::dynamic_annotations
+    absl::hardening
+    absl::throw_delegate
+)
+
+absl_cc_test(
+  NAME
+    strings_resize_and_overwrite_test
+  SRCS
+    "resize_and_overwrite_test.cc"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  DEPS
+    absl::strings_resize_and_overwrite
+    absl::absl_check
+    absl::dynamic_annotations
+    GTest::gmock_main
+)
+
+absl_cc_library(
+  NAME
+    strings_append_and_overwrite
+  HDRS
+    "internal/append_and_overwrite.h"
+  COPTS
+    ${ABSL_DEFAULT_COPTS}
+  DEPS
+    absl::config
+    absl::core_headers
+    absl::hardening
+    absl::strings_resize_and_overwrite
+    absl::throw_delegate
+)
+
+absl_cc_test(
+  NAME
+    strings_append_and_overwrite_test
+  SRCS
+    "internal/append_and_overwrite_test.cc"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  DEPS
+    absl::strings_resize_and_overwrite
+    absl::absl_check
+    GTest::gmock_main
 )
 
 absl_cc_test(
@@ -162,7 +245,9 @@ absl_cc_test(
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
+    absl::charset
     absl::strings
+    absl::str_format
     absl::core_headers
     absl::fixed_array
     GTest::gmock_main
@@ -177,7 +262,6 @@ absl_cc_test(
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
-    absl::optional
     absl::strings
     GTest::gmock_main
 )
@@ -191,7 +275,6 @@ absl_cc_test(
     ${ABSL_TEST_COPTS}
   DEPS
     absl::has_ostream_operator
-    absl::optional
     GTest::gmock_main
 )
 
@@ -259,7 +342,6 @@ absl_cc_test(
     ${ABSL_TEST_COPTS}
   DEPS
     absl::strings
-    absl::type_traits
     GTest::gmock_main
 )
 
@@ -317,6 +399,7 @@ absl_cc_test(
     absl::dynamic_annotations
     absl::btree
     absl::flat_hash_map
+    absl::hash
     absl::node_hash_map
     GTest::gmock_main
 )
@@ -337,11 +420,11 @@ absl_cc_test(
   NAME
     resize_uninitialized_test
   SRCS
-    "internal/resize_uninitialized.h"
     "internal/resize_uninitialized_test.cc"
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
+    absl::strings_internal
     absl::base
     absl::core_headers
     absl::type_traits
@@ -387,6 +470,7 @@ absl_cc_test(
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
+    absl::cleanup
     absl::config
     absl::core_headers
     absl::int128
@@ -663,7 +747,7 @@ absl_cc_library(
   SRCS
     "internal/pow10_helper.cc"
   COPTS
-    ${ABSL_TEST_COPTS}
+    ${ABSL_DEFAULT_COPTS}
   DEPS
     absl::config
   TESTONLY
@@ -845,6 +929,7 @@ absl_cc_library(
     absl::cordz_statistics
     absl::cordz_update_tracker
     absl::core_headers
+    absl::no_destructor
     absl::inlined_vector
     absl::span
     absl::raw_logging_internal
@@ -994,12 +1079,15 @@ absl_cc_library(
     absl::crc_cord_state
     absl::endian
     absl::function_ref
+    absl::hardening
     absl::inlined_vector
     absl::nullability
     absl::optional
     absl::raw_logging_internal
     absl::span
     absl::strings
+    absl::strings_append_and_overwrite
+    absl::strings_resize_and_overwrite
     absl::type_traits
     absl::weakly_mixed_integer
   PUBLIC
@@ -1077,11 +1165,11 @@ absl_cc_test(
     absl::endian
     absl::fixed_array
     absl::function_ref
+    absl::hardening
     absl::hash
     absl::hash_testing
     absl::no_destructor
     absl::log
-    absl::optional
     absl::random_random
     absl::str_format
     absl::strings
@@ -1196,6 +1284,44 @@ absl_cc_test(
     absl::config
     absl::core_headers
     absl::raw_logging_internal
+    absl::strings
+    GTest::gmock_main
+)
+
+absl_cc_library(
+  NAME
+    generic_printer_internal
+  SRCS
+    "internal/generic_printer.cc"
+    "internal/generic_printer_internal.h"
+  HDRS
+    "internal/generic_printer.h"
+  COPTS
+    ${ABSL_DEFAULT_COPTS}
+  DEPS
+    absl::config
+    absl::strings
+    absl::str_format
+    absl::log_internal_container
+    absl::requires_internal
+)
+
+absl_cc_test(
+  NAME
+    generic_printer_test
+  SRCS
+    "internal/generic_printer_test.cc"
+  COPTS
+    ${ABSL_TEST_COPTS}
+  DEPS
+    absl::base
+    absl::cleanup
+    absl::config
+    absl::flat_hash_map
+    absl::generic_printer_internal
+    absl::status
+    absl::statusor
+    absl::str_format
     absl::strings
     GTest::gmock_main
 )
