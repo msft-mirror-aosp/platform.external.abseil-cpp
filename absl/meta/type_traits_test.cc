@@ -14,10 +14,15 @@
 
 #include "absl/meta/type_traits.h"
 
+#include <array>
 #include <cstdint>
+#include <functional>
 #include <string>
+#include <string_view>
+#include <tuple>
 #include <type_traits>
 #include <utility>
+#include <variant>
 #include <vector>
 
 #include "gtest/gtest.h"
@@ -26,31 +31,33 @@
 #include "absl/time/clock.h"
 #include "absl/time/time.h"
 
-#ifdef ABSL_HAVE_STD_STRING_VIEW
-#include <string_view>
-#endif
-
 namespace {
 
 using ::testing::StaticAssertTypeEq;
 
 template <typename T>
-using IsOwnerAndNotView =
-    absl::conjunction<absl::type_traits_internal::IsOwner<T>,
-                      absl::negation<absl::type_traits_internal::IsView<T>>>;
+using IsViewAndNotOwner =
+    std::conjunction<absl::type_traits_internal::IsView<T>,
+                     std::negation<absl::type_traits_internal::IsOwner<T>>>;
 
+template <typename T>
+using IsOwnerAndNotView =
+    std::conjunction<absl::type_traits_internal::IsOwner<T>,
+                      std::negation<absl::type_traits_internal::IsView<T>>>;
+
+static_assert(
+    IsOwnerAndNotView<std::pair<std::vector<int>, std::string>>::value,
+    "pair of owners is an owner, not a view");
 static_assert(IsOwnerAndNotView<std::vector<int>>::value,
               "vector is an owner, not a view");
 static_assert(IsOwnerAndNotView<std::string>::value,
               "string is an owner, not a view");
 static_assert(IsOwnerAndNotView<std::wstring>::value,
               "wstring is an owner, not a view");
-#ifdef ABSL_HAVE_STD_STRING_VIEW
-static_assert(!IsOwnerAndNotView<std::string_view>::value,
+static_assert(IsViewAndNotOwner<std::string_view>::value,
               "string_view is a view, not an owner");
-static_assert(!IsOwnerAndNotView<std::wstring_view>::value,
+static_assert(IsViewAndNotOwner<std::wstring_view>::value,
               "wstring_view is a view, not an owner");
-#endif
 
 template <class T, class U>
 struct simple_pair {
@@ -71,14 +78,12 @@ struct StructB {};
 struct StructC {};
 
 struct TypeWithBarFunction {
-  template <class T,
-            absl::enable_if_t<std::is_same<T&&, StructA&>::value, int> = 0>
+  template <class T, std::enable_if_t<std::is_same_v<T&&, StructA&>, int> = 0>
   ReturnType bar(T&&, const StructB&, StructC&&) &&;  // NOLINT
 };
 
 struct TypeWithBarFunctionAndConvertibleReturnType {
-  template <class T,
-            absl::enable_if_t<std::is_same<T&&, StructA&>::value, int> = 0>
+  template <class T, std::enable_if_t<std::is_same_v<T&&, StructA&>, int> = 0>
   ConvertibleToReturnType bar(T&&, const StructB&, StructC&&) &&;  // NOLINT
 };
 
@@ -89,10 +94,6 @@ using BarIsCallableImpl =
 template <class Class, class... T>
 using BarIsCallable =
     absl::type_traits_internal::is_detected<BarIsCallableImpl, Class, T...>;
-
-template <class Class, class... T>
-using BarIsCallableConv = absl::type_traits_internal::is_detected_convertible<
-    ReturnType, BarIsCallableImpl, Class, T...>;
 
 // NOTE: Test of detail type_traits_internal::is_detected.
 TEST(IsDetectedTest, BasicUsage) {
@@ -110,430 +111,46 @@ TEST(IsDetectedTest, BasicUsage) {
                               StructC>::value));
 }
 
-// NOTE: Test of detail type_traits_internal::is_detected_convertible.
-TEST(IsDetectedConvertibleTest, BasicUsage) {
-  EXPECT_TRUE((BarIsCallableConv<TypeWithBarFunction, StructA&, const StructB&,
-                                 StructC>::value));
-  EXPECT_TRUE((BarIsCallableConv<TypeWithBarFunction, StructA&, StructB&,
-                                 StructC>::value));
-  EXPECT_TRUE((BarIsCallableConv<TypeWithBarFunction, StructA&, StructB,
-                                 StructC>::value));
-  EXPECT_TRUE((BarIsCallableConv<TypeWithBarFunctionAndConvertibleReturnType,
-                                 StructA&, const StructB&, StructC>::value));
-  EXPECT_TRUE((BarIsCallableConv<TypeWithBarFunctionAndConvertibleReturnType,
-                                 StructA&, StructB&, StructC>::value));
-  EXPECT_TRUE((BarIsCallableConv<TypeWithBarFunctionAndConvertibleReturnType,
-                                 StructA&, StructB, StructC>::value));
-
-  EXPECT_FALSE(
-      (BarIsCallableConv<int, StructA&, const StructB&, StructC>::value));
-  EXPECT_FALSE((BarIsCallableConv<TypeWithBarFunction&, StructA&,
-                                  const StructB&, StructC>::value));
-  EXPECT_FALSE((BarIsCallableConv<TypeWithBarFunction, StructA, const StructB&,
-                                  StructC>::value));
-  EXPECT_FALSE((BarIsCallableConv<TypeWithBarFunctionAndConvertibleReturnType&,
-                                  StructA&, const StructB&, StructC>::value));
-  EXPECT_FALSE((BarIsCallableConv<TypeWithBarFunctionAndConvertibleReturnType,
-                                  StructA, const StructB&, StructC>::value));
-}
-
 TEST(VoidTTest, BasicUsage) {
   StaticAssertTypeEq<void, absl::void_t<Dummy>>();
   StaticAssertTypeEq<void, absl::void_t<Dummy, Dummy, Dummy>>();
 }
 
-TEST(ConjunctionTest, BasicBooleanLogic) {
-  EXPECT_TRUE(absl::conjunction<>::value);
-  EXPECT_TRUE(absl::conjunction<std::true_type>::value);
-  EXPECT_TRUE((absl::conjunction<std::true_type, std::true_type>::value));
-  EXPECT_FALSE((absl::conjunction<std::true_type, std::false_type>::value));
-  EXPECT_FALSE((absl::conjunction<std::false_type, std::true_type>::value));
-  EXPECT_FALSE((absl::conjunction<std::false_type, std::false_type>::value));
-}
-
-struct MyTrueType {
-  static constexpr bool value = true;
-};
-
-struct MyFalseType {
-  static constexpr bool value = false;
-};
-
-TEST(ConjunctionTest, ShortCircuiting) {
-  EXPECT_FALSE(
-      (absl::conjunction<std::true_type, std::false_type, Dummy>::value));
-  EXPECT_TRUE((std::is_base_of<MyFalseType,
-                               absl::conjunction<std::true_type, MyFalseType,
-                                                 std::false_type>>::value));
-  EXPECT_TRUE(
-      (std::is_base_of<MyTrueType,
-                       absl::conjunction<std::true_type, MyTrueType>>::value));
-}
-
-TEST(DisjunctionTest, BasicBooleanLogic) {
-  EXPECT_FALSE(absl::disjunction<>::value);
-  EXPECT_FALSE(absl::disjunction<std::false_type>::value);
-  EXPECT_TRUE((absl::disjunction<std::true_type, std::true_type>::value));
-  EXPECT_TRUE((absl::disjunction<std::true_type, std::false_type>::value));
-  EXPECT_TRUE((absl::disjunction<std::false_type, std::true_type>::value));
-  EXPECT_FALSE((absl::disjunction<std::false_type, std::false_type>::value));
-}
-
-TEST(DisjunctionTest, ShortCircuiting) {
-  EXPECT_TRUE(
-      (absl::disjunction<std::false_type, std::true_type, Dummy>::value));
-  EXPECT_TRUE((
-      std::is_base_of<MyTrueType, absl::disjunction<std::false_type, MyTrueType,
-                                                    std::true_type>>::value));
-  EXPECT_TRUE((
-      std::is_base_of<MyFalseType,
-                      absl::disjunction<std::false_type, MyFalseType>>::value));
-}
-
-TEST(NegationTest, BasicBooleanLogic) {
-  EXPECT_FALSE(absl::negation<std::true_type>::value);
-  EXPECT_FALSE(absl::negation<MyTrueType>::value);
-  EXPECT_TRUE(absl::negation<std::false_type>::value);
-  EXPECT_TRUE(absl::negation<MyFalseType>::value);
-}
-
-// all member functions are trivial
-class Trivial {
-  int n_;
-};
-
-struct TrivialDestructor {
-  ~TrivialDestructor() = default;
-};
-
-struct NontrivialDestructor {
-  ~NontrivialDestructor() {}
-};
-
-struct DeletedDestructor {
-  ~DeletedDestructor() = delete;
-};
-
-class TrivialDefaultCtor {
- public:
-  TrivialDefaultCtor() = default;
-  explicit TrivialDefaultCtor(int n) : n_(n) {}
-
- private:
-  int n_;
-};
-
-class NontrivialDefaultCtor {
- public:
-  NontrivialDefaultCtor() : n_(1) {}
-
- private:
-  int n_;
-};
-
-class DeletedDefaultCtor {
- public:
-  DeletedDefaultCtor() = delete;
-  explicit DeletedDefaultCtor(int n) : n_(n) {}
-
- private:
-  int n_;
-};
-
-class TrivialMoveCtor {
- public:
-  explicit TrivialMoveCtor(int n) : n_(n) {}
-  TrivialMoveCtor(TrivialMoveCtor&&) = default;
-  TrivialMoveCtor& operator=(const TrivialMoveCtor& t) {
-    n_ = t.n_;
-    return *this;
-  }
-
- private:
-  int n_;
-};
-
-class NontrivialMoveCtor {
- public:
-  explicit NontrivialMoveCtor(int n) : n_(n) {}
-  NontrivialMoveCtor(NontrivialMoveCtor&& t) noexcept : n_(t.n_) {}
-  NontrivialMoveCtor& operator=(const NontrivialMoveCtor&) = default;
-
- private:
-  int n_;
-};
-
-class TrivialCopyCtor {
- public:
-  explicit TrivialCopyCtor(int n) : n_(n) {}
-  TrivialCopyCtor(const TrivialCopyCtor&) = default;
-  TrivialCopyCtor& operator=(const TrivialCopyCtor& t) {
-    n_ = t.n_;
-    return *this;
-  }
-
- private:
-  int n_;
-};
-
-class NontrivialCopyCtor {
- public:
-  explicit NontrivialCopyCtor(int n) : n_(n) {}
-  NontrivialCopyCtor(const NontrivialCopyCtor& t) : n_(t.n_) {}
-  NontrivialCopyCtor& operator=(const NontrivialCopyCtor&) = default;
-
- private:
-  int n_;
-};
-
-class DeletedCopyCtor {
- public:
-  explicit DeletedCopyCtor(int n) : n_(n) {}
-  DeletedCopyCtor(const DeletedCopyCtor&) = delete;
-  DeletedCopyCtor& operator=(const DeletedCopyCtor&) = default;
-
- private:
-  int n_;
-};
-
-class TrivialMoveAssign {
- public:
-  explicit TrivialMoveAssign(int n) : n_(n) {}
-  TrivialMoveAssign(const TrivialMoveAssign& t) : n_(t.n_) {}
-  TrivialMoveAssign& operator=(TrivialMoveAssign&&) = default;
-  ~TrivialMoveAssign() {}  // can have nontrivial destructor
- private:
-  int n_;
-};
-
-class NontrivialMoveAssign {
- public:
-  explicit NontrivialMoveAssign(int n) : n_(n) {}
-  NontrivialMoveAssign(const NontrivialMoveAssign&) = default;
-  NontrivialMoveAssign& operator=(NontrivialMoveAssign&& t) noexcept {
-    n_ = t.n_;
-    return *this;
-  }
-
- private:
-  int n_;
-};
-
-class TrivialCopyAssign {
- public:
-  explicit TrivialCopyAssign(int n) : n_(n) {}
-  TrivialCopyAssign(const TrivialCopyAssign& t) : n_(t.n_) {}
-  TrivialCopyAssign& operator=(const TrivialCopyAssign& t) = default;
-  ~TrivialCopyAssign() {}  // can have nontrivial destructor
- private:
-  int n_;
-};
-
-class NontrivialCopyAssign {
- public:
-  explicit NontrivialCopyAssign(int n) : n_(n) {}
-  NontrivialCopyAssign(const NontrivialCopyAssign&) = default;
-  NontrivialCopyAssign& operator=(const NontrivialCopyAssign& t) {
-    n_ = t.n_;
-    return *this;
-  }
-
- private:
-  int n_;
-};
-
-class DeletedCopyAssign {
- public:
-  explicit DeletedCopyAssign(int n) : n_(n) {}
-  DeletedCopyAssign(const DeletedCopyAssign&) = default;
-  DeletedCopyAssign& operator=(const DeletedCopyAssign&) = delete;
-
- private:
-  int n_;
-};
-
-struct MovableNonCopyable {
-  MovableNonCopyable() = default;
-  MovableNonCopyable(const MovableNonCopyable&) = delete;
-  MovableNonCopyable(MovableNonCopyable&&) = default;
-  MovableNonCopyable& operator=(const MovableNonCopyable&) = delete;
-  MovableNonCopyable& operator=(MovableNonCopyable&&) = default;
-};
-
-struct NonCopyableOrMovable {
-  NonCopyableOrMovable() = default;
-  virtual ~NonCopyableOrMovable() = default;
-  NonCopyableOrMovable(const NonCopyableOrMovable&) = delete;
-  NonCopyableOrMovable(NonCopyableOrMovable&&) = delete;
-  NonCopyableOrMovable& operator=(const NonCopyableOrMovable&) = delete;
-  NonCopyableOrMovable& operator=(NonCopyableOrMovable&&) = delete;
-};
-
-class Base {
- public:
-  virtual ~Base() {}
-};
-
-TEST(TypeTraitsTest, TestIsFunction) {
-  struct Callable {
-    void operator()() {}
-  };
-  EXPECT_TRUE(absl::is_function<void()>::value);
-  EXPECT_TRUE(absl::is_function<void()&>::value);
-  EXPECT_TRUE(absl::is_function<void() const>::value);
-  EXPECT_TRUE(absl::is_function<void() noexcept>::value);
-  EXPECT_TRUE(absl::is_function<void(...) noexcept>::value);
-
-  EXPECT_FALSE(absl::is_function<void (*)()>::value);
-  EXPECT_FALSE(absl::is_function<void (&)()>::value);
-  EXPECT_FALSE(absl::is_function<int>::value);
-  EXPECT_FALSE(absl::is_function<Callable>::value);
-}
-
 TEST(TypeTraitsTest, TestRemoveCVRef) {
+  EXPECT_TRUE((std::is_same_v<typename absl::remove_cvref<int>::type, int>));
+  EXPECT_TRUE((std::is_same_v<typename absl::remove_cvref<int&>::type, int>));
+  EXPECT_TRUE((std::is_same_v<typename absl::remove_cvref<int&&>::type, int>));
   EXPECT_TRUE(
-      (std::is_same<typename absl::remove_cvref<int>::type, int>::value));
-  EXPECT_TRUE(
-      (std::is_same<typename absl::remove_cvref<int&>::type, int>::value));
-  EXPECT_TRUE(
-      (std::is_same<typename absl::remove_cvref<int&&>::type, int>::value));
-  EXPECT_TRUE((
-      std::is_same<typename absl::remove_cvref<const int&>::type, int>::value));
-  EXPECT_TRUE(
-      (std::is_same<typename absl::remove_cvref<int*>::type, int*>::value));
+      (std::is_same_v<typename absl::remove_cvref<const int&>::type, int>));
+  EXPECT_TRUE((std::is_same_v<typename absl::remove_cvref<int*>::type, int*>));
   // Does not remove const in this case.
-  EXPECT_TRUE((std::is_same<typename absl::remove_cvref<const int*>::type,
-                            const int*>::value));
+  EXPECT_TRUE((std::is_same_v<typename absl::remove_cvref<const int*>::type,
+                              const int*>));
   EXPECT_TRUE(
-      (std::is_same<typename absl::remove_cvref<int[2]>::type, int[2]>::value));
-  EXPECT_TRUE((std::is_same<typename absl::remove_cvref<int(&)[2]>::type,
-                            int[2]>::value));
-  EXPECT_TRUE((std::is_same<typename absl::remove_cvref<int(&&)[2]>::type,
-                            int[2]>::value));
-  EXPECT_TRUE((std::is_same<typename absl::remove_cvref<const int[2]>::type,
-                            int[2]>::value));
-  EXPECT_TRUE((std::is_same<typename absl::remove_cvref<const int(&)[2]>::type,
-                            int[2]>::value));
-  EXPECT_TRUE((std::is_same<typename absl::remove_cvref<const int(&&)[2]>::type,
-                            int[2]>::value));
+      (std::is_same_v<typename absl::remove_cvref<int[2]>::type, int[2]>));
+  EXPECT_TRUE(
+      (std::is_same_v<typename absl::remove_cvref<int (&)[2]>::type, int[2]>));
+  EXPECT_TRUE(
+      (std::is_same_v<typename absl::remove_cvref<int (&&)[2]>::type, int[2]>));
+  EXPECT_TRUE((
+      std::is_same_v<typename absl::remove_cvref<const int[2]>::type, int[2]>));
+  EXPECT_TRUE(
+      (std::is_same_v<typename absl::remove_cvref<const int (&)[2]>::type,
+                      int[2]>));
+  EXPECT_TRUE(
+      (std::is_same_v<typename absl::remove_cvref<const int (&&)[2]>::type,
+                      int[2]>));
 }
 
-#define ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(trait_name, ...)          \
-  EXPECT_TRUE((std::is_same<typename std::trait_name<__VA_ARGS__>::type, \
-                            absl::trait_name##_t<__VA_ARGS__>>::value))
+TEST(TypeTraitsTest, TestTypeIdentity) {
+  EXPECT_TRUE((std::is_same_v<typename absl::type_identity<int>::type, int>));
+  EXPECT_TRUE((std::is_same_v<absl::type_identity_t<int>, int>));
+  EXPECT_TRUE((std::is_same_v<typename absl::type_identity<int&>::type, int&>));
+  EXPECT_TRUE((std::is_same_v<absl::type_identity_t<int&>, int&>));
 
-TEST(TypeTraitsTest, TestRemoveCVAliases) {
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_cv, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_cv, const int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_cv, volatile int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_cv, const volatile int);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_const, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_const, const int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_const, volatile int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_const, const volatile int);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_volatile, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_volatile, const int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_volatile, volatile int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_volatile, const volatile int);
-}
-
-TEST(TypeTraitsTest, TestAddCVAliases) {
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_cv, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_cv, const int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_cv, volatile int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_cv, const volatile int);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_const, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_const, const int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_const, volatile int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_const, const volatile int);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_volatile, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_volatile, const int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_volatile, volatile int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_volatile, const volatile int);
-}
-
-TEST(TypeTraitsTest, TestReferenceAliases) {
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_reference, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_reference, volatile int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_reference, int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_reference, volatile int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_reference, int&&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_reference, volatile int&&);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_lvalue_reference, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_lvalue_reference, volatile int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_lvalue_reference, int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_lvalue_reference, volatile int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_lvalue_reference, int&&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_lvalue_reference, volatile int&&);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_rvalue_reference, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_rvalue_reference, volatile int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_rvalue_reference, int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_rvalue_reference, volatile int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_rvalue_reference, int&&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_rvalue_reference, volatile int&&);
-}
-
-TEST(TypeTraitsTest, TestPointerAliases) {
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_pointer, int*);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_pointer, volatile int*);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_pointer, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(add_pointer, volatile int);
-}
-
-TEST(TypeTraitsTest, TestSignednessAliases) {
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(make_signed, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(make_signed, volatile int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(make_signed, unsigned);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(make_signed, volatile unsigned);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(make_unsigned, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(make_unsigned, volatile int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(make_unsigned, unsigned);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(make_unsigned, volatile unsigned);
-}
-
-TEST(TypeTraitsTest, TestExtentAliases) {
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_extent, int[]);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_extent, int[1]);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_extent, int[1][1]);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_extent, int[][1]);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_all_extents, int[]);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_all_extents, int[1]);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_all_extents, int[1][1]);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(remove_all_extents, int[][1]);
-}
-
-TEST(TypeTraitsTest, TestDecay) {
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, const int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, volatile int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, const volatile int);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, const int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, volatile int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, const volatile int&);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, const int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, volatile int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, const volatile int&);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, int[1]);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, int[1][1]);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, int[][1]);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, int());
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, int(float));      // NOLINT
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(decay, int(char, ...));  // NOLINT
+  EXPECT_FALSE(
+      (std::is_same_v<typename absl::type_identity<int64_t>::type, int32_t>));
+  EXPECT_FALSE((std::is_same_v<absl::type_identity_t<int64_t>, int32_t>));
 }
 
 struct TypeA {};
@@ -547,56 +164,23 @@ struct Wrap {};
 enum class TypeEnum { A, B, C, D };
 
 struct GetTypeT {
-  template <typename T,
-            absl::enable_if_t<std::is_same<T, TypeA>::value, int> = 0>
+  template <typename T, std::enable_if_t<std::is_same_v<T, TypeA>, int> = 0>
   TypeEnum operator()(Wrap<T>) const {
     return TypeEnum::A;
   }
 
-  template <typename T,
-            absl::enable_if_t<std::is_same<T, TypeB>::value, int> = 0>
+  template <typename T, std::enable_if_t<std::is_same_v<T, TypeB>, int> = 0>
   TypeEnum operator()(Wrap<T>) const {
     return TypeEnum::B;
   }
 
-  template <typename T,
-            absl::enable_if_t<std::is_same<T, TypeC>::value, int> = 0>
+  template <typename T, std::enable_if_t<std::is_same_v<T, TypeC>, int> = 0>
   TypeEnum operator()(Wrap<T>) const {
     return TypeEnum::C;
   }
 
   // NOTE: TypeD is intentionally not handled
 } constexpr GetType = {};
-
-TEST(TypeTraitsTest, TestEnableIf) {
-  EXPECT_EQ(TypeEnum::A, GetType(Wrap<TypeA>()));
-  EXPECT_EQ(TypeEnum::B, GetType(Wrap<TypeB>()));
-  EXPECT_EQ(TypeEnum::C, GetType(Wrap<TypeC>()));
-}
-
-TEST(TypeTraitsTest, TestConditional) {
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(conditional, true, int, char);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(conditional, false, int, char);
-}
-
-// TODO(calabrese) Check with specialized std::common_type
-TEST(TypeTraitsTest, TestCommonType) {
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(common_type, int);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(common_type, int, char);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(common_type, int, char, int);
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(common_type, int&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(common_type, int, char&);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(common_type, int, char, int&);
-}
-
-TEST(TypeTraitsTest, TestUnderlyingType) {
-  enum class enum_char : char {};
-  enum class enum_long_long : long long {};  // NOLINT(runtime/int)
-
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(underlying_type, enum_char);
-  ABSL_INTERNAL_EXPECT_ALIAS_EQUIVALENCE(underlying_type, enum_long_long);
-}
 
 struct GetTypeExtT {
   template <typename T>
@@ -765,28 +349,103 @@ TEST(TriviallyRelocatable, UserProvidedDestructor) {
   static_assert(!absl::is_trivially_relocatable<S>::value, "");
 }
 
-// TODO(b/275003464): remove the opt-out for Clang on Windows once
-// __is_trivially_relocatable is used there again.
-// TODO(b/324278148): remove the opt-out for Apple once
-// __is_trivially_relocatable is fixed there.
-#if defined(ABSL_HAVE_ATTRIBUTE_TRIVIAL_ABI) &&      \
-    ABSL_HAVE_BUILTIN(__is_trivially_relocatable) && \
-    (defined(__cpp_impl_trivially_relocatable) ||    \
-     (!defined(__clang__) && !defined(__APPLE__) && !defined(__NVCC__)))
-// A type marked with the "trivial ABI" attribute is trivially relocatable even
-// if it has user-provided special members.
-TEST(TriviallyRelocatable, TrivialAbi) {
-  struct ABSL_ATTRIBUTE_TRIVIAL_ABI S {
-    S(S&&) {}       // NOLINT(modernize-use-equals-default)
-    S(const S&) {}  // NOLINT(modernize-use-equals-default)
-    void operator=(S&&) {}
-    void operator=(const S&) {}
-    ~S() {}  // NOLINT(modernize-use-equals-default)
-  };
+TEST(Ownership, References) {
+  static_assert(IsViewAndNotOwner<std::string&>::value,
+                "std::string& is a view, not an owner");
+  static_assert(IsViewAndNotOwner<int&>::value, "int& is a view, not an owner");
 
-  static_assert(absl::is_trivially_relocatable<S>::value, "");
+  static_assert(IsViewAndNotOwner<std::string&&>::value,
+                "std::string&& is a view, not an owner");
+  static_assert(IsViewAndNotOwner<int&&>::value,
+                "int&& is a view, not an owner");
+
+  static_assert(IsViewAndNotOwner<std::reference_wrapper<std::string>>::value,
+                "std::reference_wrapper<std::string> is a view, not an owner");
+  static_assert(IsViewAndNotOwner<std::reference_wrapper<int>>::value,
+                "std::reference_wrapper<int> is a view, not an owner");
 }
-#endif
+
+TEST(Ownership, CVQualifiers) {
+  static_assert(IsOwnerAndNotView<const std::string>::value,
+                "const std::string is an owner, not a view");
+  static_assert(IsViewAndNotOwner<const std::string_view>::value,
+                "const std::string_view is a view, not an owner");
+
+  static_assert(IsOwnerAndNotView<volatile std::string>::value,
+                "volatile std::string is an owner, not a view");
+  static_assert(IsViewAndNotOwner<volatile std::string_view>::value,
+                "volatile std::string_view is a view, not an owner");
+
+  static_assert(IsOwnerAndNotView<const volatile std::string>::value,
+                "const volatile std::string is an owner, not a view");
+  static_assert(IsViewAndNotOwner<const volatile std::string_view>::value,
+                "const volatile std::string_view is a view, not an owner");
+}
+
+TEST(Ownership, Array) {
+  static_assert(!IsOwnerAndNotView<std::array<std::string, 0>>::value,
+                "empty array is not an owner");
+  static_assert(!IsViewAndNotOwner<std::array<std::string, 0>>::value,
+                "empty array is not a view");
+
+  static_assert(!IsOwnerAndNotView<std::array<std::string_view, 0>>::value,
+                "empty array is not an owner");
+  static_assert(!IsViewAndNotOwner<std::array<std::string_view, 0>>::value,
+                "empty array is not a view");
+
+  static_assert(IsOwnerAndNotView<std::array<std::string, 5>>::value,
+                "array of owners is an owner");
+  static_assert(IsViewAndNotOwner<std::array<std::string_view, 5>>::value,
+                "array of views is a view");
+}
+
+TEST(Ownership, Variant) {
+  static_assert(!IsOwnerAndNotView<std::variant<>>::value,
+                "empty variant is not an owner");
+  static_assert(!IsViewAndNotOwner<std::variant<>>::value,
+                "empty variant is not a view");
+
+  static_assert(IsOwnerAndNotView<std::variant<std::string, std::vector<char>,
+                                               std::vector<int>>>::value,
+                "aggregate of owners is an owner");
+  static_assert(IsViewAndNotOwner<
+                    std::variant<std::wstring_view, std::string_view>>::value,
+                "aggregate of views is a view");
+
+  static_assert(
+      !IsOwnerAndNotView<std::variant<const char*, std::string>>::value,
+      "variant of mixed-ownership types is not considered an owner");
+  static_assert(
+      !IsViewAndNotOwner<std::variant<const char*, std::string>>::value,
+      "variant of mixed-ownership types is not considered a view");
+
+  static_assert(
+      IsViewAndNotOwner<std::variant<std::reference_wrapper<const int>>>::value,
+      "variant of reference is considered a view");
+}
+
+TEST(Ownership, Tuple) {
+  static_assert(!IsOwnerAndNotView<std::tuple<>>::value,
+                "empty tuple is not an owner");
+  static_assert(!IsViewAndNotOwner<std::tuple<>>::value,
+                "empty tuple is not a view");
+
+  static_assert(
+      IsOwnerAndNotView<
+          std::tuple<std::string, std::vector<char>, std::vector<int>>>::value,
+      "aggregate of owners is an owner");
+  static_assert(
+      IsViewAndNotOwner<std::tuple<std::wstring_view, std::string_view>>::value,
+      "aggregate of views is a view");
+
+  static_assert(!IsOwnerAndNotView<std::tuple<const char*, std::string>>::value,
+                "tuple of mixed-ownership types is not considered an owner");
+  static_assert(!IsViewAndNotOwner<std::tuple<const char*, std::string>>::value,
+                "tuple of mixed-ownership types is not considered a view");
+
+  static_assert(IsViewAndNotOwner<std::tuple<const int&>>::value,
+                "tuple of reference is considered a view");
+}
 
 #ifdef ABSL_HAVE_CONSTANT_EVALUATED
 

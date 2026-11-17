@@ -15,6 +15,9 @@
 #include "absl/synchronization/internal/graphcycles.h"
 
 #include <climits>
+#include <cstdint>
+#include <cstdio>
+#include <iterator>
 #include <map>
 #include <random>
 #include <unordered_set>
@@ -22,7 +25,9 @@
 #include <vector>
 
 #include "gtest/gtest.h"
+#include "absl/base/config.h"
 #include "absl/base/macros.h"
+#include "absl/container/flat_hash_set.h"
 #include "absl/log/check.h"
 #include "absl/log/log.h"
 
@@ -49,8 +54,8 @@ static GraphId Get(const IdMap& id, int num) {
 }
 
 // Return whether "to" is reachable from "from".
-static bool IsReachable(Edges *edges, int from, int to,
-                        std::unordered_set<int> *seen) {
+static bool IsReachable(Edges* edges, int from, int to,
+                        absl::flat_hash_set<int>* seen) {
   seen->insert(from);     // we are investigating "from"; don't do it again
   if (from == to) return true;
   for (const auto &edge : *edges) {
@@ -92,7 +97,7 @@ static void PrintTransitiveClosure(Nodes *nodes, Edges *edges) {
   LOG(INFO) << "Transitive closure";
   for (int a : *nodes) {
     for (int b : *nodes) {
-      std::unordered_set<int> seen;
+      absl::flat_hash_set<int> seen;
       if (IsReachable(edges, a, b, &seen)) {
         LOG(INFO) << a << " " << b;
       }
@@ -116,7 +121,7 @@ static void PrintGCTransitiveClosure(Nodes *nodes, const IdMap &id,
 
 static void CheckTransitiveClosure(Nodes *nodes, Edges *edges, const IdMap &id,
                                    GraphCycles *gc) {
-  std::unordered_set<int> seen;
+  absl::flat_hash_set<int> seen;
   for (const auto &a : *nodes) {
     for (const auto &b : *nodes) {
       seen.clear();
@@ -225,7 +230,7 @@ TEST(GraphCycles, RandomizedTest) {
       break;
 
     case 1:    // Remove a node
-      if (nodes.size() > 0) {
+      if (!nodes.empty()) {
         int node_index = RandomNode(&rng, &nodes);
         int node = nodes[node_index];
         nodes[node_index] = nodes.back();
@@ -246,7 +251,7 @@ TEST(GraphCycles, RandomizedTest) {
       break;
 
     case 2:   // Add an edge
-      if (nodes.size() > 0) {
+      if (!nodes.empty()) {
         int from = RandomNode(&rng, &nodes);
         int to = RandomNode(&rng, &nodes);
         if (EdgeIndex(&edges, nodes[from], nodes[to]) == -1) {
@@ -256,7 +261,7 @@ TEST(GraphCycles, RandomizedTest) {
             new_edge.to = nodes[to];
             edges.push_back(new_edge);
           } else {
-            std::unordered_set<int> seen;
+            absl::flat_hash_set<int> seen;
             ASSERT_TRUE(IsReachable(&edges, nodes[to], nodes[from], &seen))
                 << "Edge " << nodes[to] << "->" << nodes[from];
           }
@@ -265,7 +270,7 @@ TEST(GraphCycles, RandomizedTest) {
       break;
 
     case 3:    // Remove an edge
-      if (edges.size() > 0) {
+      if (!edges.empty()) {
         int i = RandomEdge(&rng, &edges);
         int from = edges[i].from;
         int to = edges[i].to;
@@ -278,13 +283,13 @@ TEST(GraphCycles, RandomizedTest) {
       break;
 
     case 4:   // Check a path
-      if (nodes.size() > 0) {
+      if (!nodes.empty()) {
         int from = RandomNode(&rng, &nodes);
         int to = RandomNode(&rng, &nodes);
         GraphId path[2*kMaxNodes];
         int path_len = graph_cycles.FindPath(id[nodes[from]], id[nodes[to]],
-                                             ABSL_ARRAYSIZE(path), path);
-        std::unordered_set<int> seen;
+                                             std::size(path), path);
+        absl::flat_hash_set<int> seen;
         bool reachable = IsReachable(&edges, nodes[from], nodes[to], &seen);
         bool gc_reachable =
             graph_cycles.IsReachable(Get(id, nodes[from]), Get(id, nodes[to]));
@@ -387,10 +392,10 @@ class GraphCyclesTest : public ::testing::Test {
 
   std::string Path(int x, int y) {
     GraphId path[5];
-    int np = g_.FindPath(Get(id_, x), Get(id_, y), ABSL_ARRAYSIZE(path), path);
+    int np = g_.FindPath(Get(id_, x), Get(id_, y), std::size(path), path);
     std::string result;
     for (int i = 0; i < np; i++) {
-      if (i >= ABSL_ARRAYSIZE(path)) {
+      if (i >= int{std::size(path)}) {
         result += " ...";
         break;
       }
@@ -461,20 +466,20 @@ TEST_F(GraphCyclesTest, ManyEdges) {
 
 TEST(GraphCycles, IntegerOverflow) {
   GraphCycles graph_cycles;
-  char *buf = (char *)nullptr;
-  GraphId prev_id = graph_cycles.GetId(buf);
+  uintptr_t buf = 0;
+  GraphId prev_id = graph_cycles.GetId(reinterpret_cast<void*>(buf));
   buf += 1;
-  GraphId id = graph_cycles.GetId(buf);
+  GraphId id = graph_cycles.GetId(reinterpret_cast<void*>(buf));
   ASSERT_TRUE(graph_cycles.InsertEdge(prev_id, id));
 
   // INT_MAX / 40 is enough to cause an overflow when multiplied by 41.
   graph_cycles.TestOnlyAddNodes(INT_MAX / 40);
 
   buf += 1;
-  GraphId newid = graph_cycles.GetId(buf);
+  GraphId newid = graph_cycles.GetId(reinterpret_cast<void*>(buf));
   graph_cycles.HasEdge(prev_id, newid);
 
-  graph_cycles.RemoveNode(buf);
+  graph_cycles.RemoveNode(reinterpret_cast<void*>(buf));
 }
 
 }  // namespace synchronization_internal

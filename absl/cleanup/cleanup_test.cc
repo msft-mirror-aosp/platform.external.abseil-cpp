@@ -28,7 +28,7 @@ using Tag = absl::cleanup_internal::Tag;
 
 template <typename Type1, typename Type2>
 constexpr bool IsSame() {
-  return (std::is_same<Type1, Type2>::value);
+  return (std::is_same_v<Type1, Type2>);
 }
 
 struct IdentityFactory {
@@ -116,7 +116,6 @@ TYPED_TEST(CleanupTest, FactoryProducesCorrectType) {
   }
 }
 
-#if defined(ABSL_HAVE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
 TYPED_TEST(CleanupTest, CTADProducesCorrectType) {
   {
     auto callback = TypeParam::AsCallback([] {});
@@ -186,7 +185,6 @@ TYPED_TEST(CleanupTest, FactoryAndCTADProduceSameType) {
         IsSame<decltype(factory_cleanup), decltype(deduction_cleanup)>(), "");
   }
 }
-#endif  // defined(ABSL_HAVE_CLASS_TEMPLATE_ARGUMENT_DEDUCTION)
 
 TYPED_TEST(CleanupTest, BasicUsage) {
   bool called = false;
