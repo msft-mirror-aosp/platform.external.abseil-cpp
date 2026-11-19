@@ -1,2 +1,2 @@
-include platform/system/core:main:/janitors/OWNERS #{LAST_RESORT_SUGGESTION}
+include platform/system/core:/janitors/OWNERS
 krzysio@google.com
