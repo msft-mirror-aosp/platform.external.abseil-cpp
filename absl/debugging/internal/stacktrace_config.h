@@ -42,6 +42,15 @@
 #define ABSL_STACKTRACE_INL_HEADER \
   "absl/debugging/internal/stacktrace_emscripten-inl.inc"
 
+// Android local modification: ignore __ANDROID_API__, use a weak symbol
+// instead. This code must compile with API lower than 33, but we want to
+// provide backtracing if supported by the OS at runtime.
+#elif defined(__ANDROID__)
+#ifdef ABSL_HAVE_THREAD_LOCAL
+#define ABSL_STACKTRACE_INL_HEADER \
+  "absl/debugging/internal/stacktrace_generic-inl.inc"
+#endif  // defined(ABSL_HAVE_THREAD_LOCAL)
+
 #elif defined(__linux__) && !defined(__ANDROID__)
 
 #if defined(NO_FRAME_POINTER) && \
@@ -52,11 +61,11 @@
   "absl/debugging/internal/stacktrace_libunwind-inl.inc"
 #define STACKTRACE_USES_LIBUNWIND 1
 #elif defined(NO_FRAME_POINTER) && defined(__has_include)
-#if __has_include(<execinfo.h>)
+#if __has_include(<execinfo.h>) && defined(ABSL_HAVE_THREAD_LOCAL)
 // Note: When using glibc this may require -funwind-tables to function properly.
 #define ABSL_STACKTRACE_INL_HEADER \
   "absl/debugging/internal/stacktrace_generic-inl.inc"
-#endif  // __has_include(<execinfo.h>)
+#endif  // __has_include(<execinfo.h>) && defined(ABSL_HAVE_THREAD_LOCAL)
 #elif defined(__i386__) || defined(__x86_64__)
 #define ABSL_STACKTRACE_INL_HEADER \
   "absl/debugging/internal/stacktrace_x86-inl.inc"
@@ -70,11 +79,11 @@
 #define ABSL_STACKTRACE_INL_HEADER \
   "absl/debugging/internal/stacktrace_riscv-inl.inc"
 #elif defined(__has_include)
-#if __has_include(<execinfo.h>)
+#if __has_include(<execinfo.h>) && defined(ABSL_HAVE_THREAD_LOCAL)
 // Note: When using glibc this may require -funwind-tables to function properly.
 #define ABSL_STACKTRACE_INL_HEADER \
   "absl/debugging/internal/stacktrace_generic-inl.inc"
-#endif  // __has_include(<execinfo.h>)
+#endif  // __has_include(<execinfo.h>) && defined(ABSL_HAVE_THREAD_LOCAL)
 #endif  // defined(__has_include)
 
 #endif  // defined(__linux__) && !defined(__ANDROID__)

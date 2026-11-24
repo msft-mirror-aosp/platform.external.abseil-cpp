@@ -109,10 +109,13 @@ absl_cc_library(
     absl::core_headers
     absl::dynamic_annotations
     absl::malloc_internal
+    absl::meta
+    absl::nullability
     absl::raw_logging_internal
     absl::stacktrace
     absl::symbolize
     absl::time
+    absl::tracing_internal
     Threads::Threads
   PUBLIC
 )
@@ -140,6 +143,7 @@ absl_cc_test(
   DEPS
     absl::synchronization
     absl::time
+    absl::tracing_internal
     GTest::gmock_main
 )
 
@@ -153,6 +157,7 @@ absl_cc_test(
   DEPS
     absl::check
     absl::core_headers
+    absl::flat_hash_map
     absl::graphcycles_internal
     absl::log
     GTest::gmock_main
@@ -189,6 +194,7 @@ absl_cc_test(
     absl::core_headers
     absl::log
     absl::memory
+    absl::random_random
     absl::time
     GTest::gmock_main
 )
@@ -215,8 +221,12 @@ absl_cc_test(
   COPTS
     ${ABSL_TEST_COPTS}
   DEPS
+    absl::base
+    absl::config
+    absl::core_headers
     absl::synchronization
     absl::time
+    absl::tracing_internal
     GTest::gmock_main
 )
 

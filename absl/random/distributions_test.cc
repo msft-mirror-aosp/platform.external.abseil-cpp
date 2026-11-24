@@ -80,34 +80,31 @@ Invalid InferredTaggedUniformReturnT(...);
 template <typename A, typename B, typename Expect>
 void CheckArgsInferType() {
   static_assert(
-      absl::conjunction<
+      std::conjunction_v<
           std::is_same<Expect, decltype(InferredUniformReturnT<A, B>(0))>,
-          std::is_same<Expect,
-                       decltype(InferredUniformReturnT<B, A>(0))>>::value,
+          std::is_same<Expect, decltype(InferredUniformReturnT<B, A>(0))>>,
       "");
   static_assert(
-      absl::conjunction<
+      std::conjunction_v<
           std::is_same<Expect, decltype(InferredTaggedUniformReturnT<
                                         absl::IntervalOpenOpenTag, A, B>(0))>,
-          std::is_same<Expect,
-                       decltype(InferredTaggedUniformReturnT<
-                                absl::IntervalOpenOpenTag, B, A>(0))>>::value,
+          std::is_same<Expect, decltype(InferredTaggedUniformReturnT<
+                                        absl::IntervalOpenOpenTag, B, A>(0))>>,
       "");
 }
 
 template <typename A, typename B, typename ExplicitRet>
 auto ExplicitUniformReturnT(int) -> decltype(absl::Uniform<ExplicitRet>(
-                                     std::declval<absl::InsecureBitGen&>(),
-                                     std::declval<A>(), std::declval<B>()));
+    std::declval<absl::InsecureBitGen&>(), std::declval<A>(),
+    std::declval<B>()));
 
 template <typename, typename, typename ExplicitRet>
 Invalid ExplicitUniformReturnT(...);
 
 template <typename TagType, typename A, typename B, typename ExplicitRet>
-auto ExplicitTaggedUniformReturnT(int)
-    -> decltype(absl::Uniform<ExplicitRet>(
-        std::declval<TagType>(), std::declval<absl::InsecureBitGen&>(),
-        std::declval<A>(), std::declval<B>()));
+auto ExplicitTaggedUniformReturnT(int) -> decltype(absl::Uniform<ExplicitRet>(
+    std::declval<TagType>(), std::declval<absl::InsecureBitGen&>(),
+    std::declval<A>(), std::declval<B>()));
 
 template <typename, typename, typename, typename ExplicitRet>
 Invalid ExplicitTaggedUniformReturnT(...);
@@ -122,20 +119,20 @@ Invalid ExplicitTaggedUniformReturnT(...);
 template <typename A, typename B, typename Expect>
 void CheckArgsReturnExpectedType() {
   static_assert(
-      absl::conjunction<
+      std::conjunction_v<
           std::is_same<Expect,
                        decltype(ExplicitUniformReturnT<A, B, Expect>(0))>,
-          std::is_same<Expect, decltype(ExplicitUniformReturnT<B, A, Expect>(
-                                   0))>>::value,
+          std::is_same<Expect,
+                       decltype(ExplicitUniformReturnT<B, A, Expect>(0))>>,
       "");
   static_assert(
-      absl::conjunction<
+      std::conjunction_v<
           std::is_same<Expect,
                        decltype(ExplicitTaggedUniformReturnT<
                                 absl::IntervalOpenOpenTag, A, B, Expect>(0))>,
-          std::is_same<Expect, decltype(ExplicitTaggedUniformReturnT<
-                                        absl::IntervalOpenOpenTag, B, A,
-                                        Expect>(0))>>::value,
+          std::is_same<Expect,
+                       decltype(ExplicitTaggedUniformReturnT<
+                                absl::IntervalOpenOpenTag, B, A, Expect>(0))>>,
       "");
 }
 
@@ -469,6 +466,13 @@ TEST_F(RandomDistributionsTest, Zipf) {
   const auto moments =
       absl::random_internal::ComputeDistributionMoments(values);
   EXPECT_NEAR(6.5944, moments.mean, 2000) << moments;
+}
+
+TEST_F(RandomDistributionsTest, ZipfWithZeroMax) {
+  absl::InsecureBitGen gen;
+  for (int i = 0; i < 100; ++i) {
+    EXPECT_EQ(0, absl::Zipf(gen, 0));
+  }
 }
 
 TEST_F(RandomDistributionsTest, Gaussian) {
